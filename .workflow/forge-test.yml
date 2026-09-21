@@ -1,0 +1,44 @@
+# Gitee Go 流水线（原生支持 Gitee 仓库）
+# 启用方式：Gitee 仓库 → 服务 → Gitee Go → 新建流水线 → 选择本文件（.workflow/forge-test.yml）
+# 说明：未配置任何密钥即可运行——合约依赖已内置（contracts/lib），前端构建使用默认配置。
+version: 1.0
+name: forge-test-and-web-build
+displayName: 合约测试 + 前端构建
+triggers:
+  push:
+    branches:
+      include:
+        - main
+  pull_request:
+    branches:
+      include:
+        - main
+stages:
+  - stage:
+      name: contracts
+      displayName: 合约测试（Foundry）
+      steps:
+        - step: build@nodejs
+          name: forge-test
+          displayName: forge test
+          nodeVersion: 20
+          commands:
+            - curl -L https://foundry.paradigm.xyz | bash
+            - export PATH="$HOME/.foundry/bin:$PATH"
+            - foundryup
+            - cd contracts
+            - forge --version
+            - forge build
+            - forge test -vv
+  - stage:
+      name: web
+      displayName: 前端构建（Next.js）
+      steps:
+        - step: build@nodejs
+          name: web-build
+          displayName: next build
+          nodeVersion: 20
+          commands:
+            - cd web
+            - npm ci --no-audit --no-fund
+            - npm run build

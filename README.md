@@ -177,6 +177,17 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 | 创建页拖拽上传 JSON + 参数摘要确认 | ✅ | `web/app/create/page.tsx` |
 | git 提交 feat/test/docs 分开 | ✅ | 见 `git log` |
 
+## 持续集成（CI）
+
+仓库内置两套流水线，默认都**不需要任何密钥**即可跑通（合约依赖已内置，前端用默认配置构建）：
+
+| 平台 | 文件 | 触发 | 内容 |
+| --- | --- | --- | --- |
+| Gitee Go（原生） | `.workflow/forge-test.yml` | push / PR 到 `main` | `forge build` + `forge test -vv` + `npm ci && npm run build` |
+| GitHub Actions | `.github/workflows/ci.yml` | push / PR 到 `main` | 同上（两个 job 并行，带 npm 缓存） |
+
+启用 Gitee Go：仓库 → **服务 → Gitee Go** → 新建流水线 → 选择 `.workflow/forge-test.yml`。
+
 ## 常见问题
 
 - **这个仓库和 `vibecoding_VirtuHome` 的关系**：本仓库是黑客松交付用的独立仓库，只包含 Monad 相关内容；原创业项目的移动端扫描/后端服务在另一个仓库。
