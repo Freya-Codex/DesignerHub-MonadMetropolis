@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/deployments/*.json
+
+# Next.js
+web/node_modules/
+web/.next/
+web/out/
+web/.local-pins/
+web/data/
+web/next-env.d.ts
+web/*.tsbuildinfo
+
+# 环境变量
+.env
+.env.*
+!.env.example
+web/.env.local
+web/.env.*.local
