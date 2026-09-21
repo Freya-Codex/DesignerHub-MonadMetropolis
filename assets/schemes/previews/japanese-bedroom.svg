@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 768" width="1024" height="768" role="img" aria-label="日式卧室预览图">
+  <defs>
+    <linearGradient id="wall2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7F4ED"/><stop offset="1" stop-color="#EFE9DC"/>
+    </linearGradient>
+    <linearGradient id="floor2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D6C39F"/><stop offset="1" stop-color="#BFA87F"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="768" fill="url(#wall2)"/>
+  <rect y="455" width="1024" height="313" fill="url(#floor2)"/>
+  <rect x="480" y="70" width="470" height="300" rx="6" fill="#F4EFE2" stroke="#C9BCA0" stroke-width="8"/>
+  <path d="M480 70 H950 M715 70 V370 M480 220 H950" stroke="#C9BCA0" stroke-width="5" fill="none"/>
+  <path d="M478 372 q236 26 474 0 l0 -300 z" fill="#E8E0CE" opacity="0.55"/>
+  <rect x="60" y="60" width="330" height="78" rx="18" fill="#FFFFFF" opacity="0.9"/>
+  <text x="88" y="112" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="38" font-weight="700" fill="#443B2C">日式卧室</text>
+  <text x="900" y="120" text-anchor="end" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="24" fill="#7A6E58">3.8m × 4.6m</text>
+  <g>
+    <rect x="120" y="520" width="330" height="96" rx="18" fill="#E4D7BC" stroke="#CDBC99" stroke-width="4"/>
+    <rect x="120" y="486" width="330" height="46" rx="16" fill="#F6F1E5"/>
+    <rect x="700" y="300" width="230" height="300" rx="10" fill="#C09A6B" stroke="#A8825A" stroke-width="5"/>
+    <path d="M815 300 V600 M700 450 H930" stroke="#A8825A" stroke-width="5" fill="none"/>
+    <rect x="160" y="392" width="240" height="112" rx="12" fill="#D9C9A3"/>
+    <rect x="160" y="392" width="240" height="34" rx="12" fill="#EADFC4"/>
+    <circle cx="384" cy="330" r="44" fill="#F7F2E4" stroke="#C6B48E" stroke-width="6"/>
+    <path d="M384 286 V208" stroke="#8C7B5E" stroke-width="6"/>
+    <rect x="86" y="600" width="96" height="44" rx="14" fill="#A67C52"/>
+    <rect x="400" y="600" width="96" height="44" rx="14" fill="#A67C52"/>
+    <rect x="500" y="640" width="150" height="30" rx="12" fill="#8C7B5E" opacity="0.65"/>
+    <rect x="540" y="560" width="150" height="30" rx="12" fill="#8C7B5E" opacity="0.5"/>
+  </g>
+  <g>
+    <circle cx="96" cy="700" r="14" fill="#F2EEE6" stroke="#CFC7B6" stroke-width="2"/>
+    <circle cx="136" cy="700" r="14" fill="#D9C9A3" stroke="#CFC7B6" stroke-width="2"/>
+    <circle cx="176" cy="700" r="14" fill="#A67C52" stroke="#CFC7B6" stroke-width="2"/>
+    <circle cx="216" cy="700" r="14" fill="#5C5346" stroke="#CFC7B6" stroke-width="2"/>
+    <circle cx="256" cy="700" r="14" fill="#FFFFFF" stroke="#CFC7B6" stroke-width="2"/>
+    <text x="300" y="708" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="24" fill="#5C564A">8 件家具 · 静谧侘寂 · 原木质感</text>
+    <text x="972" y="708" text-anchor="end" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="22" fill="#7A7264">云筑家 · DreamHome</text>
+  </g>
+</svg>
