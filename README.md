@@ -153,6 +153,21 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 
 > 根目录 `.env.example` 汇总了合约与前端两套环境变量，按注释分别复制到 `contracts/.env` 与 `web/.env.local`。
 
+### 视觉与设计规范
+
+前端整体采用 **Monad 官方风格**，并把「室内设计」的行业语言做成视觉签名。
+
+- **色板**：紫罗兰 `#6E54FF` / 深紫 `#4F47EB` / 李子 `#25043A` / 墨黑 `#0F0F12` / 纸白 `#FBFAF9` / 灰紫 `#727285` / 珊瑚 `#FFA1A1` / 发丝线 `#ECECEC`
+- **字体**：自托管 Archivo variable（标题与数字，400–800）+ 中文系统黑体（正文）+ 等宽（地址、哈希、参数）
+- **签名元素 · 蓝图标注线**：虚线尺寸线 + 端部刻度 + 等宽数字，直接标注真实数据（房间尺寸、家具数量、谱系深度、分账比例），而不是装饰性图形
+- **卡片语言**：`.sheet`（白卡片 + 发丝线）/ `.sheet-dark`（墨黑→李子→紫罗兰渐变，用于 hero 与榜首卡片）；规格表统一「等宽大写小标签 + 右对齐值 + 发丝线分隔」
+- **预览图**：`lib/scheme.ts` 的 `schemeToPreviewSvg()` 按平面施工图渲染——标题区、房间平面、家具色块、尺寸标注、调色板，全部由方案 JSON 驱动；`npm run previews` 可批量重新生成
+- **移动端**：6 个页面在 390px 宽度下无横向溢出；导航可横向滚动，钱包按钮常驻
+
+```bash
+cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/public/previews
+```
+
 ### 演示视频（占位）
 
 [🎥 Demo 视频（占位，录制后替换链接）](https://youtu.be/REPLACE_ME)
