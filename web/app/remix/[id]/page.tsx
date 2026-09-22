@@ -207,55 +207,71 @@ export default function RemixPage() {
   const busy = step !== "idle" || isWritePending || isConfirming;
 
   if (loadError) {
-    return <div className="card p-8 text-sm text-red-700">加载原方案失败：{loadError}</div>;
+    return (
+      <div className="sheet border-coral/40 bg-coral/10 p-8 text-sm text-[#a53f52]">
+        加载原方案失败：{loadError}
+      </div>
+    );
   }
   if (!base || !remixed) {
     return (
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="card aspect-[16/10] animate-pulse bg-zinc-100" />
-        <div className="card h-64 animate-pulse bg-zinc-100" />
+        <div className="sheet aspect-[16/10] animate-pulse bg-paper-2" />
+        <div className="sheet h-72 animate-pulse bg-paper-2" />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <nav className="flex items-center gap-2 text-xs text-zinc-500">
-        <Link href={`/scheme/${tokenId?.toString()}`} className="hover:text-zinc-900">
+    <div className="mx-auto max-w-5xl space-y-8">
+      <nav className="eyebrow flex items-center gap-2">
+        <Link href={`/scheme/${tokenId?.toString()}`} className="transition hover:text-violet-deep">
           原方案 #{tokenId?.toString()}
         </Link>
-        <span>/</span>
-        <span className="text-zinc-900">Remix 编辑器</span>
+        <span className="text-hairline">/</span>
+        <span className="text-ink">Remix 编辑器</span>
       </nav>
 
-      {isNewVersion && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-800">
-          🧬 <b>新版本发布模式</b>：本次铸造的 parentId 将指向你自己的上一版 #
-          {tokenId?.toString()}，作为该方案家族的 v{(detail?.versionLine?.length ?? 1) + 1}。
-          版本时间线与归因都会自动上链。
-        </div>
-      )}
-
-      <header>
-        <h1 className="text-2xl font-black text-zinc-900">
-          {isNewVersion ? "发布新版本" : "Remix"}「{base.name}」{isNewVersion && `（v${(detail?.versionLine?.length ?? 1) + 1}）`}
+      <header className="rise">
+        <p className="eyebrow">{isNewVersion ? "New Version · 版本迭代" : "Remix · 衍生创作"}</p>
+        <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">
+          {isNewVersion ? "发布新版本" : "Remix"}「{base.name}」
+          {isNewVersion && <span className="mono text-violet"> v{(detail?.versionLine?.length ?? 1) + 1}</span>}
         </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          修改风格/配色/家具数量后一键铸造，链上 parentId 指向 #{tokenId?.toString()}，谱系与归因自动生成。
+        <div className="dim-line mt-6" />
+        <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
+          修改风格 / 配色 / 家具数量后一键铸造，链上{" "}
+          <span className="mono text-ink">parentId</span> 指向{" "}
+          <span className="mono text-ink">#{tokenId?.toString()}</span>，谱系与归因自动生成。
         </p>
       </header>
 
+      {isNewVersion && (
+        <div className="sheet border-violet/40 bg-violet/[0.06] p-5 text-[13px] leading-relaxed text-ink">
+          <p className="mono mb-2 text-[10px] uppercase tracking-[0.14em] text-violet">
+            Version Chain · 新版本发布模式
+          </p>
+          本次铸造的 parentId 将指向你自己的上一版 #{tokenId?.toString()}，作为该方案家族的 v
+          {(detail?.versionLine?.length ?? 1) + 1}。版本时间线与归因都会自动上链。
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
-          <div className="card overflow-hidden">
-            <div className="border-b border-zinc-100 px-4 py-2.5 text-xs font-semibold text-zinc-500">
-              实时预览（Remix 后）
+          <div className="sheet grid-sheet overflow-hidden">
+            <div className="border-b border-hairline px-5 py-3">
+              <p className="mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                Live Preview · Remix 后实时预览
+              </p>
             </div>
             <SchemePreview scheme={remixed} />
           </div>
 
-          <div className="card space-y-4 p-4">
-            <h2 className="text-sm font-bold text-zinc-900">风格参数编辑器</h2>
+          <div className="sheet space-y-6 p-5">
+            <div>
+              <p className="eyebrow">Editor · 风格参数</p>
+              <h2 className="display-sm mt-2 text-lg text-ink">风格参数编辑器</h2>
+            </div>
 
             <div>
               <label className="field-label">主题</label>
@@ -266,8 +282,8 @@ export default function RemixPage() {
                     onClick={() => handleTheme(t.id)}
                     className={`rounded-xl border px-2 py-2 text-xs font-semibold transition ${
                       themeId === t.id
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                        : "border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50"
+                        ? "border-violet bg-violet/10 text-violet-deep"
+                        : "border-hairline bg-white text-muted hover:border-violet/50 hover:text-ink"
                     }`}
                   >
                     {t.label}
@@ -287,7 +303,7 @@ export default function RemixPage() {
                       onClick={() => setPalette([...p])}
                       title={p.join(", ")}
                       className={`flex overflow-hidden rounded-xl ring-2 transition ${
-                        palette.join() === p.join() ? "ring-indigo-500" : "ring-transparent hover:ring-zinc-300"
+                        palette.join() === p.join() ? "ring-violet" : "ring-transparent hover:ring-violet/40"
                       }`}
                     >
                       {p.map((c) => (
@@ -300,7 +316,7 @@ export default function RemixPage() {
 
             <div>
               <label className="field-label">
-                家具数量：<b className="text-zinc-800">{furnitureCount}</b> 件
+                Furniture · 家具数量 <span className="mono text-ink">{furnitureCount}</span> 件
               </label>
               <div className="flex items-center gap-3">
                 <button className="btn-secondary !px-3.5 !py-1.5" onClick={() => setFurnitureCount((n) => Math.max(3, n - 1))}>
@@ -312,7 +328,8 @@ export default function RemixPage() {
                   max={12}
                   value={furnitureCount}
                   onChange={(e) => setFurnitureCount(Number(e.target.value))}
-                  className="w-full accent-indigo-600"
+                  className="w-full"
+                  style={{ accentColor: "#6E54FF" }}
                 />
                 <button className="btn-secondary !px-3.5 !py-1.5" onClick={() => setFurnitureCount((n) => Math.min(12, n + 1))}>
                   +
@@ -330,12 +347,12 @@ export default function RemixPage() {
               />
             </div>
 
-            <button onClick={() => void askKimi()} disabled={adviceBusy} className="btn-ghost !border !border-zinc-300 w-full">
-              {adviceBusy ? "Kimi 思考中…" : "💡 让 Kimi 给点优化建议"}
+            <button onClick={() => void askKimi()} disabled={adviceBusy} className="btn-secondary w-full">
+              {adviceBusy ? "Kimi 思考中…" : "让 Kimi 给点优化建议"}
             </button>
 
             {advice && (
-              <div className="whitespace-pre-wrap rounded-xl bg-zinc-50 p-3 text-xs leading-relaxed text-zinc-700">
+              <div className="whitespace-pre-wrap rounded-xl bg-paper-2 p-4 text-xs leading-relaxed text-ink">
                 {advice}
               </div>
             )}
@@ -343,59 +360,98 @@ export default function RemixPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="card space-y-3 p-4">
-            <h2 className="text-sm font-bold text-zinc-900">铸造 Remix NFT</h2>
-            <dl className="space-y-1.5 text-xs text-zinc-600">
-              <div className="flex justify-between gap-4">
-                <dt>父方案</dt>
-                <dd>#{tokenId?.toString()}（{base.name}）</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt>新名称</dt>
-                <dd className="line-clamp-1">{remixed.name}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt>主题 / 家具</dt>
-                <dd>
-                  {remixed.style.theme} / {remixed.furniture.length} 件
-                </dd>
-              </div>
+          <div className="sheet p-5">
+            <p className="eyebrow">Mint · 铸造 Remix</p>
+            <h2 className="display-sm mt-2 text-lg text-ink">铸造 Remix NFT</h2>
+            <dl className="mt-5 divide-y divide-hairline border-y border-hairline text-[13px]">
+              <Row label="PARENT / 父方案">
+                <span className="mono text-[12px]">#{tokenId?.toString()}</span>
+                <span className="ml-2 text-muted">{base.name}</span>
+              </Row>
+              <Row label="NAME / 新名称">
+                <span className="line-clamp-1">{remixed.name}</span>
+              </Row>
+              <Row label="THEME / FURNITURE">
+                {remixed.style.theme} · <span className="mono">{remixed.furniture.length}</span> 件
+              </Row>
+              <Row label="CHAIN">
+                <span className="mono">Monad Testnet · 10143</span>
+              </Row>
             </dl>
-            <button onClick={() => void handleMintRemix()} disabled={busy} className="btn-primary w-full">
-              {step === "pin" ? "🪐 固定到 IPFS…" : isWritePending ? "⛏ 铸造中…" : isConfirming ? "等待确认…" : "🔥 固定 + 铸造 Remix"}
+
+            <button onClick={() => void handleMintRemix()} disabled={busy} className="btn-primary mt-5 w-full">
+              {step === "pin" ? "固定到 IPFS…" : isWritePending ? "铸造中…" : isConfirming ? "等待确认…" : "固定 + 铸造 Remix"}
             </button>
-            {error && <div className="rounded-xl bg-red-50 p-3 text-xs leading-relaxed text-red-700">{error}</div>}
-            {writeError && <div className="rounded-xl bg-red-50 p-3 text-xs text-red-700">{writeError.message}</div>}
+
+            {error && (
+              <div className="mt-4 rounded-xl border border-coral/40 bg-coral/10 p-3.5 text-xs leading-relaxed text-[#a53f52]">
+                {error}
+              </div>
+            )}
+            {writeError && (
+              <div className="mt-4 rounded-xl border border-coral/40 bg-coral/10 p-3.5 text-xs text-[#a53f52]">
+                {writeError.message}
+              </div>
+            )}
             {mintHash && !tokenIdOut && (
               <a
                 href={`https://testnet.monadexplorer.com/tx/${mintHash}`}
                 target="_blank"
                 rel="noreferrer"
-                className="block break-all text-xs text-indigo-600 underline"
+                className="mono mt-4 block break-all text-[11px] text-violet-deep hover:underline"
               >
-                交易：{mintHash}
+                交易已提交 ↗ {mintHash.slice(0, 22)}…
               </a>
             )}
             {tokenIdOut && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                🎉 Remix 铸造成功！衍生方案 <b>#{tokenIdOut.toString()}</b> 的 parentId = #{tokenId?.toString()}
-                <Link href={`/scheme/${tokenIdOut.toString()}`} className="mt-2 block font-semibold text-indigo-600 underline">
-                  查看谱系与详情 →
+              <div className="mt-4 rounded-xl border border-violet/40 bg-violet/[0.06] p-4 text-[13px] text-ink">
+                Remix 铸造成功！衍生方案{" "}
+                <span className="mono font-semibold text-violet-deep">#{tokenIdOut.toString()}</span> 的 parentId = #
+                {tokenId?.toString()}
+                <Link href={`/scheme/${tokenIdOut.toString()}`} className="btn-primary mt-3">
+                  查看谱系与详情
                 </Link>
               </div>
             )}
-            {!isConnected && <p className="text-xs text-zinc-500">铸造前请先连接 MetaMask 并切换到 Monad 测试网。</p>}
+            {!isConnected && (
+              <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
+                铸造前请先连接 MetaMask 并切换到 Monad 测试网。
+              </p>
+            )}
           </div>
 
-          <div className="card space-y-2 p-4 text-xs leading-relaxed text-zinc-500">
-            <h3 className="text-sm font-bold text-zinc-900">归因与分账规则</h3>
-            <p>✦ 本次铸造后你是新方案的 creator；链上 lineageOf 会把完整谱系（含原创）记入</p>
-            <p>✦ 新方案被「应用到我家」时，90% 费用归你，10% 进入平台金库</p>
-            <p>✦ 父方案原创作者不受影响，其收益基于自身被应用/被转售次数</p>
-            <p>✦ 转售按 ERC-2981 收取 5% 版税给原创作者（或平台指定接收方）</p>
+          <div className="sheet p-5">
+            <p className="eyebrow">Attribution · 归因与分账</p>
+            <ul className="mt-4 space-y-3 text-xs leading-relaxed text-muted">
+              <li className="flex gap-3">
+                <span className="mono shrink-0 text-violet">01</span>
+                本次铸造后你是新方案的 creator；链上 lineageOf 会把完整谱系（含原创）记入
+              </li>
+              <li className="flex gap-3">
+                <span className="mono shrink-0 text-violet">02</span>
+                新方案被「应用到我家」时，90% 费用归你，10% 进入平台金库
+              </li>
+              <li className="flex gap-3">
+                <span className="mono shrink-0 text-violet">03</span>
+                父方案原创作者不受影响，其收益基于自身被应用 / 被转售次数
+              </li>
+              <li className="flex gap-3">
+                <span className="mono shrink-0 text-violet">04</span>
+                转售按 ERC-2981 收取 5% 版税给原创作者
+              </li>
+            </ul>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <dt className="mono text-[10px] uppercase tracking-[0.12em] text-muted">{label}</dt>
+      <dd className="flex items-center text-right text-ink">{children}</dd>
     </div>
   );
 }

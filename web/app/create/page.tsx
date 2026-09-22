@@ -185,18 +185,21 @@ export default function CreatePage() {
   const busy = step === "pin" || step === "mint" || isWritePending || isConfirming;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <header>
-        <h1 className="text-2xl font-black text-zinc-900">创建原创方案</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          上传/粘贴方案 JSON → 自动生成预览图 → 固定到 IPFS → 铸造为 Monad 链上 NFT（parentId = 0）。
+    <div className="mx-auto max-w-5xl space-y-8">
+      <header className="rise">
+        <p className="eyebrow">Create · 铸造原创方案</p>
+        <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">创建原创方案</h1>
+        <div className="dim-line mt-6" />
+        <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
+          上传 / 粘贴方案 JSON → 自动生成蓝图预览 → 固定到 IPFS → 铸造为 Monad 链上 NFT（
+          <span className="mono text-ink">parentId = 0</span>）。创作者地址在铸造时上链固化。
         </p>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-4">
-          <div className="card p-4">
-            <label className="field-label">方案 JSON</label>
+        <div className="space-y-5">
+          <div className="sheet p-5">
+            <label className="field-label">Scheme JSON · 方案文件</label>
             <div
               role="button"
               tabIndex={0}
@@ -210,18 +213,25 @@ export default function CreatePage() {
               }}
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
-              className={`grid min-h-28 cursor-pointer place-items-center rounded-2xl border-2 border-dashed p-4 text-center transition ${
+              className={`grid min-h-[124px] cursor-pointer place-items-center rounded-xl border-2 border-dashed p-5 text-center transition ${
                 dragOver
-                  ? "border-indigo-500 bg-indigo-50"
-                  : "border-zinc-300 bg-zinc-50 hover:border-indigo-300 hover:bg-indigo-50/50"
+                  ? "border-violet bg-violet/10"
+                  : "border-hairline bg-paper-2/60 hover:border-violet/60 hover:bg-violet/[0.04]"
               }`}
             >
               <div className="text-sm">
-                <span className="text-2xl">📂</span>
-                <p className="mt-1 font-medium text-zinc-700">
+                <span
+                  aria-hidden
+                  className={`mono block text-[18px] ${dragOver ? "text-violet" : "text-muted"}`}
+                >
+                  ⤓
+                </span>
+                <p className="mt-2 font-medium text-ink">
                   {dragOver ? "松开即可载入" : "拖拽方案 JSON 到此处，或点击选择文件"}
                 </p>
-                <p className="mt-0.5 text-xs text-zinc-400">支持 .json / application/json</p>
+                <p className="mono mt-1.5 text-[10.5px] uppercase tracking-[0.12em] text-muted">
+                  .json / application/json
+                </p>
               </div>
               <input
                 ref={fileRef}
@@ -231,11 +241,11 @@ export default function CreatePage() {
                 onChange={(e) => void handleFile(e.target.files?.[0])}
               />
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <button className="btn-ghost !border !border-zinc-300 !py-1.5 text-xs" onClick={() => void loadSample(1)}>
-                🧪 载入示例（北欧客厅）
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button className="btn-secondary !py-1.5 !text-xs" onClick={() => void loadSample(1)}>
+                载入示例（北欧客厅）
               </button>
-              {fileName && <span className="text-xs text-zinc-500">已加载：{fileName}</span>}
+              {fileName && <span className="mono text-[11px] text-muted">已加载 · {fileName}</span>}
             </div>
             <textarea
               value={raw}
@@ -243,111 +253,163 @@ export default function CreatePage() {
               rows={12}
               spellCheck={false}
               placeholder={SAMPLE_JSON}
-              className="input font-mono text-xs leading-relaxed"
+              className="input mono mt-3 text-xs leading-relaxed"
             />
-            {validationError && <p className="mt-2 text-xs text-red-600">{validationError}</p>}
+            {validationError && (
+              <p className="mt-2 text-xs text-[#a53f52]">{validationError}</p>
+            )}
           </div>
 
-          <div className="card p-4">
-            <label className="field-label">方案名称（可选，覆盖 JSON 中的 name）</label>
-            <input value={nameOverride} onChange={(e) => setName(e.target.value)} placeholder="例如：我家客厅 v2" className="input" />
+          <div className="sheet p-5">
+            <label className="field-label">Display Name · 方案名称（可选）</label>
+            <input
+              value={nameOverride}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="例如：我家客厅 v2"
+              className="input"
+            />
           </div>
 
           <button onClick={() => void handleMint()} disabled={busy || !displayScheme} className="btn-primary w-full">
-            {step === "pin" ? "🪐 固定到 IPFS…" : step === "mint" || isWritePending ? "⛏ 铸造 NFT…" : isConfirming ? "等待链上确认…" : "🚀 固定 + 铸造"}
+            {step === "pin"
+              ? "固定到 IPFS…"
+              : step === "mint" || isWritePending
+                ? "铸造 NFT…"
+                : isConfirming
+                  ? "等待链上确认…"
+                  : "固定 + 铸造"}
           </button>
 
-          {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-700">{error}</div>}
+          {error && (
+            <div className="rounded-xl border border-coral/40 bg-coral/10 p-3.5 text-xs leading-relaxed text-[#a53f52]">
+              {error}
+            </div>
+          )}
 
           {pinInfo && (
-            <div className="card space-y-1.5 p-4 text-xs">
-              <p className="font-bold text-zinc-900">✅ 已固定到 IPFS</p>
-              <p className="break-all text-zinc-600">contentHash：<code>{pinInfo.contentHash}</code></p>
-              <p className="break-all text-zinc-600">tokenUri：<code>{pinInfo.tokenUri}</code></p>
+            <div className="sheet space-y-2 p-5 text-xs">
+              <p className="mono text-[10px] uppercase tracking-[0.14em] text-violet">Pinned · 已固定到 IPFS</p>
+              <p className="break-all text-muted">
+                contentHash <code className="mono text-ink">{pinInfo.contentHash}</code>
+              </p>
+              <p className="break-all text-muted">
+                tokenUri <code className="mono text-ink">{pinInfo.tokenUri}</code>
+              </p>
             </div>
           )}
 
           {tokenId !== null && isConfirmed && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-              🎉 铸造成功！你的原创方案是 <b>#{tokenId.toString()}</b>
-              <Link href={`/scheme/${tokenId.toString()}`} className="mt-2 block font-semibold text-indigo-600 underline">
-                查看方案详情 →
+            <div className="sheet border-violet/40 bg-violet/[0.06] p-5 text-sm">
+              <p className="text-ink">
+                铸造成功！你的原创方案是 <span className="mono font-semibold text-violet-deep">#{tokenId.toString()}</span>
+              </p>
+              <Link href={`/scheme/${tokenId.toString()}`} className="btn-primary mt-3">
+                查看方案详情
               </Link>
             </div>
           )}
 
-          {writeError && <div className="rounded-xl bg-red-50 p-3 text-xs text-red-700">{writeError.message}</div>}
+          {writeError && (
+            <div className="rounded-xl border border-coral/40 bg-coral/10 p-3.5 text-xs text-[#a53f52]">
+              {writeError.message}
+            </div>
+          )}
 
-          <p className="text-xs leading-relaxed text-zinc-500">
-            格式要求：name、room.type、room.dimensions(width/length/height)、style.theme + style.palette，
-            furniture 数组含 modelId 与 position/rotation/scale（x/y/z 数字）。
+          <p className="text-xs leading-relaxed text-muted">
+            格式要求：<span className="mono text-ink">name</span>、
+            <span className="mono text-ink"> room.type</span>、
+            <span className="mono text-ink"> room.dimensions</span>(width/length/height)、
+            <span className="mono text-ink"> style.theme</span> +{" "}
+            <span className="mono text-ink">style.palette</span>，furniture 数组含 modelId 与
+            position/rotation/scale。
           </p>
         </div>
 
-        <div className="space-y-4">
-          <div className="card overflow-hidden">
-            <div className="border-b border-zinc-100 px-4 py-2.5 text-xs font-semibold text-zinc-500">
-              预览图（自动生成占位）
+        <div className="space-y-5">
+          <div className="sheet grid-sheet overflow-hidden">
+            <div className="border-b border-hairline px-5 py-3">
+              <p className="mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                Preview · 自动生成蓝图预览
+              </p>
             </div>
             {displayScheme ? (
               <SchemePreview scheme={displayScheme} />
             ) : (
-              <div className="grid aspect-[16/10] place-items-center bg-zinc-50 text-sm text-zinc-400">
+              <div className="grid aspect-[16/10] place-items-center text-sm text-muted">
                 填写左侧 JSON 后自动生成预览
               </div>
             )}
           </div>
 
           {scheme && (
-            <div className="card space-y-2.5 p-4">
+            <div className="sheet p-5">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-zinc-900">参数摘要</h3>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                  校验通过 ✓
-                </span>
+                <p className="eyebrow">Summary · 参数摘要</p>
+                <span className="chip chip-violet">校验通过</span>
               </div>
-              <dl className="grid grid-cols-2 gap-2 text-xs text-zinc-600">
-                <div className="rounded-xl bg-zinc-50 p-2.5">
-                  <dt className="text-[10px] uppercase tracking-wide text-zinc-400">房间</dt>
-                  <dd className="mt-0.5 font-semibold text-zinc-800">{scheme.room.type}</dd>
-                </div>
-                <div className="rounded-xl bg-zinc-50 p-2.5">
-                  <dt className="text-[10px] uppercase tracking-wide text-zinc-400">尺寸</dt>
-                  <dd className="mt-0.5 font-semibold text-zinc-800">
-                    {scheme.room.dimensions.width} × {scheme.room.dimensions.length} × {scheme.room.dimensions.height} m
-                  </dd>
-                </div>
-                <div className="rounded-xl bg-zinc-50 p-2.5">
-                  <dt className="text-[10px] uppercase tracking-wide text-zinc-400">风格主题</dt>
-                  <dd className="mt-0.5 font-semibold text-zinc-800">{scheme.style.theme}</dd>
-                </div>
-                <div className="rounded-xl bg-zinc-50 p-2.5">
-                  <dt className="text-[10px] uppercase tracking-wide text-zinc-400">家具数量</dt>
-                  <dd className="mt-0.5 font-semibold text-zinc-800">{scheme.furniture.length} 件</dd>
-                </div>
+              <dl className="mt-4 divide-y divide-hairline border-y border-hairline text-[13px]">
+                <SummaryRow label="ROOM / 房间">{scheme.room.type}</SummaryRow>
+                <SummaryRow label="SIZE / 尺寸">
+                  <span className="mono">
+                    {scheme.room.dimensions.width} × {scheme.room.dimensions.length} ×{" "}
+                    {scheme.room.dimensions.height} m
+                  </span>
+                </SummaryRow>
+                <SummaryRow label="THEME / 风格">{scheme.style.theme}</SummaryRow>
+                <SummaryRow label="FURNITURE / 家具">
+                  <span className="mono">{scheme.furniture.length}</span> 件
+                </SummaryRow>
               </dl>
-              <div className="flex items-center gap-1.5">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 {scheme.style.palette.slice(0, 5).map((c) => (
-                  <span key={c} className="h-6 w-6 rounded-full border border-zinc-200" style={{ backgroundColor: c }} />
+                  <span
+                    key={c}
+                    className="h-6 w-6 rounded-full border border-hairline"
+                    style={{ backgroundColor: c }}
+                    title={c}
+                  />
                 ))}
-                <span className="ml-1 text-[11px] text-zinc-400">{scheme.style.mood ?? ""}</span>
+                <span className="mono ml-1 text-[11px] text-muted">{scheme.style.mood ?? ""}</span>
               </div>
-              <p className="text-xs text-zinc-500">确认无误后点击下方「固定 + 铸造」上链；name 可覆盖 JSON 中的名称。</p>
+              <p className="mt-4 text-xs leading-relaxed text-muted">
+                确认无误后点击左侧「固定 + 铸造」上链；名称可在上方覆盖 JSON 中的 name。
+              </p>
             </div>
           )}
 
-          <div className="card p-4 text-sm">
-            <h3 className="font-bold text-zinc-900">铸造信息</h3>
-            <dl className="mt-2 space-y-1.5 text-xs text-zinc-600">
-              <div className="flex justify-between gap-4"><dt>合约</dt><dd className="truncate font-mono">{dreamSchemeAddress() ?? "未配置"}</dd></div>
-              <div className="flex justify-between gap-4"><dt>Parent</dt><dd>0（原创）</dd></div>
-              <div className="flex justify-between gap-4"><dt>版税</dt><dd>ERC-2981 · 5%</dd></div>
-              <div className="flex justify-between gap-4"><dt>网络</dt><dd>Monad Testnet (10143)</dd></div>
+          <div className="sheet p-5">
+            <p className="eyebrow">Mint · 铸造信息</p>
+            <dl className="mt-4 divide-y divide-hairline border-y border-hairline text-[13px]">
+              <SummaryRow label="CONTRACT">
+                <span className="mono text-[11px]">{dreamSchemeAddress() ?? "未配置"}</span>
+              </SummaryRow>
+              <SummaryRow label="PARENT">
+                <span className="mono">0 · 原创</span>
+              </SummaryRow>
+              <SummaryRow label="ROYALTY">
+                <span className="mono">ERC-2981 · 5%</span>
+              </SummaryRow>
+              <SummaryRow label="NETWORK">
+                <span className="mono">Monad Testnet · 10143</span>
+              </SummaryRow>
             </dl>
-            {!isConnected && <p className="mt-3 rounded-xl bg-zinc-50 p-2.5 text-xs text-zinc-500">铸造前请先连接 MetaMask 并切换到 Monad 测试网。</p>}
+            {!isConnected && (
+              <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
+                铸造前请先连接 MetaMask 并切换到 Monad 测试网。
+              </p>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <dt className="mono text-[10px] uppercase tracking-[0.12em] text-muted">{label}</dt>
+      <dd className="text-right text-ink">{children}</dd>
     </div>
   );
 }

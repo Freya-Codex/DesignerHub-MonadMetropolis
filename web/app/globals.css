@@ -2,7 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------
+   Archivo（自托管，variable 400–800）—— 拉丁标题/数字的几何 grotesque
+   中文正文回落到系统黑体，数据/地址使用等宽
+   --------------------------------------------------------------- */
+@font-face {
+  font-family: "Archivo";
+  src: url("/fonts/archivo-var.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
+  /* Monad 风格色板 */
+  --ink: #0f0f12;
+  --ink-deep: #05060a;
+  --paper: #fbfaf9;
+  --paper-2: #f4f2f7;
+  --violet: #6e54ff;
+  --violet-deep: #4f47eb;
+  --plum: #25043a;
+  --plum-2: #19053c;
+  --muted: #727285;
+  --coral: #ffa1a1;
+  --hairline: #ececec;
+  --hairline-dark: rgba(255, 255, 255, 0.14);
+
+  --font-display: "Archivo", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
   color-scheme: light;
 }
 
@@ -10,30 +42,229 @@ html,
 body {
   padding: 0;
   margin: 0;
-  background: #f7f5f0;
-  color: #18181b;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--violet);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @layer components {
-  .nav-link {
-    @apply rounded-xl px-2.5 py-1.5 font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 sm:px-3;
+  /* ---------- 排版 ---------- */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
   }
-  .card {
-    @apply rounded-2xl border border-zinc-200/80 bg-white shadow-card;
+  .display-sm {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
   }
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .eyebrow-dark {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  /* ---------- 容器 ---------- */
+  .sheet {
+    @apply rounded-2xl border bg-white;
+    border-color: var(--hairline);
+  }
+  .sheet-dark {
+    @apply rounded-2xl border text-white;
+    border-color: var(--hairline-dark);
+    background: linear-gradient(150deg, var(--ink) 0%, var(--plum) 58%, var(--violet-deep) 130%);
+  }
+  .hairline-t {
+    border-top: 1px solid var(--hairline);
+  }
+
+  /* ---------- 按钮 ---------- */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition;
+    background: var(--violet);
+  }
+  .btn-primary:hover {
+    background: var(--violet-deep);
+  }
+  .btn-primary:disabled {
+    @apply cursor-not-allowed opacity-45;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold transition;
+    border-color: var(--hairline);
+    color: var(--ink);
+  }
+  .btn-secondary:hover {
+    border-color: var(--violet);
+    color: var(--violet-deep);
+  }
+  .btn-secondary:disabled {
+    @apply cursor-not-allowed opacity-45;
+  }
+  .btn-outline-light {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-white transition;
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+  .btn-ghost-light {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition;
+    color: rgba(255, 255, 255, 0.62);
+  }
+  .btn-ghost-light:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition;
+    color: var(--muted);
   }
+  .btn-ghost:hover {
+    color: var(--ink);
+    background: var(--paper-2);
+  }
+
+  /* ---------- 表单 ---------- */
   .field-label {
-    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500;
+    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em];
+    font-family: var(--font-mono);
+    color: var(--muted);
   }
   .input {
-    @apply w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100;
+    @apply w-full rounded-xl border bg-white px-3 py-2.5 text-sm transition;
+    border-color: var(--hairline);
+    color: var(--ink);
+  }
+  .input:focus {
+    @apply outline-none;
+    border-color: var(--violet);
+    box-shadow: 0 0 0 3px rgba(110, 84, 255, 0.12);
+  }
+
+  /* ---------- 标签 / 徽章 ---------- */
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium;
+    border-color: var(--hairline);
+    color: var(--muted);
+  }
+  .chip-violet {
+    border-color: rgba(110, 84, 255, 0.28);
+    background: rgba(110, 84, 255, 0.08);
+    color: var(--violet-deep);
+  }
+  .chip-coral {
+    border-color: rgba(255, 161, 161, 0.45);
+    background: rgba(255, 161, 161, 0.14);
+    color: #a53f52;
+  }
+
+  /* ---------- 签名元素：蓝图标注线 ---------- */
+  .dim-line {
+    position: relative;
+    height: 1px;
+    background-image: linear-gradient(to right, var(--violet) 0 6px, transparent 6px 12px);
+    background-size: 12px 1px;
+    background-repeat: repeat-x;
+    opacity: 0.45;
+  }
+  .dim-line-dark {
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.6) 0 6px, transparent 6px 12px);
+    opacity: 0.5;
+  }
+  .dim-tick {
+    position: absolute;
+    top: -4px;
+    width: 1px;
+    height: 9px;
+    background: var(--violet);
+    opacity: 0.65;
+  }
+  .dim-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    background: var(--paper);
+    padding: 0 6px;
+  }
+
+  /* ---------- 图纸网格背景 ---------- */
+  .grid-sheet {
+    background-image:
+      linear-gradient(to right, rgba(110, 84, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(110, 84, 255, 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  /* 深色图纸：网格线 + 墨黑→李子→紫罗兰渐变一次声明，
+     避免 background-image 被后定义的网格类覆盖掉底色 */
+  .grid-sheet-dark {
+    background-color: var(--ink);
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      linear-gradient(150deg, var(--ink) 0%, var(--plum) 58%, var(--violet-deep) 130%);
+    background-size: 44px 44px, 44px 44px, 100% 100%;
+  }
+
+  /* ---------- 链接 ---------- */
+  .link {
+    color: var(--violet-deep);
+    text-underline-offset: 3px;
+  }
+  .link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* 入场动效（尊重 reduced-motion） */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

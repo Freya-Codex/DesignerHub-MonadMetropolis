@@ -139,89 +139,112 @@ export function applyRemixStyle(base: DesignScheme, opts: RemixOptions): DesignS
 }
 
 function esc(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
-/** 根据方案数据生成一张 SVG 预览占位图。 */
+const SVG_DISPLAY = "Archivo, PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif";
+const SVG_MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+
+/**
+ * 自动生成预览图：以「蓝图施工图」语言绘制房间平面。
+ * 房间尺寸、家具数量、调色板全部来自方案数据，尺寸线标注真实尺寸。
+ */
 export function schemeToPreviewSvg(s: DesignScheme): string {
   const pal = s.style.palette;
-  const wall = pal[0] ?? "#F2EFE9";
-  const floor = pal[1] ?? "#D9CDB8";
-  const accent = pal[2] ?? "#8FA98F";
-  const dark = pal[3] ?? "#4A4A44";
+  const accent = pal[2] ?? "#6E54FF";
+  const ink = "#0F0F12";
+  const muted = "#727285";
+  const violet = "#6E54FF";
 
-  const n = Math.max(1, Math.min(s.furniture.length <= 0 ? 5 : s.furniture.length, 12));
-  const rects: string[] = [];
-  const colors = [accent, dark, pal[2] ?? accent, pal[4] ?? "#FFFFFF"];
-  for (let i = 0; i < n; i++) {
-    const col = i % 4;
-    const fill = col === 3 ? "#E8E4DA" : colors[col];
-    const x = 110 + (i * 740) / Math.max(n - 1, 1);
-    const y = 230 + (i % 3) * 120;
-    const w = 96 + ((i * 53) % 90);
-    const h = 56 + ((i * 37) % 52);
-    const rx = Math.min(16, Math.floor(h / 3));
-    rects.push(
-      `<rect x="${Math.round(x)}" y="${Math.round(y)}" width="${Math.round(w)}" height="${Math.round(h)}" rx="${rx}" fill="${fill}" stroke="${dark}" stroke-opacity="0.25" stroke-width="3"/>`
-    );
-    if (n > 6) {
-      rects.push(
-        `<rect x="${Math.round(x + w / 2 - 20)}" y="${Math.round(y + h / 2 - 6)}" width="40" height="10" rx="5" fill="#FFFFFF" opacity="0.55"/>`
-      );
-    }
-  }
+  // 图纸：房间平面范围
+  const RX = 176;
+  const RY = 252;
+  const RW = 672;
+  const RH = 336;
 
-  const dim = `${s.room.dimensions.width}m × ${s.room.dimensions.length}m`;
-  const paletteDots = pal
+  // 家具按网格排布，尺寸受 scale 影响（数据驱动）
+  const items = s.furniture.slice(0, 12);
+  const n = Math.max(items.length, 1);
+  const cols = Math.max(2, Math.ceil(Math.sqrt(n * 1.5)));
+  const rows = Math.ceil(n / cols);
+  const cellW = RW / cols;
+  const cellH = RH / rows;
+
+  const blocks = items
+    .map((f, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const sx = Math.min(Math.max(f.scale?.x ?? 1, 0.6), 1.5);
+      const sz = Math.min(Math.max(f.scale?.z ?? 1, 0.6), 1.5);
+      const w = Math.min(cellW * 0.5 * sx, cellW * 0.72);
+      const h = Math.min(cellH * 0.5 * sz, cellH * 0.62);
+      const cx = RX + cellW * (col + 0.5);
+      const cy = RY + cellH * (row + 0.5);
+      const x = Math.round(cx - w / 2);
+      const y = Math.round(cy - h / 2);
+      const fill = pal[(i % Math.max(pal.length, 1))] ?? accent;
+      const label = esc((f.name ?? f.modelId).slice(0, 10));
+      return `    <g>
+      <rect x="${x}" y="${y}" width="${Math.round(w)}" height="${Math.round(h)}" rx="3" fill="${fill}" fill-opacity="0.5" stroke="${ink}" stroke-opacity="0.55" stroke-width="1.4"/>
+      <text x="${Math.round(cx)}" y="${Math.min(Math.round(cy + h / 2 + 15), RY + RH - 10)}" text-anchor="middle" font-family="${SVG_MONO}" font-size="10.5" fill="${muted}">${label}</text>
+    </g>`;
+    })
+    .join("\n");
+
+  const dim = s.room.dimensions;
+  const swatches = pal
     .slice(0, 5)
     .map(
       (c, i) =>
-        `<circle cx="${96 + i * 40}" cy="700" r="14" fill="${c}" stroke="${dark}" stroke-opacity="0.3" stroke-width="2"/>`
+        `<rect x="${64 + i * 26}" y="668" width="20" height="20" fill="${c}" stroke="${ink}" stroke-opacity="0.25"/>`
     )
-    .join("\n    ");
+    .join("");
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 768" width="1024" height="768">
-  <defs>
-    <linearGradient id="w" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${wall}"/><stop offset="1" stop-color="${lighten(wall)}"/>
-    </linearGradient>
-    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${floor}"/><stop offset="1" stop-color="${darken(floor)}"/>
-    </linearGradient>
-  </defs>
-  <rect width="1024" height="768" fill="url(#w)"/>
-  <rect y="470" width="1024" height="298" fill="url(#f)"/>
-  <rect x="60" y="60" width="360" height="78" rx="18" fill="#FFFFFF" opacity="0.88"/>
-  <text x="88" y="112" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="38" font-weight="700" fill="${dark}">${esc(s.name)}</text>
-  <text x="900" y="120" text-anchor="end" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="24" fill="${dark}" opacity="0.75">${esc(dim)}</text>
+  const grid = Array.from({ length: 24 }, (_, i) => {
+    const x = i * 44;
+    return `<line x1="${x}" y1="0" x2="${x}" y2="768" stroke="${violet}" stroke-opacity="0.05" stroke-width="1"/>`;
+  }).join("");
+  const gridH = Array.from({ length: 18 }, (_, i) => {
+    const y = i * 44;
+    return `<line x1="0" y1="${y}" x2="1024" y2="${y}" stroke="${violet}" stroke-opacity="0.05" stroke-width="1"/>`;
+  }).join("");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 768" width="1024" height="768" role="img" aria-label="${esc(s.name)} 平面预览图">
+  <rect width="1024" height="768" fill="#FBFAF9"/>
+  <g>${grid}${gridH}</g>
+  <rect x="24" y="24" width="976" height="720" fill="none" stroke="${ink}" stroke-opacity="0.5" stroke-width="1.5"/>
+  <path d="M24 44 H44 M24 24 V44" stroke="${violet}" stroke-width="2.5" fill="none"/>
+  <path d="M1000 724 H980 M1000 744 V724" stroke="${violet}" stroke-width="2.5" fill="none"/>
+
+  <rect x="${RX}" y="${RY}" width="${RW}" height="${RH}" fill="${pal[0] ?? "#FFFFFF"}" fill-opacity="0.45" stroke="${ink}" stroke-width="2"/>
+
   <g>
-${rects.join("\n")}
+${blocks}
   </g>
-  <g>
-${paletteDots}
-    <text x="330" y="708" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="24" fill="${dark}">${esc(s.style.theme)} · ${s.furniture.length} 件家具 · ${esc(s.style.mood ?? "")}</text>
-    <text x="972" y="708" text-anchor="end" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="22" fill="${dark}" opacity="0.7">云筑家 · DreamHome</text>
+
+  <g stroke="${violet}" stroke-width="1.4" fill="none">
+    <path d="M${RX} ${RY - 34} H${RX + RW}"/>
+    <path d="M${RX} ${RY - 40} V${RY - 28}"/>
+    <path d="M${RX + RW} ${RY - 40} V${RY - 28}"/>
+    <path d="M${RX - 34} ${RY} V${RY + RH}"/>
+    <path d="M${RX - 40} ${RY} H${RX - 28}"/>
+    <path d="M${RX - 40} ${RY + RH} H${RX - 28}"/>
   </g>
+  <text x="${RX + RW / 2}" y="${RY - 42}" text-anchor="middle" font-family="${SVG_MONO}" font-size="14" fill="${ink}">${dim.width} m</text>
+  <text x="${RX - 46}" y="${RY + RH / 2}" text-anchor="middle" font-family="${SVG_MONO}" font-size="14" fill="${ink}" transform="rotate(-90 ${RX - 46} ${RY + RH / 2})">${dim.length} m</text>
+
+  <text x="64" y="90" font-family="${SVG_MONO}" font-size="12" letter-spacing="2.4" fill="${muted}">FLOOR PLAN · ${esc(s.room.type)} · SCALE 1:50</text>
+  <text x="64" y="140" font-family="${SVG_DISPLAY}" font-size="40" font-weight="800" letter-spacing="-1.4" fill="${ink}">${esc(s.name.slice(0, 22))}</text>
+  <text x="64" y="172" font-family="${SVG_MONO}" font-size="13" fill="${muted}">${esc(s.style.theme)} · ${s.furniture.length} 件家具 · ${dim.width}×${dim.length}×${dim.height} m</text>
+
+  ${swatches}
+  <text x="216" y="684" font-family="${SVG_MONO}" font-size="11.5" fill="${muted}">${esc((s.style.mood ?? "").slice(0, 24))}</text>
+  <text x="960" y="684" text-anchor="end" font-family="${SVG_MONO}" font-size="11.5" letter-spacing="1.6" fill="${muted}">云筑家 · DREAMHOME</text>
 </svg>`;
-}
-
-function lighten(hex: string): string {
-  return shade(hex, 0.12);
-}
-function darken(hex: string): string {
-  return shade(hex, -0.12);
-}
-function shade(hex: string, amount: number): string {
-  const m = hex.replace("#", "");
-  if (!/^[0-9a-fA-F]{6}$/.test(m)) return hex;
-  const num = parseInt(m, 16);
-  const r = clamp255((num >> 16) + Math.round(255 * amount));
-  const g = clamp255(((num >> 8) & 0xff) + Math.round(255 * amount));
-  const b = clamp255((num & 0xff) + Math.round(255 * amount));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
-}
-function clamp255(v: number): number {
-  return Math.max(0, Math.min(255, v));
 }
 
 export function svgToDataUri(svg: string): string {

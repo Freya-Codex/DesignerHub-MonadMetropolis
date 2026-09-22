@@ -77,13 +77,13 @@ export default function SchemeDetailPage() {
   };
 
   if (!tokenId) {
-    return <div className="card p-8 text-sm text-zinc-500">无效的方案 ID。</div>;
+    return <div className="sheet p-8 text-sm text-muted">无效的方案 ID。</div>;
   }
 
   if (isDemo) {
     if (!demo) {
       return (
-        <div className="card p-8 text-sm text-zinc-500">
+        <div className="sheet p-8 text-sm text-muted">
           演示模式没有 #{tokenId.toString()} 这个方案（可用 1-3）。部署合约后可查看链上数据。
         </div>
       );
@@ -100,15 +100,15 @@ export default function SchemeDetailPage() {
   if (isLoading) {
     return (
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="card aspect-[16/10] animate-pulse bg-zinc-100 lg:col-span-3" />
-        <div className="card h-64 animate-pulse bg-zinc-100 lg:col-span-2" />
+        <div className="sheet aspect-[16/10] animate-pulse bg-paper-2 lg:col-span-3" />
+        <div className="sheet h-72 animate-pulse bg-paper-2 lg:col-span-2" />
       </div>
     );
   }
 
   if (error || !detail) {
     return (
-      <div className="card p-8 text-sm text-red-700">
+      <div className="sheet border-coral/40 bg-coral/10 p-8 text-sm text-[#a53f52]">
         读取失败：{error instanceof Error ? error.message : "无数据"}。请确认已部署合约并配置
         web/.env.local。
       </div>
@@ -176,150 +176,205 @@ function DetailFrame(props: DetailFrameProps) {
   const canNewVersion = !isDemoMode && isCreator && isHead && versions.length >= 1;
 
   return (
-    <div className="space-y-6">
-      <nav className="flex items-center gap-2 text-xs text-zinc-500">
-        <Link href="/" className="hover:text-zinc-900">画廊</Link>
-        <span>/</span>
-        <span className="text-zinc-900">方案 #{d.tokenId.toString()}</span>
+    <div className="space-y-8">
+      <nav className="eyebrow flex items-center gap-2">
+        <Link href="/" className="transition hover:text-violet-deep">
+          画廊
+        </Link>
+        <span className="text-hairline">/</span>
+        <span className="text-ink">方案 #{d.tokenId.toString()}</span>
       </nav>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="card overflow-hidden lg:col-span-3">
-          <img src={img} alt={title} className="aspect-[16/10] w-full object-cover" />
-        </div>
+        {/* 图纸 */}
+        <figure className="sheet grid-sheet relative overflow-hidden lg:col-span-3">
+          <span
+            aria-hidden
+            className="absolute left-3 top-3 z-10 h-5 w-5 border-l-2 border-t-2 border-violet"
+          />
+          <span
+            aria-hidden
+            className="absolute right-3 top-3 z-10 h-5 w-5 border-r-2 border-t-2 border-violet"
+          />
+          <img src={img} alt={title} className="aspect-[4/3] w-full object-cover" />
+          <figcaption className="mono flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-hairline bg-paper px-4 py-2.5 text-[10px] uppercase tracking-[0.16em] text-muted">
+            <span>Floor Plan · #{d.tokenId.toString()} · Scale 1:50</span>
+            <span className="text-violet-deep">ERC-721 · ERC-2981</span>
+          </figcaption>
+        </figure>
 
-        <div className="card space-y-4 p-5 lg:col-span-2">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-black text-zinc-900">{title}</h1>
-              {d.parentId === 0n ? (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                  原创
-                </span>
-              ) : (
-                <Link
-                  href={`/scheme/${d.parentId.toString()}`}
-                  className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-200"
-                >
-                  Remix 自 #{d.parentId.toString()}
-                </Link>
-              )}
-            </div>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-600">{d.description}</p>
+        {/* 信息面板 */}
+        <div className="sheet flex flex-col p-6 lg:col-span-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {d.parentId === 0n ? (
+              <span className="chip">ORIGIN · 原创</span>
+            ) : (
+              <Link href={`/scheme/${d.parentId.toString()}`} className="chip chip-violet">
+                REMIX 自 #{d.parentId.toString()}
+              </Link>
+            )}
+            {versions.length > 1 && <span className="chip">v{versions.length}</span>}
           </div>
 
-          <dl className="grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl bg-zinc-50 p-3">
-              <dt className="text-[11px] text-zinc-500">创作者</dt>
-              <dd className="mt-0.5 truncate font-mono text-xs">
-                <a className="hover:text-indigo-600" href={`${explorerBase}/address/${creator}`} target="_blank" rel="noreferrer" title="在浏览器中查看">
-                  {shortAddress(creator, 8)}
-                </a>
-              </dd>
-            </div>
-            <div className="rounded-xl bg-zinc-50 p-3">
-              <dt className="text-[11px] text-zinc-500">房间</dt>
-              <dd className="mt-0.5">{d.roomType}</dd>
-            </div>
-            <div className="rounded-xl bg-zinc-50 p-3">
-              <dt className="text-[11px] text-zinc-500">风格</dt>
-              <dd className="mt-0.5">{d.theme}</dd>
-            </div>
-            <div className="rounded-xl bg-zinc-50 p-3">
-              <dt className="text-[11px] text-zinc-500">家具数量</dt>
-              <dd className="mt-0.5">{d.furnitureCount} 件</dd>
-            </div>
-            <div className="rounded-xl bg-zinc-50 p-3">
-              <dt className="text-[11px] text-zinc-500">Remix / 被应用</dt>
-              <dd className="mt-0.5">
-                🔁 {d.remixCount} / 🏠 {d.appliedCount}
-              </dd>
-            </div>
-            <div className="rounded-xl bg-zinc-50 p-3">
-              <dt className="text-[11px] text-zinc-500">内容哈希</dt>
-              <dd className="mt-0.5 truncate font-mono text-[11px]" title={d.contentHash}>
+          <h1 className="display mt-4 text-[26px] text-ink sm:text-[30px]">{title}</h1>
+          <p className="mt-3 text-[13px] leading-relaxed text-muted">{d.description}</p>
+
+          <dl className="mt-6 divide-y divide-hairline border-y border-hairline">
+            <Row label="CREATOR / 创作者">
+              <a
+                className="mono transition hover:text-violet-deep"
+                href={`${explorerBase}/address/${creator}`}
+                target="_blank"
+                rel="noreferrer"
+                title="在浏览器中查看"
+              >
+                {shortAddress(creator, 8)}
+              </a>
+            </Row>
+            <Row label="ROOM / 房间">{d.roomType}</Row>
+            <Row label="STYLE / 风格">{d.theme}</Row>
+            <Row label="FURNITURE / 家具">
+              <span className="mono">{d.furnitureCount}</span> 件
+            </Row>
+            <Row label="REMIX / APPLIED">
+              <span className="mono">{d.remixCount}</span>
+              <span className="mx-1.5 text-hairline">/</span>
+              <span className="mono">{d.appliedCount}</span>
+            </Row>
+            <Row label="CONTENT HASH">
+              <span className="mono text-[11px]" title={d.contentHash}>
                 {String(d.contentHash).slice(0, 18)}…
-              </dd>
-            </div>
+              </span>
+            </Row>
           </dl>
 
           {!isDemoMode && (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                onClick={onApply}
-                disabled={!canAct || isApplyPending}
-                className="btn-primary flex-1"
-              >
-                {(isApplyPending ? "交易确认中…" : isApplied ? "✅ 已应用！" : "🏠 应用到我家（0.01 MON）")}
+            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+              <button onClick={onApply} disabled={!canAct || isApplyPending} className="btn-primary flex-1">
+                {isApplyPending ? "交易确认中…" : isApplied ? "已应用到我家 ✓" : "应用到我家 · 0.01 MON"}
               </button>
               <Link href={`/remix/${d.tokenId.toString()}`} className="btn-secondary flex-1">
-                🔁 Remix 这个方案
+                Remix
               </Link>
             </div>
           )}
 
           {!isDemoMode && !isConnected && (
-            <p className="text-xs text-zinc-500">连接 MetaMask 后即可应用或 Remix（需使用 Monad 测试网）。</p>
+            <p className="mt-3 text-xs leading-relaxed text-muted">
+              连接 MetaMask 后即可应用或 Remix（需切换到 Monad 测试网）。
+            </p>
           )}
-          {txNote && <p className="break-all rounded-xl bg-zinc-50 p-2.5 text-xs text-zinc-600">{txNote}</p>}
-          {applyError && <p className="rounded-xl bg-red-50 p-2.5 text-xs text-red-700">{applyError}</p>}
+          {txNote && (
+            <p className="mono mt-3 break-all rounded-xl bg-paper-2 p-2.5 text-[11px] text-muted">{txNote}</p>
+          )}
+          {applyError && (
+            <p className="mt-3 rounded-xl border border-coral/40 bg-coral/10 p-2.5 text-[11px] text-[#a53f52]">
+              {applyError}
+            </p>
+          )}
           {applyTxHash && (
             <a
               href={`${explorerBase}/tx/${applyTxHash}`}
               target="_blank"
               rel="noreferrer"
-              className="break-all text-xs text-indigo-600 underline"
+              className="mono mt-3 break-all text-[11px] text-violet-deep hover:underline"
             >
-              查看交易：{applyTxHash}
+              查看交易 ↗ {applyTxHash.slice(0, 20)}…
             </a>
           )}
+
+          <p className="mono mt-auto pt-6 text-[10px] uppercase tracking-[0.14em] text-muted">
+            90% → creator · 10% → treasury
+          </p>
         </div>
       </div>
 
-      <div className="card space-y-3 p-5">
-        <h2 className="text-sm font-bold text-zinc-900">🌱 谱系树（可归因的创作链）</h2>
+      <Panel eyebrow="Lineage · 可归因创作链" title="谱系树">
         <LineageTree lineage={d.lineage ?? []} currentId={d.tokenId} names={namesFrom(allSchemes)} />
         {d.children && d.children.length > 0 && (
-          <div className="pt-2 text-xs text-zinc-500">
-            直接衍生：{d.children.map((id: bigint) => `#${id.toString()}`).join("、")}
-          </div>
+          <p className="mono mt-4 text-[11px] text-muted">
+            直接衍生 · {d.children.map((id: bigint) => `#${id.toString()}`).join("  ")}
+          </p>
         )}
-      </div>
+      </Panel>
 
-      <div className="card space-y-3 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-bold text-zinc-900">🧬 版本时间线（同一作者链）</h2>
-          {canNewVersion && (
-            <Link
-              href={`/remix/${d.tokenId.toString()}?newVersion=1`}
-              className="btn-primary !px-3.5 !py-1.5 !text-xs"
-            >
-              🚀 发布新版本（v{versions.length + 1}）
+      <Panel
+        eyebrow="Versions · 同一作者链"
+        title="版本时间线"
+        action={
+          canNewVersion ? (
+            <Link href={`/remix/${d.tokenId.toString()}?newVersion=1`} className="btn-primary !px-3.5 !py-1.5 !text-xs">
+              发布新版本 v{versions.length + 1}
             </Link>
-          )}
-        </div>
+          ) : undefined
+        }
+      >
         <VersionTimeline line={versions} currentId={d.tokenId} names={namesFrom(allSchemes)} />
         {isCreator && !isHead && versions.length > 1 && (
-          <p className="text-xs text-zinc-500">
-            你的最新版本是 v{versions.length}（<Link className="text-indigo-600 underline" href={`/scheme/${headId.toString()}`}>#{headId.toString()}</Link>
+          <p className="mt-4 text-xs leading-relaxed text-muted">
+            你的最新版本是 v{versions.length}（
+            <Link className="link" href={`/scheme/${headId.toString()}`}>
+              #{headId.toString()}
+            </Link>
             ），在那里发布新版本可保持版本链连续。
           </p>
         )}
-      </div>
+      </Panel>
 
       <CommentsSection tokenId={d.tokenId} />
 
-      <div className="card space-y-2 p-5 text-xs leading-relaxed text-zinc-500">
-        <h2 className="text-sm font-bold text-zinc-900">📦 资产说明</h2>
-        <p>ERC-721 + ERC-2981（版税 5%）；创作者在铸造时上链归因，NFT 转手不影响分账对象。</p>
-        <p>
-          「应用到我家」费用为 0.01 MON：90% 即时转给创作者，10% 累积到平台金库
-          <code className="rounded bg-zinc-100 px-1">{schemeMarketAddress() ?? "未配置"}</code>，任何账户均可 withdraw。
-        </p>
+      <div className="sheet p-6">
+        <p className="eyebrow">Asset · 资产说明</p>
+        <div className="mt-4 space-y-2.5 text-xs leading-relaxed text-muted">
+          <p>
+            <span className="mono text-ink">ERC-721 + ERC-2981</span>（版税 5%）；创作者在铸造时上链归因，
+            NFT 转手不影响分账对象。
+          </p>
+          <p>
+            「应用到我家」费用为 0.01 MON：90% 即时转给创作者，10% 累积到平台金库{" "}
+            <code className="mono text-ink">{schemeMarketAddress() ?? "未配置"}</code>，任何账户均可 withdraw。
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-2.5">
+      <dt className="mono text-[10px] uppercase tracking-[0.12em] text-muted">{label}</dt>
+      <dd className="text-right text-[13px] text-ink">{children}</dd>
+    </div>
+  );
+}
+
+function Panel({
+  eyebrow,
+  title,
+  action,
+  children
+}: {
+  eyebrow: string;
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="sheet p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">{eyebrow}</p>
+          <h2 className="display-sm mt-2 text-xl text-ink">{title}</h2>
+        </div>
+        {action}
+      </div>
+      <div className="dim-line mt-4" />
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
 function namesFrom(allSchemes: any[]): Record<string, string> {
   const map: Record<string, string> = {};
   for (const s of allSchemes) map[s.tokenId.toString()] = s.name;

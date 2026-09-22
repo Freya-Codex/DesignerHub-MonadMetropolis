@@ -8,31 +8,35 @@ interface Props {
   names?: Record<string, string>;
 }
 
-/** 谱系树：从原创 → 各代 remix → 当前方案。 */
+/** 谱系树：以「图纸节点 + 虚线脊线」呈现从原创到当前的创作链。 */
 export default function LineageTree({ lineage, currentId, names }: Props) {
   if (lineage.length === 0) {
-    return <p className="text-sm text-zinc-500">暂无谱系数据。</p>;
+    return <p className="text-sm text-muted">暂无谱系数据。</p>;
   }
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-y-3">
       {lineage.map((id, i) => {
         const isCurrent = id === currentId;
         const isRoot = i === 0;
         return (
-          <div key={id.toString()} className="flex items-center gap-2">
-            {i > 0 && <span className="text-zinc-400">→</span>}
+          <div key={id.toString()} className="flex items-center">
+            {i > 0 && <span className="dim-line mx-1.5 h-px w-6 sm:w-9" />}
             <Link
               href={`/scheme/${id.toString()}`}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 transition ${
                 isCurrent
-                  ? "border-indigo-500 bg-indigo-600 text-white shadow"
+                  ? "border-violet bg-violet text-white shadow-glow"
                   : isRoot
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                    : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
+                    ? "border-violet/35 bg-violet/5 text-violet-deep hover:border-violet/60"
+                    : "border-hairline bg-white text-ink/75 hover:border-violet/40 hover:text-ink"
               }`}
             >
-              <span>{isRoot ? "🌱 原创" : isCurrent ? "✨ 当前" : `#${id.toString()}`}</span>
-              <span className="font-normal opacity-70">{names?.[id.toString()]}</span>
+              <span className="mono text-[10px] tracking-wider opacity-70">
+                {isRoot ? "ORIGIN" : `#${id.toString()}`}
+              </span>
+              <span className="display-sm max-w-[9rem] truncate text-[12.5px]">
+                {names?.[id.toString()] ?? (isCurrent ? "当前方案" : "方案")}
+              </span>
             </Link>
           </div>
         );

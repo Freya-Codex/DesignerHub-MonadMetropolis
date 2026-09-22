@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "previews": "tsx scripts/generate-previews.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",

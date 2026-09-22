@@ -42,7 +42,6 @@ export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
     setBusy(true);
     setError(null);
     try {
-      // SIWE 风格：对「方案号 + 地址 + 时间戳」的文本签名，后端恢复地址校验
       const issuedAt = new Date().toISOString();
       const message = [
         "云筑家 · DreamHome 评论签名",
@@ -71,52 +70,48 @@ export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
   };
 
   return (
-    <div className="card space-y-4 p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-zinc-900">💬 协作讨论（链下 · 钱包签名）</h2>
-        <span className="text-[11px] text-zinc-400">
-          {items.length} 条 · 不消耗 gas
-        </span>
+    <section className="sheet p-5">
+      <div className="flex items-baseline justify-between">
+        <h2 className="display-sm text-[15px]">协作讨论</h2>
+        <p className="eyebrow">
+          {items.length} 条 · OFF-CHAIN · 零 GAS
+        </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={2}
           maxLength={500}
-          placeholder={isConnected ? "给创作者/作者一些反馈，或提出 remix 想法…" : "连接钱包后可签名发表评论"}
-          className="input resize-none text-sm"
+          placeholder={isConnected ? "写下你的反馈，或提出 remix 想法…" : "连接钱包后可签名发表评论"}
+          className="input resize-none"
         />
-        <button
-          onClick={() => void submit()}
-          disabled={busy || !isConnected}
-          className="btn-primary h-fit !px-5"
-        >
-          {busy ? "签名中…" : "✍ 签名发布"}
+        <button onClick={() => void submit()} disabled={busy || !isConnected} className="btn-primary h-fit shrink-0 whitespace-nowrap sm:!px-5">
+          {busy ? "签名中…" : "签名发布"}
         </button>
       </div>
-      {!isConnected && <p className="text-xs text-zinc-500">使用 MetaMask 对内容签名即可发布，无需支付任何 gas。</p>}
-      {error && <p className="rounded-xl bg-red-50 p-2.5 text-xs text-red-700">{error}</p>}
+      <p className="mt-2 text-[11px] text-muted">
+        评论以钱包签名（SIWE 风格）校验归属后链下存储，不需要支付任何 gas。
+      </p>
+      {error && <p className="mt-2 rounded-xl bg-coral/15 p-2.5 text-xs text-[#a53f52]">{error}</p>}
 
-      <ul className="space-y-3">
+      <ul className="mt-4 divide-y divide-hairline">
         {items.length === 0 && (
-          <li className="rounded-xl bg-zinc-50 p-3 text-center text-xs text-zinc-400">
-            还没有评论，来写下第一条反馈吧
-          </li>
+          <li className="py-6 text-center text-xs text-muted">还没有评论 —— 成为第一个给作者反馈的人。</li>
         )}
         {[...items].reverse().map((c) => (
-          <li key={c.id} className="rounded-xl border border-zinc-100 bg-zinc-50/60 p-3">
-            <div className="flex items-center justify-between text-[11px] text-zinc-500">
-              <span className="font-mono font-semibold text-indigo-600">{shortAddress(c.author, 5)}</span>
-              <time dateTime={c.createdAt}>
+          <li key={c.id} className="py-3.5">
+            <div className="flex items-center justify-between">
+              <span className="mono text-[11px] font-semibold text-violet-deep">{shortAddress(c.author, 5)}</span>
+              <time className="mono text-[10.5px] text-muted" dateTime={c.createdAt}>
                 {new Date(c.createdAt).toLocaleString("zh-CN", { hour12: false })}
               </time>
             </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-zinc-800">{c.text}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink/85">{c.text}</p>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }

@@ -5,13 +5,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#18181b",
-        paper: "#F7F5F0",
-        brand: { 50: "#EEF2FF", 500: "#6366F1", 600: "#4F46E5" }
+        ink: "#0F0F12",
+        "ink-deep": "#05060A",
+        paper: "#FBFAF9",
+        "paper-2": "#F4F2F7",
+        violet: { DEFAULT: "#6E54FF", deep: "#4F47EB" },
+        plum: "#25043A",
+        muted: "#727285",
+        coral: "#FFA1A1",
+        hairline: "#ECECEC"
+      },
+      fontFamily: {
+        display: ["Archivo", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "sans-serif"],
+        body: ["-apple-system", "BlinkMacSystemFont", "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "SF Mono", "Menlo", "Consolas", "monospace"]
       },
       boxShadow: {
-        card: "0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px -12px rgb(0 0 0 / 0.18)"
-      }
+        glow: "0 30px 80px -40px rgba(110, 84, 255, 0.55)",
+        sheet: "0 1px 0 rgba(15,15,18,0.04), 0 18px 40px -32px rgba(15,15,18,0.35)"
+      },
+      keyframes: {
+        rise: {
+          from: { opacity: "0", transform: "translateY(14px)" },
+          to: { opacity: "1", transform: "none" }
+        }
+      },
+      animation: { rise: "rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both" }
     }
   },
   plugins: []
