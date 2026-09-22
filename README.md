@@ -17,7 +17,7 @@
 ┌──────────────────────────── web/ ────────────────────────────┐
 │ Next.js 14 App Router + TS + viem + wagmi + RainbowKit      │
 │                                                              │
-│ 首页(画廊)  /scheme/[id]  /create  /remix/[id]  /board       │
+│ 画廊 /scheme/[id] /create /remix/[id] /mint /trades /board   │
 │   │ 读取 SchemeMinted 事件 + IPFS 元数据                      │
 │   │ 写交易：mint / applyScheme                               │
 │ ├─ /api/pin    方案JSON+预览图 → Pinata 固定 → ipfs:// URI    │
@@ -60,7 +60,7 @@ monad/
 │   ├── deployments/           部署记录（monad-testnet.json 部署后自动生成）
 │   └── lib/                   内置依赖源码（OpenZeppelin 5.3.0 / forge-std 1.16.2）
 ├── web/                       Next.js 14 前端 + API
-│   ├── app/                   6 个页面：/ · /scheme/[id] · /create · /remix/[id] · /board · /docs
+│   ├── app/                   8 个页面：/ · /scheme/[id] · /create · /remix/[id] · /mint · /trades · /board · /docs
 │   ├── app/api/               5 个路由：/pin · /kimi · /comment · /cid/[cid] · /demo/[id]
 │   ├── components/            VersionTimeline · CommentsSection · SchemeCard · LineageTree · SchemePreview
 │   ├── lib/                   wagmi/合约/主题/IPFS/Pinata/Kimi 封装
@@ -162,7 +162,20 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 - **签名元素 · 蓝图标注线**：虚线尺寸线 + 端部刻度 + 等宽数字，直接标注真实数据（房间尺寸、家具数量、谱系深度、分账比例），而不是装饰性图形
 - **卡片语言**：`.sheet`（白卡片 + 发丝线）/ `.sheet-dark`（墨黑→李子→紫罗兰渐变，用于 hero 与榜首卡片）；规格表统一「等宽大写小标签 + 右对齐值 + 发丝线分隔」
 - **预览图**：`lib/scheme.ts` 的 `schemeToPreviewSvg()` 按平面施工图渲染——标题区、房间平面、家具色块、尺寸标注、调色板，全部由方案 JSON 驱动；`npm run previews` 可批量重新生成
-- **移动端**：6 个页面在 390px 宽度下无横向溢出；导航可横向滚动，钱包按钮常驻
+- **移动端**：8 个页面在 390px 宽度下无横向溢出；导航可横向滚动，钱包按钮常驻
+
+### 页面一览
+
+| 路由 | 作用 |
+| --- | --- |
+| `/` | 方案画廊信息流（SchemeMinted 事件 + IPFS 元数据） |
+| `/scheme/[id]` | 方案详情：大图、谱系树、版本时间线、签名评论、应用到我家 / Remix |
+| `/create` | 拖拽或粘贴方案 JSON → 参数摘要 → 固定 IPFS → 铸造（parentId = 0） |
+| `/remix/[id]` | 风格参数编辑器 → 铸造衍生方案；带 `?newVersion=1` 时指向自己的上一版 |
+| `/mint` | 铸造中心：我的铸造统计、可 Remix 机会、我的方案与版本迭代入口 |
+| `/trades` | 交易记录：SchemeApplied 全量流水、90/10 分账、我的支出收入与提取 |
+| `/board` | 排行榜：热度 = Remix × 2 + 被应用 × 3 |
+| `/docs` | 玩法与规则、链上参数、快速上手与 FAQ |
 
 ```bash
 cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/public/previews
@@ -184,7 +197,7 @@ cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/publ
 | 部署脚本输出地址 | ✅ | `contracts/script/Deploy.s.sol` + `deployments/` |
 | `/api/pin`（Pinata，`PINATA_KEY/SECRET`）+ `.env.example` | ✅ | `web/app/api/pin/route.ts` |
 | `/api/kimi` 转发 Kimi API | ✅ | `web/app/api/kimi/route.ts` |
-| 6 页面（画廊/详情/创建/Remix/排行榜/玩法文档），中文移动端自适应 | ✅ | `web/app/**` |
+| 8 页面（画廊/详情/创建/Remix/铸造中心/交易记录/排行榜/玩法文档），中文移动端自适应 | ✅ | `web/app/**` |
 | viem 读事件 + IPFS 元数据（画廊）、谱系树、应用/Remix 按钮 | ✅ | `web/lib/contracts.ts`、`web/components/LineageTree.tsx` |
 | `assets/` 3 套示例方案 + 预览图 + seed 脚本 | ✅ | `assets/schemes/`、`web/scripts/seed.ts` |
 | 版本管理（链上谱系 v1/v2/v3 时间线） | ✅ | `DreamScheme.versionLineOf` + `web/components/VersionTimeline.tsx` |

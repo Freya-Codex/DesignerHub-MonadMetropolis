@@ -7,6 +7,8 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 const NAV = [
   { href: "/", label: "画廊", en: "GALLERY" },
   { href: "/create", label: "创建", en: "CREATE" },
+  { href: "/mint", label: "铸造", en: "MINT" },
+  { href: "/trades", label: "交易", en: "TRADES" },
   { href: "/board", label: "排行榜", en: "BOARD" },
   { href: "/docs", label: "文档", en: "DOCS" }
 ];

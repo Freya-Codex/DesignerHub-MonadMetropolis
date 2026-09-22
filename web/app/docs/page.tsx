@@ -34,8 +34,8 @@ const MECHANISMS = [
   },
   {
     tag: "06",
-    title: "IPFS 内容寻址",
-    body: "方案 JSON、预览图与 NFT 元数据都固定到 IPFS，链上只存 contentHash 与 URI，保证作品永久可复现、可验证。"
+    title: "交易账本可查",
+    body: "方案 JSON、预览图与 NFT 元数据都固定到 IPFS，链上只存 contentHash 与 URI；所有应用流水按 SchemeApplied 事件沉淀在交易页，可逐笔核对。"
   }
 ];
 
@@ -200,6 +200,12 @@ export default function DocsPage() {
               浏览方案，进入详情页点「应用到我家」（0.01 MON，自动 90/10 分账）
             </>,
             <>点「Remix」调整主题/调色板/家具数量，铸造衍生方案（parentId 自动指向原方案）</>,
+            <>
+              在 <Link className="link" href="/mint">铸造</Link> 页查看自己的铸造记录与被衍生次数
+            </>,
+            <>
+              在 <Link className="link" href="/trades">交易</Link> 页查看应用流水与 90/10 分账，提取待领份额
+            </>,
             <>作者可在自己最新版本上点「发布新版本」，形成 v1/v2/v3 版本时间线</>,
             <>在详情页底部用钱包签名发表评论（零 gas），在 <Link className="link" href="/board">排行榜</Link> 查看热度变化</>
           ].map((li, i) => (
