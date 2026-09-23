@@ -45,6 +45,7 @@ contract DeployScript is Script {
         console2.log("royaltyReceiver  :", royaltyReceiver);
         console2.log("platformAddress  :", platformAddress);
         console2.log("applyPrice (wei) :", schemeMarket.applyPrice());
+        console2.log("deploy block     :", block.number);
 
         _saveDeployment(address(dreamScheme), address(schemeMarket), deployer, platformAddress);
     }
@@ -60,6 +61,9 @@ contract DeployScript is Script {
             '  "network": "monad-testnet",\n',
             '  "chainId": ',
             vm.toString(block.chainid),
+            ",\n",
+            '  "deployBlock": ',
+            vm.toString(block.number),
             ",\n",
             '  "deployer": "',
             vm.toString(deployer),
@@ -83,5 +87,10 @@ contract DeployScript is Script {
         string memory path = string.concat(dir, "/", fileName);
         vm.writeFile(path, json);
         console2.log("deployment file  :", path);
+        console2.log("");
+        console2.log("Next: write these into web/.env.local");
+        console2.log("  NEXT_PUBLIC_DREAMSCHEME_ADDRESS=", schemeAddr);
+        console2.log("  NEXT_PUBLIC_SCHEME_MARKET_ADDRESS=", marketAddr);
+        console2.log("  NEXT_PUBLIC_DEPLOY_BLOCK=", block.number);
     }
 }

@@ -40,7 +40,7 @@
 
 | 合约 | 地址（部署后填写） | 说明 |
 | --- | --- | --- |
-| `DreamScheme` | `0x…`（见 `contracts/deployments/monad-testnet.json`） | ERC-721 + ERC-2981（5%）；`mint(parentId, contentHash, tokenURI)` 开放铸造；`parentId=0` 原创、`>0` remix 来源；记录 `creator`；`lineageOf` 返回完整谱系、`versionLineOf` 返回同作者版本链（v1/v2/v3）；事件 `SchemeMinted(tokenId, creator, parentId, contentHash)` |
+| `DreamScheme` | `0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e` | ERC-721 + ERC-2981（5%）；`mint(parentId, contentHash, tokenURI)` 开放铸造；`parentId=0` 原创、`>0` remix 来源；记录 `creator`；`lineageOf` 返回完整谱系、`versionLineOf` 返回同作者版本链（v1/v2/v3）；事件 `SchemeMinted(tokenId, creator, parentId, contentHash)` |
 | `SchemeMarket` | `0x…` | `applyScheme(tokenId)` payable（预设 0.01 MON）：90% 转创作者、10% 累积 `platformAddress` 可 `withdraw()`；事件 `SchemeApplied` |
 
 分账细节：创作者地址在铸造时固化，NFT 转手不影响分账对象；创作者拒收 ETH 时份额计入平台代管（`CreatorShareEscrowed`），
@@ -145,13 +145,23 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 | 项目 | 地址 |
 | --- | --- |
 | 前端 Demo（本地 / 线上） | `http://localhost:3000`（部署后替换为线上地址，如 `https://<your-app>.vercel.app`） |
-| DreamScheme 合约 | `https://testnet.monadexplorer.com/address/<DREAMSCHEME_ADDRESS>` |
-| SchemeMarket 合约 | `https://testnet.monadexplorer.com/address/<SCHEME_MARKET_ADDRESS>` |
+| DreamScheme 合约 | [0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e](https://testnet.monadexplorer.com/address/0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e) |
+| SchemeMarket 合约 | [0xb32210cDe4D920E02e774281f679629D03B274ee](https://testnet.monadexplorer.com/address/0xb32210cDe4D920E02e774281f679629D03B274ee) |
 | Monad 测试网 RPC | <https://testnet-rpc.monad.xyz> |
 | 测试币水龙头 | <https://faucet.monad.xyz> |
 | 演示视频 | <https://youtu.be/REPLACE_ME> |
 
 > 根目录 `.env.example` 汇总了合约与前端两套环境变量，按注释分别复制到 `contracts/.env` 与 `web/.env.local`。
+
+**当前线上部署（Monad Testnet，Chain ID 10143）**
+
+| 合约 | 地址 | 部署区块 |
+| --- | --- | --- |
+| DreamScheme | `0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e` | `64997161` |
+| SchemeMarket | `0xb32210cDe4D920E02e774281f679629D03B274ee` | `64997161` |
+
+浏览器：<https://testnet.monadexplorer.com/address/0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e> 与 <https://testnet.monadexplorer.com/address/0xb32210cDe4D920E02e774281f679629D03B274ee>。
+前端已验证：画廊、详情谱系、铸造中心、交易账本、排行榜均读取链上真实数据。
 
 ### 视觉与设计规范
 
@@ -223,6 +233,10 @@ cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/publ
 - **铸造按钮报「需要一个 Post-object」类错误**：钱包网络不对，切换到 Monad 测试网（10143）。
 - **Pinata 403**：确认 `PINATA_KEY/PINATA_SECRET` 有效；未配置时本地模式使用 `local://` 与 `/api/cid`，不影响演示。
 - **Kimi 无返回**：未配置 `KIMI_API_KEY`，此时使用内置规则引擎返回建议。
+- **前端报 `eth_getLogs is limited to a 100 range`**：Monad 测试网公共 RPC 把 `eth_getLogs` 限制在每次 100 个区块。画廊按 `totalSupply()` 枚举（不走日志）；`/mint` 与 `/trades` 的事件流水按 100 区块分片扫描，锚点取 `web/.env.local` 的 `NEXT_PUBLIC_DEPLOY_BLOCK`（部署脚本会输出）。
+- **前端报 `chain does not support contract multicall3`**：viem 内置链定义缺少 Monad 的 Multicall3，已补到 `web/lib/chains.ts`（canonical 地址 `0xcA11...CA11`，确认已部署在测试网）。
+- **钱包 `projectId` 报错**：`.env.local` 里 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 留空即可（`web/lib/wagmi.ts` 用 `||` 回退占位值，MetaMask 注入模式不受影响）。
+- **端到端验收**：部署后跑 `cd web && npm run verify:flow`（真实交易：Remix 衍生 + 应用到我家，并逐项核对 90/10 分账金额）。
 - **排行榜未更新**：页面每 20s 重新拉取事件与合约状态；也可以在页面刷新。
 - **评论发布失败（401）**：签名内容需与提交的 message 完全一致，且 message 必须包含「方案 #tokenId」；重新点击签名发布即可。
 - **评论存在哪里**：`web/data/comments/<tokenId>.json`（已 gitignore），可通过 `COMMENTS_DATA_DIR` 改路径。
