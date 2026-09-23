@@ -6,8 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "tsx scripts/seed.ts",
-    "previews": "tsx scripts/generate-previews.ts"
+    "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "previews": "tsx scripts/generate-previews.ts",
+    "verify:flow": "tsx --env-file-if-exists=.env.local scripts/verify-flow.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",
