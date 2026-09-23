@@ -33,60 +33,99 @@ export interface ChainActivity {
   trades: TradeRecord[];
 }
 
-/** 用 Promise.allSettled 包裹 getLogs，单边失败不影响另一边。 */
-async function safeLogs<T>(fn: () => Promise<T[]>): Promise<T[]> {
-  try {
-    return await fn();
-  } catch {
-    return [];
+/**
+ * Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 个区块内（超出返回 -32614），
+ * 因此所有日志查询都要按 100 区块分片，并限制总扫描范围。
+ */
+const LOG_CHUNK = 100n;
+
+/** 单次扫描的最大区块跨度（默认 20000，约 200 个请求）。 */
+const MAX_SCAN_BLOCKS = BigInt(process.env.NEXT_PUBLIC_LOG_SCAN_BLOCKS || "20000");
+
+/** 每次并发请求数，避免打爆公共 RPC。 */
+const CONCURRENCY = 8;
+
+/** 部署区块锚点：优先取 NEXT_PUBLIC_DEPLOY_BLOCK，缺省回退到「最近 MAX_SCAN_BLOCKS 个区块」。 */
+function deployBlock(latest: bigint): bigint {
+  const raw = process.env.NEXT_PUBLIC_DEPLOY_BLOCK;
+  if (raw && /^\d+$/.test(raw)) {
+    const b = BigInt(raw);
+    if (b <= latest) return b;
   }
+  const floor = latest > MAX_SCAN_BLOCKS ? latest - MAX_SCAN_BLOCKS : 0n;
+  return floor;
+}
+
+/** 把 [from, to] 切成 100 区块的分片并按批并发请求。 */
+async function getLogsChunked(
+  client: PublicClient,
+  address: Address,
+  event: any,
+  from: bigint,
+  to: bigint
+): Promise<any[]> {
+  const ranges: Array<[bigint, bigint]> = [];
+  let start = from;
+  while (start <= to) {
+    const end = start + LOG_CHUNK - 1n > to ? to : start + LOG_CHUNK - 1n;
+    ranges.push([start, end]);
+    start = end + 1n;
+  }
+
+  const out: any[] = [];
+  for (let i = 0; i < ranges.length; i += CONCURRENCY) {
+    const batch = ranges.slice(i, i + CONCURRENCY);
+    const settled = await Promise.allSettled(
+      batch.map(([f, t]) => client.getLogs({ address, event, fromBlock: f, toBlock: t }))
+    );
+    for (const r of settled) {
+      if (r.status === "fulfilled") out.push(...(r.value as any[]));
+    }
+  }
+  return out;
 }
 
 export async function fetchActivity(client: PublicClient): Promise<ChainActivity> {
   const dream = dreamSchemeAddress();
   const market = schemeMarketAddress();
+  if (!dream && !market) return { mints: [], trades: [] };
 
-  const mintPromise = safeLogs(async () => {
-    if (!dream) return [];
-    const logs = await client.getLogs({
-      address: dream,
-      event: schemeMintedEvent,
-      fromBlock: 0n,
-      toBlock: "latest"
-    });
-    return (logs as Array<{ args: any; blockNumber: bigint | null }>).map((l) => ({
-      tokenId: l.args.tokenId as bigint,
-      creator: l.args.creator as Address,
-      parentId: l.args.parentId as bigint,
-      contentHash: l.args.contentHash as Hex,
-      blockNumber: l.blockNumber ?? 0n
-    }));
-  });
+  const latest = await client.getBlockNumber();
+  const from = deployBlock(latest);
 
-  const tradePromise = safeLogs(async () => {
-    if (!market) return [];
-    const logs = await client.getLogs({
-      address: market,
-      event: schemeAppliedEvent,
-      fromBlock: 0n,
-      toBlock: "latest"
-    });
-    return (logs as Array<{ args: any; blockNumber: bigint | null; transactionHash: Hex; logIndex: number }>).map(
-      (l) => ({
-        tokenId: l.args.tokenId as bigint,
-        applier: l.args.applier as Address,
-        creator: l.args.creator as Address,
-        value: l.args.value as bigint,
-        creatorShare: l.args.creatorShare as bigint,
-        platformShare: l.args.platformShare as bigint,
-        blockNumber: l.blockNumber ?? 0n,
-        txHash: l.transactionHash,
-        logIndex: l.logIndex
-      })
-    );
-  });
+  const [mints, trades] = await Promise.all([
+    dream
+      ? getLogsChunked(client, dream, schemeMintedEvent, from, latest)
+          .then((logs) =>
+            logs.map((l) => ({
+              tokenId: l.args.tokenId as bigint,
+              creator: l.args.creator as Address,
+              parentId: l.args.parentId as bigint,
+              contentHash: l.args.contentHash as Hex,
+              blockNumber: l.blockNumber ?? 0n
+            }))
+          )
+          .catch(() => [] as MintRecord[])
+      : Promise.resolve([] as MintRecord[]),
+    market
+      ? getLogsChunked(client, market, schemeAppliedEvent, from, latest)
+          .then((logs) =>
+            logs.map((l) => ({
+              tokenId: l.args.tokenId as bigint,
+              applier: l.args.applier as Address,
+              creator: l.args.creator as Address,
+              value: l.args.value as bigint,
+              creatorShare: l.args.creatorShare as bigint,
+              platformShare: l.args.platformShare as bigint,
+              blockNumber: l.blockNumber ?? 0n,
+              txHash: l.transactionHash as Hex,
+              logIndex: l.logIndex
+            }))
+          )
+          .catch(() => [] as TradeRecord[])
+      : Promise.resolve([] as TradeRecord[])
+  ]);
 
-  const [mints, trades] = await Promise.all([mintPromise, tradePromise]);
   trades.sort((a, b) =>
     a.blockNumber === b.blockNumber ? b.logIndex - a.logIndex : a.blockNumber < b.blockNumber ? 1 : -1
   );

@@ -15,5 +15,12 @@ export const monadTestnet = defineChain({
   blockExplorers: {
     default: { name: "Monad Explorer", url: "https://testnet.monadexplorer.com" }
   },
+  // viem 内置链定义里没有 Monad 的 Multicall3，缺了它 client.multicall() 会直接报错。
+  // 该合约已按 canonical 地址部署在 Monad 测试网（codesize 3808，getBlockNumber() 可调用）。
+  contracts: {
+    multicall3: {
+      address: "0xcA11bde05977b3631167028862bE2a173976CA11"
+    }
+  },
   testnet: true
 });

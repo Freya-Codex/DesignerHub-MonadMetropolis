@@ -9,7 +9,7 @@ import {
   type PublicClient
 } from "viem";
 import { usePublicClient } from "wagmi";
-import { dreamSchemeAbi, schemeMarketAbi, schemeMintedEvent } from "./abis";
+import { dreamSchemeAbi, schemeMarketAbi } from "./abis";
 import { monadTestnet } from "./chains";
 import { fetchUriJson } from "./ipfs";
 
@@ -159,23 +159,29 @@ async function attachMetadata(state: SchemeOnChain): Promise<SchemeSummary> {
   };
 }
 
-/** 通过 SchemeMinted 事件 + IPFS 元数据读取全部方案。 */
+/**
+ * 读取全部方案（链上状态 + IPFS 元数据）。
+ *
+ * 注意：Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 个区块内，
+ * 无法用它扫描「从 0 到 latest」的全部铸造事件。由于 DreamScheme 的
+ * tokenId 由 `++_nextTokenId` 连续自增、`totalSupply()` 即当前最大 id，
+ * 这里改为按 totalSupply() 枚举 tokenId 逐个读取状态，既不受区块范围限制，
+ * 也避免了海量日志扫描。
+ */
 export async function fetchAllSchemes(client: PublicClient): Promise<SchemeSummary[]> {
   const addr = dreamSchemeAddress();
   if (!addr) return [];
   const marketAddr = schemeMarketAddress();
 
-  const logs = await client.getLogs({
+  const total = await client.readContract({
     address: addr,
-    event: schemeMintedEvent,
-    fromBlock: 0n,
-    toBlock: "latest"
+    abi: dreamSchemeAbi,
+    functionName: "totalSupply"
   });
-  const ids = (logs as Array<{ args: { tokenId?: bigint } }>)
-    .map((l) => l.args.tokenId)
-    .filter((v): v is bigint => v !== undefined)
-    .slice(-200);
+  const count = Number(total);
+  if (!Number.isFinite(count) || count <= 0) return [];
 
+  const ids = Array.from({ length: Math.min(count, 200) }, (_, i) => BigInt(i + 1));
   const onChain = await Promise.all(ids.map((id) => readSchemeOnChain(client, addr, marketAddr, id)));
   const results = await Promise.allSettled(onChain.map((s) => attachMetadata(s)));
   return results
