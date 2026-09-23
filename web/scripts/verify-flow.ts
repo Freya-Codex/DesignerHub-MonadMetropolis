@@ -30,6 +30,33 @@ import { pinFile, pinJson } from "../lib/pinata";
 import { buildTokenMetadata } from "../lib/metadata";
 import { schemeToPreviewSvg, validateScheme, type DesignScheme } from "../lib/scheme";
 
+/**
+ * Next.js 会自动加载 .env.local，但 tsx 直接跑脚本不会。
+ * 这里手动加载，避免「.env.local 明明填了却报未设置」。
+ * 优先级：真实环境变量 > .env.local（不覆盖已存在的值）。
+ */
+function loadEnvLocal(): void {
+  const file = path.join(process.cwd(), ".env.local");
+  if (!fs.existsSync(file)) return;
+  for (const rawLine of fs.readFileSync(file, "utf8").split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+}
+
+loadEnvLocal();
+
 const env = process.env;
 const RPC = monadTestnet.rpcUrls.default.http[0];
 
