@@ -62,10 +62,12 @@ monad/
 ├── web/                       Next.js 14 前端 + API
 │   ├── app/                   8 个页面：/ · /scheme/[id] · /create · /remix/[id] · /mint · /trades · /board · /docs
 │   ├── app/api/               5 个路由：/pin · /kimi · /comment · /cid/[cid] · /demo/[id]
-│   ├── components/            VersionTimeline · CommentsSection · SchemeCard · LineageTree · SchemePreview
+│   ├── components/            Header · SchemeCard · SchemePreview · PreviewImage · LineageTree ·
+│   │                          VersionTimeline · CommentsSection
 │   ├── lib/                   wagmi/合约/主题/IPFS/Pinata/Kimi 封装
 │   └── scripts/seed.ts        用示例数据铸造初始方案
 ├── assets/schemes/            3 套示例方案 JSON + SVG 预览图（demo 冷启动用）
+├── docs/screenshots/          8 张界面截图（README 配图，取自测试网真实数据）
 ├── .env.example               环境变量总览（合约 + 前端两套）
 └── README.md
 ```
@@ -172,7 +174,7 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 - **签名元素 · 蓝图标注线**：虚线尺寸线 + 端部刻度 + 等宽数字，直接标注真实数据（房间尺寸、家具数量、谱系深度、分账比例），而不是装饰性图形
 - **卡片语言**：`.sheet`（白卡片 + 发丝线）/ `.sheet-dark`（墨黑→李子→紫罗兰渐变，用于 hero 与榜首卡片）；规格表统一「等宽大写小标签 + 右对齐值 + 发丝线分隔」
 - **预览图**：`lib/scheme.ts` 的 `schemeToPreviewSvg()` 按平面施工图渲染——标题区、房间平面、家具色块、尺寸标注、调色板，全部由方案 JSON 驱动；`npm run previews` 可批量重新生成
-- **移动端**：8 个页面在 390px 宽度下无横向溢出；导航可横向滚动，钱包按钮常驻
+- **移动端**：顶部栏为两行布局（品牌 + 钱包 / 导航整行平铺），390px 下 6 个入口全部可见，8 个页面均无横向溢出
 
 ### 页面一览
 
@@ -190,6 +192,26 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 ```bash
 cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/public/previews
 ```
+
+### 界面预览
+
+| 画廊（首页） | 方案详情 |
+| --- | --- |
+| ![画廊](docs/screenshots/01-home.png) | ![方案详情](docs/screenshots/02-scheme-detail.png) |
+
+| 创建原创方案 | 铸造中心 |
+| --- | --- |
+| ![创建](docs/screenshots/03-create.png) | ![铸造中心](docs/screenshots/04-mint.png) |
+
+| 交易记录（90/10 分账流水） | 排行榜 |
+| --- | --- |
+| ![交易记录](docs/screenshots/05-trades.png) | ![排行榜](docs/screenshots/06-board.png) |
+
+| 移动端 · 画廊 | 移动端 · Remix |
+| --- | --- |
+| ![移动端画廊](docs/screenshots/07-mobile-home.png) | ![移动端 Remix](docs/screenshots/08-mobile-remix.png) |
+
+> 截图均取自 Monad 测试网真实链上数据（`totalSupply = 5`、`totalApplied = 6`），非静态 Mock。
 
 ### 演示视频（占位）
 
