@@ -2,22 +2,20 @@
 
 import Link from "next/link";
 import type { SchemeSummary } from "@/lib/contracts";
-import { toHttpUrl } from "@/lib/ipfs";
 import { shortAddress } from "@/lib/scheme";
+import PreviewImage from "./PreviewImage";
 
 export default function SchemeCard({ scheme, rank }: { scheme: SchemeSummary; rank?: number }) {
-  const img = scheme.image ? toHttpUrl(scheme.image) : "/previews/placeholder.svg";
   return (
     <Link
       href={`/scheme/${scheme.tokenId.toString()}`}
       className="group relative block overflow-hidden rounded-2xl border border-hairline bg-white transition duration-300 hover:-translate-y-0.5 hover:border-violet/45 hover:shadow-sheet"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
-        <img
-          src={img}
+        <PreviewImage
+          uri={scheme.image}
           alt={scheme.name}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-          loading="lazy"
         />
         <span className="mono absolute left-3 top-3 rounded-md bg-ink/85 px-2 py-1 text-[10px] tracking-wider text-white backdrop-blur">
           #{scheme.tokenId.toString()}

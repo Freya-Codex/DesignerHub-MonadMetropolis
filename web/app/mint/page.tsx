@@ -8,6 +8,7 @@ import { demoActivity, useActivity } from "@/lib/events";
 import { demoSchemes } from "@/lib/demo";
 import { monadTestnet } from "@/lib/chains";
 import { shortAddress } from "@/lib/scheme";
+import PreviewImage from "@/components/PreviewImage";
 
 type SortKey = "recent" | "remix" | "applied";
 
@@ -326,11 +327,10 @@ function OpportunityCard({ scheme, disabled }: { scheme: SchemeSummary; disabled
   return (
     <div className="sheet flex flex-col overflow-hidden">
       <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
-        <img
-          src={scheme.image || "/previews/placeholder.svg"}
+        <PreviewImage
+          uri={scheme.image}
           alt={scheme.name}
           className="h-full w-full object-cover"
-          loading="lazy"
         />
         <span className="mono absolute left-3 top-3 rounded-md bg-ink/85 px-2 py-1 text-[10px] tracking-wider text-white">
           #{scheme.tokenId.toString()}

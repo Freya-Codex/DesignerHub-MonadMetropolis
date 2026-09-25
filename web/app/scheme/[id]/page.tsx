@@ -9,10 +9,10 @@ import { dreamSchemeAddress, schemeMarketAddress, useSchemeDetail, useSchemes, A
 import { schemeMarketAbi } from "@/lib/abis";
 import { demoSchemes } from "@/lib/demo";
 import LineageTree from "@/components/LineageTree";
+import PreviewImage from "@/components/PreviewImage";
 import VersionTimeline from "@/components/VersionTimeline";
 import CommentsSection from "@/components/CommentsSection";
 import { monadTestnet } from "@/lib/chains";
-import { toHttpUrl } from "@/lib/ipfs";
 import { shortAddress } from "@/lib/scheme";
 
 export default function SchemeDetailPage() {
@@ -161,7 +161,6 @@ function DetailFrame(props: DetailFrameProps) {
     isConnected
   } = props;
 
-  const img = d.image ? toHttpUrl(d.image) : "/previews/placeholder.svg";
   const creator = d.creator as string;
   const explorerBase = "https://testnet.monadexplorer.com";
   const isDemoMode = !dreamSchemeAddress();
@@ -196,7 +195,7 @@ function DetailFrame(props: DetailFrameProps) {
             aria-hidden
             className="absolute right-3 top-3 z-10 h-5 w-5 border-r-2 border-t-2 border-violet"
           />
-          <img src={img} alt={title} className="aspect-[4/3] w-full object-cover" />
+          <PreviewImage uri={d.image} alt={title} className="aspect-[4/3] w-full object-cover" lazy={false} />
           <figcaption className="mono flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-hairline bg-paper px-4 py-2.5 text-[10px] uppercase tracking-[0.16em] text-muted">
             <span>Floor Plan · #{d.tokenId.toString()} · Scale 1:50</span>
             <span className="text-violet-deep">ERC-721 · ERC-2981</span>
