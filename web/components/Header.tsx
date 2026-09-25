@@ -20,23 +20,23 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-ink/95 text-white backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-2 px-3 py-1.5 sm:h-16 sm:flex-nowrap sm:gap-x-3 sm:py-0 sm:px-4">
         <Link href="/" className="flex shrink-0 items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-violet shadow-glow">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet shadow-glow sm:h-9 sm:w-9">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               <path d="M2.5 15.5V2.5H15.5" stroke="white" strokeWidth="2.2" strokeLinecap="square" />
               <path d="M6.5 15.5V9.5H12.5V15.5" stroke="white" strokeWidth="1.4" opacity="0.72" />
             </svg>
           </span>
-          <span className="hidden leading-none sm:block">
+          <span className="leading-none">
             <span className="display-sm block text-[15px]">云筑家</span>
-            <span className="mono mt-1 block text-[9px] tracking-[0.2em] text-white/45">
+            <span className="mono mt-1 hidden text-[9px] tracking-[0.2em] text-white/45 sm:block">
               DREAMHOME · MONAD
             </span>
           </span>
         </Link>
 
-        <nav className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto sm:justify-end sm:gap-1">
+        <nav className="order-last -mx-3 flex w-full min-w-0 items-center gap-0.5 overflow-x-auto border-t border-white/10 px-3 pt-1 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:justify-end sm:gap-1 sm:border-t-0 sm:px-0 sm:pt-0">
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -53,7 +53,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="shrink-0 [&_button]:!px-2.5 [&_button]:!text-[12px] sm:[&_button]:!px-4 sm:[&_button]:!text-[13.5px]">
+        <div className="ml-auto shrink-0 sm:ml-0 [&_button]:!px-2.5 [&_button]:!text-[12px] sm:[&_button]:!px-4 sm:[&_button]:!text-[13.5px]">
           <ConnectButton chainStatus="icon" accountStatus="address" showBalance={false} />
         </div>
       </div>
