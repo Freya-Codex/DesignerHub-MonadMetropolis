@@ -8,7 +8,7 @@
   "chainId": 10143,
   "deployer": "0x...",
   "platformAddress": "0x...",
-  "DreamScheme": "0x...",
+  "VirtuHomeScheme": "0x...",
   "SchemeMarket": "0x..."
 }
 ```
@@ -21,6 +21,6 @@ forge script script/Deploy.s.sol --rpc-url monad_testnet --broadcast -vv
 把输出的两个地址填入 `web/.env.local`：
 
 ```
-NEXT_PUBLIC_DREAMSCHEME_ADDRESS=0x...
+NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS=0x...
 NEXT_PUBLIC_SCHEME_MARKET_ADDRESS=0x...
 ```

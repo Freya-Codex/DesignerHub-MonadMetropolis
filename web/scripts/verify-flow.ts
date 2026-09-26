@@ -25,7 +25,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "../lib/chains";
-import { dreamSchemeAbi, schemeMarketAbi, schemeMintedEvent, schemeAppliedEvent } from "../lib/abis";
+import { virtuHomeSchemeAbi, schemeMarketAbi, schemeMintedEvent, schemeAppliedEvent } from "../lib/abis";
 import { pinFile, pinJson } from "../lib/pinata";
 import { buildTokenMetadata } from "../lib/metadata";
 import { schemeToPreviewSvg, validateScheme, type DesignScheme } from "../lib/scheme";
@@ -94,9 +94,9 @@ async function main(): Promise<void> {
   if (!/^[0-9a-fA-F]{64}$/.test(privateKey)) throw new Error("请先设置 MONAD_PRIVATE_KEY");
   const account = privateKeyToAccount(`0x${privateKey}`);
 
-  const dreamScheme = resolveAddress("DREAMSCHEME_ADDRESS", "DreamScheme");
+  const virtuHomeScheme = resolveAddress("VIRTUHOME_SCHEME_ADDRESS", "VirtuHomeScheme");
   const schemeMarket = resolveAddress("SCHEME_MARKET_ADDRESS", "SchemeMarket");
-  if (!dreamScheme || !schemeMarket) throw new Error("无法确定合约地址");
+  if (!virtuHomeScheme || !schemeMarket) throw new Error("无法确定合约地址");
 
   const publicClient = createPublicClient({ chain: monadTestnet, transport: http(RPC) });
   const wallet = createWalletClient({ account, chain: monadTestnet, transport: http(RPC) });
@@ -106,18 +106,18 @@ async function main(): Promise<void> {
 
   console.log("网络      :", monadTestnet.name, `(${monadTestnet.id})`);
   console.log("账户      :", account.address);
-  console.log("DreamScheme :", dreamScheme);
+  console.log("VirtuHomeScheme :", virtuHomeScheme);
   console.log("SchemeMarket:", schemeMarket);
   console.log("");
 
   const total0 = await publicClient.readContract({
-    address: dreamScheme,
-    abi: dreamSchemeAbi,
+    address: virtuHomeScheme,
+    abi: virtuHomeSchemeAbi,
     functionName: "totalSupply"
   });
   const remixBefore = await publicClient.readContract({
-    address: dreamScheme,
-    abi: dreamSchemeAbi,
+    address: virtuHomeScheme,
+    abi: virtuHomeSchemeAbi,
     functionName: "remixCount",
     args: [parent]
   });
@@ -165,8 +165,8 @@ async function main(): Promise<void> {
 
     console.log(`→ Remix #${parent}（基于 ${file}）…`);
     const hash = await wallet.writeContract({
-      address: dreamScheme,
-      abi: dreamSchemeAbi,
+      address: virtuHomeScheme,
+      abi: virtuHomeSchemeAbi,
       functionName: "mint",
       args: [parent, contentHash as Hex, tokenPin.uri]
     });
@@ -187,14 +187,14 @@ async function main(): Promise<void> {
     if (newId !== null) {
       const [p, c] = await Promise.all([
         publicClient.readContract({
-          address: dreamScheme,
-          abi: dreamSchemeAbi,
+          address: virtuHomeScheme,
+          abi: virtuHomeSchemeAbi,
           functionName: "parentOf",
           args: [newId]
         }),
         publicClient.readContract({
-          address: dreamScheme,
-          abi: dreamSchemeAbi,
+          address: virtuHomeScheme,
+          abi: virtuHomeSchemeAbi,
           functionName: "creatorOf",
           args: [newId]
         })
@@ -202,8 +202,8 @@ async function main(): Promise<void> {
       check("parentId 归因正确", p === parent, `parentOf(#${newId})=${p}`);
       check("creator 归因正确", c.toLowerCase() === account.address.toLowerCase());
       const lineage = await publicClient.readContract({
-        address: dreamScheme,
-        abi: dreamSchemeAbi,
+        address: virtuHomeScheme,
+        abi: virtuHomeSchemeAbi,
         functionName: "lineageOf",
         args: [newId]
       });
@@ -211,8 +211,8 @@ async function main(): Promise<void> {
     }
 
     const remixAfter = await publicClient.readContract({
-      address: dreamScheme,
-      abi: dreamSchemeAbi,
+      address: virtuHomeScheme,
+      abi: virtuHomeSchemeAbi,
       functionName: "remixCount",
       args: [parent]
     });
@@ -233,8 +233,8 @@ async function main(): Promise<void> {
       functionName: "platformAddress"
     });
     const creator = await publicClient.readContract({
-      address: dreamScheme,
-      abi: dreamSchemeAbi,
+      address: virtuHomeScheme,
+      abi: virtuHomeSchemeAbi,
       functionName: "creatorOf",
       args: [applyToken]
     });

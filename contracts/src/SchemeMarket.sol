@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {DreamScheme} from "./DreamScheme.sol";
+import {VirtuHomeScheme} from "./VirtuHomeScheme.sol";
 
 /// @title SchemeMarket
 /// @notice 「应用到我家」付费入口：支付固定价格把一份方案应用到自己的房间。
@@ -12,7 +12,7 @@ contract SchemeMarket is Ownable, ReentrancyGuard {
     uint256 public constant MAX_BPS = 10_000;
     uint256 public constant DEFAULT_APPLY_PRICE = 0.01 ether;
 
-    DreamScheme public immutable scheme;
+    VirtuHomeScheme public immutable scheme;
     address public platformAddress;
     uint256 public creatorShareBps = 9_000; // 90%
     uint256 public applyPrice = DEFAULT_APPLY_PRICE;
@@ -45,7 +45,7 @@ contract SchemeMarket is Ownable, ReentrancyGuard {
     error NothingToWithdraw();
     error WithdrawFailed();
 
-    constructor(DreamScheme scheme_, address initialOwner, address platformAddress_) Ownable(initialOwner) {
+    constructor(VirtuHomeScheme scheme_, address initialOwner, address platformAddress_) Ownable(initialOwner) {
         scheme = scheme_;
         platformAddress = platformAddress_ == address(0) ? initialOwner : platformAddress_;
     }

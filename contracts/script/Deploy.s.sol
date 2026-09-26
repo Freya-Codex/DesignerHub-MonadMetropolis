@@ -2,11 +2,11 @@
 pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {DreamScheme} from "../src/DreamScheme.sol";
+import {VirtuHomeScheme} from "../src/VirtuHomeScheme.sol";
 import {SchemeMarket} from "../src/SchemeMarket.sol";
 
 /// @title DeployScript
-/// @notice 在 Monad 测试网（Chain ID 10143）部署 DreamScheme + SchemeMarket，
+/// @notice 在 Monad 测试网（Chain ID 10143）部署 VirtuHomeScheme + SchemeMarket，
 ///         并在终端输出合约地址，同时把地址写入 contracts/deployments/*.json。
 ///
 /// 用法：
@@ -30,24 +30,24 @@ contract DeployScript is Script {
         uint256 applyPriceWei = vm.envOr("APPLY_PRICE_WEI", uint256(0));
 
         vm.startBroadcast(deployerKey);
-        DreamScheme dreamScheme = new DreamScheme(deployer, royaltyReceiver);
-        SchemeMarket schemeMarket = new SchemeMarket(dreamScheme, deployer, platformAddress);
+        VirtuHomeScheme virtuHomeScheme = new VirtuHomeScheme(deployer, royaltyReceiver);
+        SchemeMarket schemeMarket = new SchemeMarket(virtuHomeScheme, deployer, platformAddress);
         if (applyPriceWei != 0) {
             schemeMarket.setApplyPrice(applyPriceWei);
         }
         vm.stopBroadcast();
 
-        console2.log("=== DreamScheme / SchemeMarket deployed ===");
+        console2.log("=== VirtuHomeScheme / SchemeMarket deployed ===");
         console2.log("chainId          :", block.chainid);
         console2.log("deployer         :", deployer);
-        console2.log("DreamScheme      :", address(dreamScheme));
+        console2.log("VirtuHomeScheme      :", address(virtuHomeScheme));
         console2.log("SchemeMarket     :", address(schemeMarket));
         console2.log("royaltyReceiver  :", royaltyReceiver);
         console2.log("platformAddress  :", platformAddress);
         console2.log("applyPrice (wei) :", schemeMarket.applyPrice());
         console2.log("deploy block     :", block.number);
 
-        _saveDeployment(address(dreamScheme), address(schemeMarket), deployer, platformAddress);
+        _saveDeployment(address(virtuHomeScheme), address(schemeMarket), deployer, platformAddress);
     }
 
     function _saveDeployment(address schemeAddr, address marketAddr, address deployer, address platformAddress)
@@ -71,7 +71,7 @@ contract DeployScript is Script {
             '  "platformAddress": "',
             vm.toString(platformAddress),
             '",\n',
-            '  "DreamScheme": "',
+            '  "VirtuHomeScheme": "',
             vm.toString(schemeAddr),
             '",\n',
             '  "SchemeMarket": "',
@@ -89,7 +89,7 @@ contract DeployScript is Script {
         console2.log("deployment file  :", path);
         console2.log("");
         console2.log("Next: write these into web/.env.local");
-        console2.log("  NEXT_PUBLIC_DREAMSCHEME_ADDRESS=", schemeAddr);
+        console2.log("  NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS=", schemeAddr);
         console2.log("  NEXT_PUBLIC_SCHEME_MARKET_ADDRESS=", marketAddr);
         console2.log("  NEXT_PUBLIC_DEPLOY_BLOCK=", block.number);
     }

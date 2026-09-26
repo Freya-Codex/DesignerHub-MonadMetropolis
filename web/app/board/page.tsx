@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { dreamSchemeAddress, useSchemes, type SchemeSummary } from "@/lib/contracts";
+import { virtuHomeSchemeAddress, useSchemes, type SchemeSummary } from "@/lib/contracts";
 import { demoSchemes } from "@/lib/demo";
 import { shortAddress } from "@/lib/scheme";
 
@@ -9,7 +9,7 @@ const score = (s: SchemeSummary) => s.remixCount * 2 + s.appliedCount * 3;
 
 export default function BoardPage() {
   const { data, isLoading } = useSchemes();
-  const isDemo = !dreamSchemeAddress();
+  const isDemo = !virtuHomeSchemeAddress();
   const schemes = data && data.length > 0 ? data : isDemo ? demoSchemes : [];
   const ranked = [...schemes].sort((a, b) => score(b) - score(a) || a.createdAt - b.createdAt);
   const top = ranked[0];

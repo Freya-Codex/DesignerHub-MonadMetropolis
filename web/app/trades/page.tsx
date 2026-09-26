@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useAccount, useChainId, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { dreamSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
+import { virtuHomeSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
 import { demoActivity, useActivity, type TradeRecord } from "@/lib/events";
 import { demoSchemes } from "@/lib/demo";
 import { schemeMarketAbi } from "@/lib/abis";
@@ -18,7 +18,7 @@ export default function TradesPage() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
-  const isDemo = !dreamSchemeAddress();
+  const isDemo = !virtuHomeSchemeAddress();
   const market = schemeMarketAddress();
 
   const { data: schemesData } = useSchemes();

@@ -7,7 +7,7 @@
  *   SEED_REMIX_FROM=1 npm run seed     # 以 #1 为 parent 铸造 remix 版本
  *   SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 额外执行一次「应用到我家」（需账户有 MON）
  *
- * 合约地址读取顺序：环境变量 DREAMSCHEME_ADDRESS > contracts/deployments/monad-testnet.json
+ * 合约地址读取顺序：环境变量 VIRTUHOME_SCHEME_ADDRESS > contracts/deployments/monad-testnet.json
  * 未配置 Pinata 密钥时会自动进入 local:// 本地演示模式（URI 一致，全流程可跑通）。
  */
 import fs from "node:fs";
@@ -26,7 +26,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "../lib/chains";
-import { dreamSchemeAbi, schemeMarketAbi, schemeMintedEvent } from "../lib/abis";
+import { virtuHomeSchemeAbi, schemeMarketAbi, schemeMintedEvent } from "../lib/abis";
 import { pinFile, pinJson } from "../lib/pinata";
 import { buildTokenMetadata } from "../lib/metadata";
 import { validateScheme, type DesignScheme } from "../lib/scheme";
@@ -89,12 +89,12 @@ async function main(): Promise<void> {
   }
   const account = privateKeyToAccount(`0x${privateKey}`);
 
-  const dreamScheme = resolveAddress("DREAMSCHEME_ADDRESS", "DreamScheme");
+  const virtuHomeScheme = resolveAddress("VIRTUHOME_SCHEME_ADDRESS", "VirtuHomeScheme");
   const schemeMarket = resolveAddress("SCHEME_MARKET_ADDRESS", "SchemeMarket");
-  if (!dreamScheme) {
-    throw new Error("无法确定 DreamScheme 地址：请设置 DREAMSCHEME_ADDRESS 或先运行 forge script 部署");
+  if (!virtuHomeScheme) {
+    throw new Error("无法确定 VirtuHomeScheme 地址：请设置 VIRTUHOME_SCHEME_ADDRESS 或先运行 forge script 部署");
   }
-  console.log("🏠 DreamScheme :", dreamScheme);
+  console.log("🏠 VirtuHomeScheme :", virtuHomeScheme);
   console.log("🏪 SchemeMarket :", schemeMarket ?? "未配置（跳过 apply）");
 
   const walletClient = createWalletClient({
@@ -147,8 +147,8 @@ async function main(): Promise<void> {
 
     const functionName = parentId > 0n ? "remix" : "mint";
     const txHash = await walletClient.writeContract({
-      address: dreamScheme,
-      abi: dreamSchemeAbi,
+      address: virtuHomeScheme,
+      abi: virtuHomeSchemeAbi,
       functionName,
       args: [parentId, contentHash, tokenPin.uri]
     });

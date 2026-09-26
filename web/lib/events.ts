@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Address, Hex, PublicClient } from "viem";
 import { usePublicClient } from "wagmi";
 import { schemeAppliedEvent, schemeMintedEvent } from "./abis";
-import { dreamSchemeAddress, publicClientFor, schemeMarketAddress } from "./contracts";
+import { virtuHomeSchemeAddress, publicClientFor, schemeMarketAddress } from "./contracts";
 
 export interface MintRecord {
   tokenId: bigint;
@@ -86,7 +86,7 @@ async function getLogsChunked(
 }
 
 export async function fetchActivity(client: PublicClient): Promise<ChainActivity> {
-  const dream = dreamSchemeAddress();
+  const dream = virtuHomeSchemeAddress();
   const market = schemeMarketAddress();
   if (!dream && !market) return { mints: [], trades: [] };
 
@@ -134,7 +134,7 @@ export async function fetchActivity(client: PublicClient): Promise<ChainActivity
 
 export function useActivity() {
   const client = usePublicClient();
-  const dream = dreamSchemeAddress();
+  const dream = virtuHomeSchemeAddress();
   return useQuery({
     queryKey: ["activity", dream ?? "none", schemeMarketAddress() ?? "none"],
     queryFn: async () => {

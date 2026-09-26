@@ -6,8 +6,8 @@ import { useParams } from "next/navigation";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { decodeEventLog, type Hex } from "viem";
-import { dreamSchemeAbi } from "@/lib/abis";
-import { dreamSchemeAddress, publicClientFor, useSchemeDetail } from "@/lib/contracts";
+import { virtuHomeSchemeAbi } from "@/lib/abis";
+import { virtuHomeSchemeAddress, publicClientFor, useSchemeDetail } from "@/lib/contracts";
 import { monadTestnet } from "@/lib/chains";
 import { fetchUriJson } from "@/lib/ipfs";
 import {
@@ -27,7 +27,7 @@ export default function RemixPage() {
     return Number.isFinite(n) && n > 0 ? BigInt(n) : undefined;
   }, [params?.id]);
 
-  const isDemoMode = !dreamSchemeAddress();
+  const isDemoMode = !virtuHomeSchemeAddress();
   const { data: detail } = useSchemeDetail(tokenId);
 
   const [base, setBase] = useState<DesignScheme | null>(null);
@@ -134,7 +134,7 @@ export default function RemixPage() {
     setError(null);
     setTokenIdOut(null);
     if (!tokenId || !remixed) return;
-    const addr = dreamSchemeAddress();
+    const addr = virtuHomeSchemeAddress();
     if (!addr) {
       setError("未配置合约地址，请先部署合约并写入 web/.env.local");
       return;
@@ -169,7 +169,7 @@ export default function RemixPage() {
       }
       const hash = await writeContractAsync({
         address: addr,
-        abi: dreamSchemeAbi,
+        abi: virtuHomeSchemeAbi,
         functionName: "mint",
         args: [tokenId, data.contentHash as Hex, data.tokenUri as string]
       });
@@ -190,7 +190,7 @@ export default function RemixPage() {
         const receipt = await client.getTransactionReceipt({ hash: mintHash });
         for (const log of receipt.logs) {
           try {
-            const decoded = decodeEventLog({ abi: dreamSchemeAbi, data: log.data, topics: log.topics });
+            const decoded = decodeEventLog({ abi: virtuHomeSchemeAbi, data: log.data, topics: log.topics });
             if (decoded.eventName === "SchemeMinted" && decoded.args.parentId === tokenId) {
               setTokenIdOut(decoded.args.tokenId);
             }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { dreamSchemeAddress, schemeMarketAddress, useSchemeDetail, useSchemes, APPLY_PRICE } from "@/lib/contracts";
+import { virtuHomeSchemeAddress, schemeMarketAddress, useSchemeDetail, useSchemes, APPLY_PRICE } from "@/lib/contracts";
 import { schemeMarketAbi } from "@/lib/abis";
 import { demoSchemes } from "@/lib/demo";
 import LineageTree from "@/components/LineageTree";
@@ -29,7 +29,7 @@ export default function SchemeDetailPage() {
   const { data: allSchemes } = useSchemes();
   const [txNote, setTxNote] = useState<string>("");
 
-  const isDemo = !dreamSchemeAddress();
+  const isDemo = !virtuHomeSchemeAddress();
   const demo = useMemo(
     () => (isDemo && tokenId ? demoSchemes.find((d) => d.tokenId === tokenId) : undefined),
     [isDemo, tokenId]
@@ -163,7 +163,7 @@ function DetailFrame(props: DetailFrameProps) {
 
   const creator = d.creator as string;
   const explorerBase = "https://testnet.monadexplorer.com";
-  const isDemoMode = !dreamSchemeAddress();
+  const isDemoMode = !virtuHomeSchemeAddress();
   const canAct = !isDemoMode && Boolean(isConnected && onApply);
 
   const versions: bigint[] = d.versionLine ?? [];

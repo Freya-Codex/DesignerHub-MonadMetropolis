@@ -4,11 +4,11 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {DreamScheme} from "../src/DreamScheme.sol";
+import {VirtuHomeScheme} from "../src/VirtuHomeScheme.sol";
 
-/// @notice DreamScheme 铸造与 remix 谱系的单元测试。
-contract DreamSchemeTest is Test {
-    DreamScheme internal scheme;
+/// @notice VirtuHomeScheme 铸造与 remix 谱系的单元测试。
+contract VirtuHomeSchemeTest is Test {
+    VirtuHomeScheme internal scheme;
 
     address internal owner = makeAddr("owner");
     address internal alice = makeAddr("alice");
@@ -25,12 +25,12 @@ contract DreamSchemeTest is Test {
 
     function setUp() public {
         vm.prank(owner);
-        scheme = new DreamScheme(owner, royaltyReceiver);
+        scheme = new VirtuHomeScheme(owner, royaltyReceiver);
     }
 
     function test_MintOriginal_RecordsCreatorParentAndHash() public {
         vm.expectEmit(true, true, true, true, address(scheme));
-        emit DreamScheme.SchemeMinted(1, alice, 0, HASH_1);
+        emit VirtuHomeScheme.SchemeMinted(1, alice, 0, HASH_1);
 
         vm.prank(alice);
         uint256 tokenId = scheme.mint(0, HASH_1, URI_1);
@@ -102,13 +102,13 @@ contract DreamSchemeTest is Test {
     }
 
     function test_RevertWhen_RemixParentNotMinted() public {
-        vm.expectRevert(abi.encodeWithSelector(DreamScheme.ParentSchemeNotMinted.selector, 42));
+        vm.expectRevert(abi.encodeWithSelector(VirtuHomeScheme.ParentSchemeNotMinted.selector, 42));
         vm.prank(alice);
         scheme.mint(42, HASH_1, URI_1);
     }
 
     function test_RevertWhen_RemixHelperUsedWithZeroParent() public {
-        vm.expectRevert(abi.encodeWithSelector(DreamScheme.ParentSchemeNotMinted.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(VirtuHomeScheme.ParentSchemeNotMinted.selector, 0));
         vm.prank(alice);
         scheme.remix(0, HASH_1, URI_1);
     }
@@ -124,13 +124,13 @@ contract DreamSchemeTest is Test {
     }
 
     function test_RevertWhen_ContentHashEmpty() public {
-        vm.expectRevert(DreamScheme.InvalidContentHash.selector);
+        vm.expectRevert(VirtuHomeScheme.InvalidContentHash.selector);
         vm.prank(alice);
         scheme.mint(0, bytes32(0), URI_1);
     }
 
     function test_RevertWhen_MetadataURLEmpty() public {
-        vm.expectRevert(DreamScheme.EmptyTokenURI.selector);
+        vm.expectRevert(VirtuHomeScheme.EmptyTokenURI.selector);
         vm.prank(alice);
         scheme.mint(0, HASH_1, "");
     }

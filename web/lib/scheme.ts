@@ -243,7 +243,7 @@ ${blocks}
 
   ${swatches}
   <text x="216" y="684" font-family="${SVG_MONO}" font-size="11.5" fill="${muted}">${esc((s.style.mood ?? "").slice(0, 24))}</text>
-  <text x="960" y="684" text-anchor="end" font-family="${SVG_MONO}" font-size="11.5" letter-spacing="1.6" fill="${muted}">云筑家 · DREAMHOME</text>
+  <text x="960" y="684" text-anchor="end" font-family="${SVG_MONO}" font-size="11.5" letter-spacing="1.6" fill="${muted}">云筑家 VIRTUHOME</text>
 </svg>`;
 }
 

@@ -1,6 +1,6 @@
 import { parseAbi } from "viem";
 
-export const dreamSchemeAbi = parseAbi([
+export const virtuHomeSchemeAbi = parseAbi([
   "function mint(uint256 parentId, bytes32 contentHash, string calldata metadataURI) external returns (uint256)",
   "function remix(uint256 parentId, bytes32 contentHash, string calldata metadataURI) external returns (uint256)",
   "function creatorOf(uint256 tokenId) external view returns (address)",

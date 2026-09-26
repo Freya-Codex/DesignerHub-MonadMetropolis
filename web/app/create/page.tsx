@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { decodeEventLog, type Hex } from "viem";
-import { dreamSchemeAbi } from "@/lib/abis";
-import { dreamSchemeAddress, publicClientFor } from "@/lib/contracts";
+import { virtuHomeSchemeAbi } from "@/lib/abis";
+import { virtuHomeSchemeAddress, publicClientFor } from "@/lib/contracts";
 import { monadTestnet } from "@/lib/chains";
 import { schemeToPreviewSvg, svgToDataUri, validateScheme, type DesignScheme } from "@/lib/scheme";
 import SchemePreview from "@/components/SchemePreview";
@@ -84,7 +84,7 @@ export default function CreatePage() {
         const receipt = await client.getTransactionReceipt({ hash: mintHash });
         for (const log of receipt.logs) {
           try {
-            const decoded = decodeEventLog({ abi: dreamSchemeAbi, data: log.data, topics: log.topics });
+            const decoded = decodeEventLog({ abi: virtuHomeSchemeAbi, data: log.data, topics: log.topics });
             if (decoded.eventName === "SchemeMinted") {
               setTokenId(decoded.args.tokenId);
               setStep("done");
@@ -135,9 +135,9 @@ export default function CreatePage() {
     setError(null);
     setPinInfo(null);
     setTokenId(null);
-    const addr = dreamSchemeAddress();
+    const addr = virtuHomeSchemeAddress();
     if (!addr) {
-      setError("未配置 DREAMSCHEME 合约地址。请先部署合约，并把地址写入 web/.env.local 后重启 dev 服务。");
+      setError("未配置 VIRTUHOME_SCHEME 合约地址。请先部署合约，并把地址写入 web/.env.local 后重启 dev 服务。");
       return;
     }
     if (!displayScheme) {
@@ -172,7 +172,7 @@ export default function CreatePage() {
       }
       await writeContractAsync({
         address: addr,
-        abi: dreamSchemeAbi,
+        abi: virtuHomeSchemeAbi,
         functionName: "mint",
         args: [0n, data.contentHash as Hex, data.tokenUri as string]
       });
@@ -381,7 +381,7 @@ export default function CreatePage() {
             <p className="eyebrow">Mint · 铸造信息</p>
             <dl className="mt-4 divide-y divide-hairline border-y border-hairline text-[13px]">
               <SummaryRow label="CONTRACT">
-                <span className="mono text-[11px]">{dreamSchemeAddress() ?? "未配置"}</span>
+                <span className="mono text-[11px]">{virtuHomeSchemeAddress() ?? "未配置"}</span>
               </SummaryRow>
               <SummaryRow label="PARENT">
                 <span className="mono">0 · 原创</span>

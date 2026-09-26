@@ -5,11 +5,11 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title DreamScheme
+/// @title VirtuHomeScheme
 /// @notice 云筑家装修设计方案的链上创作资产：一份方案 = 一枚 ERC-721。
 ///         支持原创铸造与 remix 衍生，形成可归因、可追溯的创作谱系。
 /// @dev 本合约只管「归属 + 谱系」，资金分账由 SchemeMarket 负责。
-contract DreamScheme is ERC721, ERC2981, Ownable {
+contract VirtuHomeScheme is ERC721, ERC2981, Ownable {
     /// @notice 版税费率（基点），5% = 500。
     uint96 public constant ROYALTY_BPS = 500;
     /// @notice 版税上限，10% = 1000 基点。
@@ -38,7 +38,7 @@ contract DreamScheme is ERC721, ERC2981, Ownable {
     error ParentSchemeNotMinted(uint256 parentId);
 
     constructor(address initialOwner, address royaltyReceiver)
-        ERC721("YunZhuJia DreamScheme", "YZJ")
+        ERC721("VirtuHome Scheme", "VIRTU")
         Ownable(initialOwner)
     {
         _setDefaultRoyalty(royaltyReceiver == address(0) ? initialOwner : royaltyReceiver, ROYALTY_BPS);

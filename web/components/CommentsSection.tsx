@@ -44,7 +44,7 @@ export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
     try {
       const issuedAt = new Date().toISOString();
       const message = [
-        "云筑家 · DreamHome 评论签名",
+        "VirtuHome · Monad 评论签名",
         `方案 #${tokenId.toString()}`,
         `钱包地址: ${address}`,
         `签署时间: ${issuedAt}`,

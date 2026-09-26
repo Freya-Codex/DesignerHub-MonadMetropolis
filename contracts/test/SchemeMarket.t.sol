@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {DreamScheme} from "../src/DreamScheme.sol";
+import {VirtuHomeScheme} from "../src/VirtuHomeScheme.sol";
 import {SchemeMarket} from "../src/SchemeMarket.sol";
 
 /// @notice 可持有 NFT、但拒绝接收原生 ETH 的合约，用于测试创作者代管分支。
@@ -19,7 +19,7 @@ contract RejectEth is IERC721Receiver {
 
 /// @notice SchemeMarket 付费应用到我家 + 90/10 分账的单元测试。
 contract SchemeMarketTest is Test {
-    DreamScheme internal scheme;
+    VirtuHomeScheme internal scheme;
     SchemeMarket internal market;
 
     address internal owner = makeAddr("owner");
@@ -44,7 +44,7 @@ contract SchemeMarketTest is Test {
 
     function setUp() public {
         vm.prank(owner);
-        scheme = new DreamScheme(owner, address(0));
+        scheme = new VirtuHomeScheme(owner, address(0));
         vm.prank(owner);
         market = new SchemeMarket(scheme, owner, platform);
 

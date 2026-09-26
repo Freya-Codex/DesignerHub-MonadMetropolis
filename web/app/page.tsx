@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import SchemeCard from "@/components/SchemeCard";
-import { dreamSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
+import { virtuHomeSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
 import { demoSchemes } from "@/lib/demo";
 
 export default function GalleryPage() {
   const { data, isLoading, isError, error } = useSchemes();
-  const isDemo = !dreamSchemeAddress();
+  const isDemo = !virtuHomeSchemeAddress();
   const schemes = data && data.length > 0 ? data : isDemo ? demoSchemes : [];
 
   const totalRemix = schemes.reduce((sum, s) => sum + s.remixCount, 0);
@@ -84,7 +84,7 @@ export default function GalleryPage() {
         <div className="sheet rise flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:gap-5">
           <span className="chip chip-violet shrink-0 self-start">演示数据模式</span>
           <p className="text-[13px] leading-relaxed text-muted">
-            尚未配置 <code className="mono text-ink">NEXT_PUBLIC_DREAMSCHEME_ADDRESS</code>，当前展示{" "}
+            尚未配置 <code className="mono text-ink">NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS</code>，当前展示{" "}
             <code className="mono text-ink">assets/schemes</code> 中的示例方案。部署合约后把地址写入{" "}
             <code className="mono text-ink">web/.env.local</code>（或运行{" "}
             <code className="mono text-ink">npm run seed</code>），画廊会自动切换为链上数据。
@@ -94,7 +94,7 @@ export default function GalleryPage() {
 
       {!isDemo && (
         <p className="mono text-[11px] leading-relaxed text-muted">
-          DreamScheme <span className="text-ink">{dreamSchemeAddress()}</span>
+          VirtuHomeScheme <span className="text-ink">{virtuHomeSchemeAddress()}</span>
           <br />
           SchemeMarket{" "}
           <span className="text-ink">{schemeMarketAddress() ?? "未配置（仅画廊可读）"}</span>
