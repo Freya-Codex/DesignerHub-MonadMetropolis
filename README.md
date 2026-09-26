@@ -1,13 +1,43 @@
-# 云筑家 · DreamHome on Monad
+# 云筑家 VirtuHome · Monad 参赛项目
 
-> 用手机扫描房间生成 3D 模型并做虚拟装修的创业项目（VirtuHome），把**装修设计方案**变成 Monad 链上
-> **可 remix、可归因、可分账**的创作资产——家居设计界的 GitHub。
+> 把云筑家 App 导出的**装修设计方案**变成 Monad 链上**可 remix、可归因、可分账**的创作资产
+> ——家居设计界的 GitHub。
 > 参赛赛道：Monad 黑客松 **Social / Attention / Culture**。
+
+本仓库是**独立可运行的参赛交付物**：一份方案 JSON 进来，一枚 ERC-721 方案 NFT 出去，
+之后所有引用与付费都在链上留下痕迹。
 
 每份装修方案 = 一枚 ERC-721 NFT：原创铸造（parentId=0）或 Remix 衍生（parentId 指向来源，谱系上链可追溯）；
 任何用户支付 0.01 MON「应用到我家」时，**90% 即时转给创作者、10% 累积到平台金库**；转售按 ERC-2981 收取 5% 版税。
 注意力（remix 数 × 被应用次数）即资产，由链上事件实时聚合为排行榜。
 同一作者持续迭代时 parentId 指向自己的上一版，形成链上 **v1 → v2 → v3 版本时间线**；评论走**链下存储 + 钱包签名验证**（SIWE 风格），零 gas。
+
+---
+
+## 与云筑家 App 的关系
+
+本项目与云筑家 App **完全解耦**，分属两个仓库，只通过一份 scheme JSON 交接：
+
+| 仓库 | 职责 | 地址 |
+| --- | --- | --- |
+| **virtu-home** | 云筑家 App 本体：手机扫描房间 → 服务端重建 3D → PC 工作台虚拟装修 → **导出方案** | <https://gitee.com/freyahhhhh/virtu-home> |
+| **monad-competition**（本仓库） | 方案的链上创作资产：**创建 / 铸造 / Remix / 交易 / 排行榜** | <https://gitee.com/freyahhhhh/monad-competition_-designer-github> |
+
+```text
+云筑家 App（virtu-home 仓库）                       本仓库（monad-competition）
+┌────────────────────────────┐                  ┌──────────────────────────────┐
+│ 手机扫描 → 3D 重建 → 虚拟装修 │                  │  ⑦ 画廊信息流 / 排行榜         │
+│                            │                  │  ⑥ Remix 衍生（parentId 上链） │
+│        导出 scheme JSON ────┼─── 同一份 JSON ──▶│  ⑤ 铸造 ERC-721 方案 NFT      │
+│         （房间 + 风格 + 家具）│                  │  ④ /api/pin → IPFS 固定       │
+└────────────────────────────┘                  │  ③ 参赛站 /create 拖入 JSON    │
+                                                │  ⑧ 应用到我家 90/10 自动分账    │
+                                                └──────────────────────────────┘
+```
+
+**本仓库不依赖 App 的任何服务**：没有 App 也能跑——`assets/schemes/` 里预置了 3 份示例方案
+（北欧风客厅、日式卧室、工业风书房），`npm run seed` 可直接铸造出可供 Remix 的初始方案。
+App 侧只要导出同一格式的 JSON，就能无缝进入这套流程。
 
 ---
 
@@ -30,7 +60,7 @@
 │   Monad Testnet       │   │  IPFS（Pinata，可本地演示）    │
 │   Chain ID 10143      │   │  方案 JSON / 预览图 / 元数据   │
 │                       │   │  contentHash = keccak256()    │
-│ DreamScheme (ERC-721   │   │                              │
+│ VirtuHomeScheme (ERC-721   │   │                              │
 │  + ERC-2981 5%)       │   └──────────────────────────────┘
 │ SchemeMarket (90/10)  │
 └───────────────────────┘
@@ -40,7 +70,7 @@
 
 | 合约 | 地址（部署后填写） | 说明 |
 | --- | --- | --- |
-| `DreamScheme` | `0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e` | ERC-721 + ERC-2981（5%）；`mint(parentId, contentHash, tokenURI)` 开放铸造；`parentId=0` 原创、`>0` remix 来源；记录 `creator`；`lineageOf` 返回完整谱系、`versionLineOf` 返回同作者版本链（v1/v2/v3）；事件 `SchemeMinted(tokenId, creator, parentId, contentHash)` |
+| `VirtuHomeScheme` | `0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137` | ERC-721 + ERC-2981（5%）；`mint(parentId, contentHash, tokenURI)` 开放铸造；`parentId=0` 原创、`>0` remix 来源；记录 `creator`；`lineageOf` 返回完整谱系、`versionLineOf` 返回同作者版本链（v1/v2/v3）；事件 `SchemeMinted(tokenId, creator, parentId, contentHash)` |
 | `SchemeMarket` | `0x…` | `applyScheme(tokenId)` payable（预设 0.01 MON）：90% 转创作者、10% 累积 `platformAddress` 可 `withdraw()`；事件 `SchemeApplied` |
 
 分账细节：创作者地址在铸造时固化，NFT 转手不影响分账对象；创作者拒收 ETH 时份额计入平台代管（`CreatorShareEscrowed`），
@@ -53,7 +83,7 @@
 ```text
 monad/
 ├── contracts/                 Foundry 合约工程
-│   ├── src/DreamScheme.sol    方案 NFT（ERC-721 + ERC-2981 5% + 谱系/版本链）
+│   ├── src/VirtuHomeScheme.sol    方案 NFT（ERC-721 + ERC-2981 5% + 谱系/版本链）
 │   ├── src/SchemeMarket.sol   应用付费与 90/10 分账
 │   ├── test/                  Foundry 单元测试（35 个用例）
 │   ├── script/Deploy.s.sol    部署脚本，输出并落盘合约地址
@@ -104,7 +134,7 @@ forge script script/Deploy.s.sol --rpc-url monad_testnet --broadcast -vv
 验证源码（浏览器验证）：
 
 ```bash
-forge verify-contract <DREAMSCHEME_ADDR> src/DreamScheme.sol:DreamScheme \
+forge verify-contract <VIRTUHOME_SCHEME_ADDR> src/VirtuHomeScheme.sol:VirtuHomeScheme \
   --chain 10143 --verifier-url https://testnet.monadexplorer.com/api \
   --etherscan-api-key <MONAD_EXPLORER_API_KEY>
 # SchemeMarket 同理；也可用 Explorer 网页上传 JSON 源码验证
@@ -115,7 +145,7 @@ forge verify-contract <DREAMSCHEME_ADDR> src/DreamScheme.sol:DreamScheme \
 ```bash
 cd web
 cp .env.example .env.local
-# 填入 NEXT_PUBLIC_DREAMSCHEME_ADDRESS / NEXT_PUBLIC_SCHEME_MARKET_ADDRESS
+# 填入 NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS / NEXT_PUBLIC_SCHEME_MARKET_ADDRESS
 # 可选：PINATA_KEY/PINATA_SECRET（IPFS）、KIMI_API_KEY、NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 # 不填 Pinata/Kimi 时自动进入 local:// 本地演示模式 + 内置规则引擎，全流程可跑通
 npm install
@@ -147,8 +177,8 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 | 项目 | 地址 |
 | --- | --- |
 | 前端 Demo（本地 / 线上） | `http://localhost:3000`（部署后替换为线上地址，如 `https://<your-app>.vercel.app`） |
-| DreamScheme 合约 | [0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e](https://testnet.monadexplorer.com/address/0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e) |
-| SchemeMarket 合约 | [0xb32210cDe4D920E02e774281f679629D03B274ee](https://testnet.monadexplorer.com/address/0xb32210cDe4D920E02e774281f679629D03B274ee) |
+| VirtuHomeScheme 合约 | [0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137](https://testnet.monadexplorer.com/address/0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137) |
+| SchemeMarket 合约 | [0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513](https://testnet.monadexplorer.com/address/0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513) |
 | Monad 测试网 RPC | <https://testnet-rpc.monad.xyz> |
 | 测试币水龙头 | <https://faucet.monad.xyz> |
 | 演示视频 | <https://youtu.be/REPLACE_ME> |
@@ -159,10 +189,10 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 
 | 合约 | 地址 | 部署区块 |
 | --- | --- | --- |
-| DreamScheme | `0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e` | `64997161` |
-| SchemeMarket | `0xb32210cDe4D920E02e774281f679629D03B274ee` | `64997161` |
+| VirtuHomeScheme | `0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137` | `65618721` |
+| SchemeMarket | `0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513` | `65618721` |
 
-浏览器：<https://testnet.monadexplorer.com/address/0xd6a068b60db6c2E0bb6732a07DB489D5888a9D4e> 与 <https://testnet.monadexplorer.com/address/0xb32210cDe4D920E02e774281f679629D03B274ee>。
+浏览器：<https://testnet.monadexplorer.com/address/0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137> 与 <https://testnet.monadexplorer.com/address/0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513>。
 前端已验证：画廊、详情谱系、铸造中心、交易账本、排行榜均读取链上真实数据。
 
 ### 视觉与设计规范
@@ -224,7 +254,7 @@ cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/publ
 | 要求 | 状态 | 位置 |
 | --- | --- | --- |
 | `forge test` 全通过 | ✅ 35/35 | `contracts/test/` |
-| DreamScheme（ERC-721+ERC-2981 5%，mint 开放，谱系事件） | ✅ | `contracts/src/DreamScheme.sol` |
+| VirtuHomeScheme（ERC-721+ERC-2981 5%，mint 开放，谱系事件） | ✅ | `contracts/src/VirtuHomeScheme.sol` |
 | SchemeMarket（applyScheme 90/10 分账 + withdraw） | ✅ | `contracts/src/SchemeMarket.sol` |
 | 部署脚本输出地址 | ✅ | `contracts/script/Deploy.s.sol` + `deployments/` |
 | `/api/pin`（Pinata，`PINATA_KEY/SECRET`）+ `.env.example` | ✅ | `web/app/api/pin/route.ts` |
@@ -232,7 +262,7 @@ cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/publ
 | 8 页面（画廊/详情/创建/Remix/铸造中心/交易记录/排行榜/玩法文档），中文移动端自适应 | ✅ | `web/app/**` |
 | viem 读事件 + IPFS 元数据（画廊）、谱系树、应用/Remix 按钮 | ✅ | `web/lib/contracts.ts`、`web/components/LineageTree.tsx` |
 | `assets/` 3 套示例方案 + 预览图 + seed 脚本 | ✅ | `assets/schemes/`、`web/scripts/seed.ts` |
-| 版本管理（链上谱系 v1/v2/v3 时间线） | ✅ | `DreamScheme.versionLineOf` + `web/components/VersionTimeline.tsx` |
+| 版本管理（链上谱系 v1/v2/v3 时间线） | ✅ | `VirtuHomeScheme.versionLineOf` + `web/components/VersionTimeline.tsx` |
 | 评论（链下存储 + 钱包签名验证，POST/GET `/api/comment`） | ✅ | `web/app/api/comment/route.ts`、`web/lib/comments.ts` |
 | 创建页拖拽上传 JSON + 参数摘要确认 | ✅ | `web/app/create/page.tsx` |
 | git 提交 feat/test/docs 分开 | ✅ | 见 `git log` |
@@ -250,7 +280,7 @@ cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/publ
 
 ## 常见问题
 
-- **这个仓库和 `vibecoding_VirtuHome` 的关系**：本仓库是黑客松交付用的独立仓库，只包含 Monad 相关内容；原创业项目的移动端扫描/后端服务在另一个仓库。
+- **这个仓库和云筑家 App 的关系**：两者完全解耦，只通过 scheme JSON 交接。本仓库是黑客松交付用的独立仓库，只包含 Monad 相关内容（合约 / 前端 / 示例数据）；App 本体的扫描、建模与虚拟装修在 `virtu-home` 仓库，见上方「与云筑家 App 的关系」。
 - **画廊一直显示演示数据**：`web/.env.local` 未配置合约地址，或部署后未重启 `npm run dev`。
 - **铸造按钮报「需要一个 Post-object」类错误**：钱包网络不对，切换到 Monad 测试网（10143）。
 - **Pinata 403**：确认 `PINATA_KEY/PINATA_SECRET` 有效；未配置时本地模式使用 `local://` 与 `/api/cid`，不影响演示。
