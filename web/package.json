@@ -8,6 +8,7 @@
     "start": "next start",
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "previews": "tsx scripts/generate-previews.ts",
+    "index": "tsx --env-file-if-exists=.env.local scripts/index-activity.ts",
     "verify:flow": "tsx --env-file-if-exists=.env.local scripts/verify-flow.ts"
   },
   "dependencies": {

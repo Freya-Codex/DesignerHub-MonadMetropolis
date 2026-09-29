@@ -22,7 +22,7 @@ export default function MintPage() {
   const { data: activityData } = useActivity();
 
   const schemes = schemesData && schemesData.length > 0 ? schemesData : isDemo ? demoSchemes : [];
-  const activity = activityData && activityData.mints.length > 0 ? activityData : demoActivity;
+  const activity = isDemo ? demoActivity : activityData ?? { mints: [], trades: [], indexed: false };
 
   const wrongNetwork = isConnected && chainId !== monadTestnet.id;
   const me = address?.toLowerCase();

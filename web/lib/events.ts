@@ -1,6 +1,12 @@
 /**
- * 链上事件聚合：SchemeMinted（铸造）与 SchemeApplied（应用/付费）全量流水。
+ * 链上事件聚合：SchemeMinted（铸造）与 SchemeApplied（应用/付费）流水。
  * 供 /mint（铸造中心）与 /trades（交易记录）复用。
+ *
+ * 数据来源（两路合并、按 txHash+logIndex 去重）：
+ *  1) 离线索引 web/data/activity.json —— scripts/index-activity.ts 生成，经 /api/activity 读取。
+ *     因为 Monad 公共 RPC 的 eth_getLogs 上限 100 区块，浏览器无法扫完
+ *     部署块 → 最新块（百万级区块）的全部历史，故由脚本离线扫描落盘。
+ *  2) 浏览器端「尾部窗口」实时扫描 —— 只扫最近 N 个区块，用于展示刚刚发生的活动。
  */
 import { useQuery } from "@tanstack/react-query";
 import type { Address, Hex, PublicClient } from "viem";
@@ -33,30 +39,27 @@ export interface ChainActivity {
   trades: TradeRecord[];
 }
 
+export interface ActivityResult extends ChainActivity {
+  /** 是否已读到离线索引（false 表示仅有尾部实时扫描，历史可能不完整）。 */
+  indexed: boolean;
+  generatedAt?: string;
+}
+
 /**
  * Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 个区块内（超出返回 -32614），
- * 因此所有日志查询都要按 100 区块分片，并限制总扫描范围。
+ * 因此所有日志查询都要按 100 区块分片。
  */
 const LOG_CHUNK = 100n;
 
-/** 单次扫描的最大区块跨度（默认 20000，约 200 个请求）。 */
-const MAX_SCAN_BLOCKS = BigInt(process.env.NEXT_PUBLIC_LOG_SCAN_BLOCKS || "20000");
+/** 尾部实时扫描的区块跨度（默认 2000，约 20 个请求），仅用于捕获刚发生的活动。 */
+const TAIL_SCAN_BLOCKS = BigInt(process.env.NEXT_PUBLIC_TAIL_SCAN_BLOCKS || "2000");
 
 /** 每次并发请求数，避免打爆公共 RPC。 */
 const CONCURRENCY = 8;
 
-/** 部署区块锚点：优先取 NEXT_PUBLIC_DEPLOY_BLOCK，缺省回退到「最近 MAX_SCAN_BLOCKS 个区块」。 */
-function deployBlock(latest: bigint): bigint {
-  const raw = process.env.NEXT_PUBLIC_DEPLOY_BLOCK;
-  if (raw && /^\d+$/.test(raw)) {
-    const b = BigInt(raw);
-    if (b <= latest) return b;
-  }
-  const floor = latest > MAX_SCAN_BLOCKS ? latest - MAX_SCAN_BLOCKS : 0n;
-  return floor;
-}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** 把 [from, to] 切成 100 区块的分片并按批并发请求。 */
+/** 把 [from, to] 切成 100 区块的分片并按批并发请求（含指数退避重试）。 */
 async function getLogsChunked(
   client: PublicClient,
   address: Address,
@@ -72,26 +75,34 @@ async function getLogsChunked(
     start = end + 1n;
   }
 
+  const one = async ([f, t]: [bigint, bigint]): Promise<any[]> => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        return await client.getLogs({ address, event, fromBlock: f, toBlock: t });
+      } catch {
+        await sleep(Math.min(1500, 120 * 2 ** attempt));
+      }
+    }
+    return [];
+  };
+
   const out: any[] = [];
   for (let i = 0; i < ranges.length; i += CONCURRENCY) {
     const batch = ranges.slice(i, i + CONCURRENCY);
-    const settled = await Promise.allSettled(
-      batch.map(([f, t]) => client.getLogs({ address, event, fromBlock: f, toBlock: t }))
-    );
-    for (const r of settled) {
-      if (r.status === "fulfilled") out.push(...(r.value as any[]));
-    }
+    const settled = await Promise.all(batch.map(one));
+    for (const logs of settled) out.push(...logs);
   }
   return out;
 }
 
-export async function fetchActivity(client: PublicClient): Promise<ChainActivity> {
+/** 尾部窗口实时扫描：只覆盖最近 TAIL_SCAN_BLOCKS 个区块，快速且不会超限。 */
+export async function fetchTailActivity(client: PublicClient): Promise<ChainActivity> {
   const dream = virtuHomeSchemeAddress();
   const market = schemeMarketAddress();
   if (!dream && !market) return { mints: [], trades: [] };
 
   const latest = await client.getBlockNumber();
-  const from = deployBlock(latest);
+  const from = latest > TAIL_SCAN_BLOCKS ? latest - TAIL_SCAN_BLOCKS : 0n;
 
   const [mints, trades] = await Promise.all([
     dream
@@ -126,23 +137,68 @@ export async function fetchActivity(client: PublicClient): Promise<ChainActivity
       : Promise.resolve([] as TradeRecord[])
   ]);
 
-  trades.sort((a, b) =>
+  return { mints, trades };
+}
+
+/** 读取离线索引（/api/activity）。索引不存在时返回空集合。 */
+export async function fetchIndexedActivity(): Promise<ActivityResult> {
+  try {
+    const res = await fetch("/api/activity", { cache: "no-store" });
+    if (!res.ok) return { indexed: false, mints: [], trades: [] };
+    const data = (await res.json()) as any;
+    const mints: MintRecord[] = (data.mints ?? []).map((m: any) => ({
+      tokenId: BigInt(m.tokenId),
+      creator: m.creator as Address,
+      parentId: BigInt(m.parentId),
+      contentHash: m.contentHash as Hex,
+      blockNumber: BigInt(m.blockNumber)
+    }));
+    const trades: TradeRecord[] = (data.trades ?? []).map((t: any) => ({
+      tokenId: BigInt(t.tokenId),
+      applier: t.applier as Address,
+      creator: t.creator as Address,
+      value: BigInt(t.value),
+      creatorShare: BigInt(t.creatorShare),
+      platformShare: BigInt(t.platformShare),
+      blockNumber: BigInt(t.blockNumber),
+      txHash: t.txHash as Hex,
+      logIndex: Number(t.logIndex)
+    }));
+    return { indexed: Boolean(data.indexed), generatedAt: data.generatedAt, mints, trades };
+  } catch {
+    return { indexed: false, mints: [], trades: [] };
+  }
+}
+
+const tradeKey = (t: TradeRecord) => `${t.txHash}:${t.logIndex}`;
+
+/** 合并离线索引与尾部实时扫描结果（去重，索引优先）。 */
+function mergeActivity(indexed: ActivityResult, tail: ChainActivity): ActivityResult {
+  const tradeMap = new Map<string, TradeRecord>();
+  for (const t of [...indexed.trades, ...tail.trades]) tradeMap.set(tradeKey(t), t);
+  const mintMap = new Map<string, MintRecord>();
+  for (const m of [...indexed.mints, ...tail.mints]) mintMap.set(m.tokenId.toString(), m);
+
+  const trades = [...tradeMap.values()].sort((a, b) =>
     a.blockNumber === b.blockNumber ? b.logIndex - a.logIndex : a.blockNumber < b.blockNumber ? 1 : -1
   );
-  return { mints, trades };
+  const mints = [...mintMap.values()].sort((a, b) => (a.tokenId < b.tokenId ? -1 : 1));
+  return { indexed: indexed.indexed, generatedAt: indexed.generatedAt, mints, trades };
 }
 
 export function useActivity() {
   const client = usePublicClient();
   const dream = virtuHomeSchemeAddress();
-  return useQuery({
-    queryKey: ["activity", dream ?? "none", schemeMarketAddress() ?? "none"],
+  return useQuery<ActivityResult>({
+    queryKey: ["activity", dream ?? "none", schemeMarketAddress() ?? "none", TAIL_SCAN_BLOCKS.toString()],
     queryFn: async () => {
       const c = client ?? publicClientFor();
-      if (!c) return { mints: [], trades: [] } as ChainActivity;
-      return fetchActivity(c);
+      const indexed = await fetchIndexedActivity();
+      if (!c || !dream) return indexed;
+      const tail = await fetchTailActivity(c).catch(() => ({ mints: [], trades: [] }));
+      return mergeActivity(indexed, tail);
     },
-    enabled: Boolean(client) && Boolean(dream),
+    enabled: Boolean(dream),
     staleTime: 15_000,
     refetchInterval: 20_000,
     retry: 1

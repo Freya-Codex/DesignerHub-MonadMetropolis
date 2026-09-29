@@ -109,7 +109,7 @@ export default function GalleryPage() {
             <h2 className="display-sm mt-2 text-2xl text-ink sm:text-3xl">链上创作流</h2>
           </div>
           <span className="mono text-[11px] text-muted">
-            数据来源 · SchemeMinted 事件 + IPFS 元数据
+            数据来源 · 链上状态（tokenId 1…totalSupply） + IPFS 元数据
           </span>
         </div>
         <div className="dim-line mt-5" />

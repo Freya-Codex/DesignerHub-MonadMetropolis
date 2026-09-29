@@ -13,7 +13,9 @@ web/node_modules/
 web/.next/
 web/out/
 web/.local-pins/
-web/data/
+# 链上活动索引（离线生成，activity.json 随仓库提交以便线上直接读取）
+web/data/*
+!web/data/activity.json
 web/next-env.d.ts
 web/*.tsbuildinfo
 

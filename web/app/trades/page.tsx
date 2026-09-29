@@ -26,7 +26,7 @@ export default function TradesPage() {
   const [filter, setFilter] = useState<Filter>("all");
 
   const schemes = schemesData && schemesData.length > 0 ? schemesData : isDemo ? demoSchemes : [];
-  const activity = activityData && activityData.trades.length > 0 ? activityData : demoActivity;
+  const activity = isDemo ? demoActivity : activityData ?? { mints: [], trades: [], indexed: false };
   const me = address?.toLowerCase();
 
   const nameOf = useMemo(() => {
@@ -100,6 +100,16 @@ export default function TradesPage() {
           <p className="text-[13px] leading-relaxed text-muted">
             尚未配置市场合约地址，以下为示例流水。部署并在 <code className="mono text-ink">web/.env.local</code>{" "}
             填入 <code className="mono text-ink">NEXT_PUBLIC_SCHEME_MARKET_ADDRESS</code> 后会切换为链上真实事件。
+          </p>
+        </div>
+      )}
+
+      {!isDemo && activityData && !activityData.indexed && (
+        <div className="sheet flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:gap-5">
+          <span className="chip shrink-0 self-start">索引待生成</span>
+          <p className="text-[13px] leading-relaxed text-muted">
+            尚未生成链上活动索引，当前仅显示最近若干区块的实时扫描结果。运行{" "}
+            <code className="mono text-ink">npm run index</code> 可补齐完整历史流水。
           </p>
         </div>
       )}
@@ -276,7 +286,7 @@ export default function TradesPage() {
         </div>
 
         <p className="mono mt-5 text-[11px] leading-relaxed text-muted">
-          数据来源 · SchemeApplied 事件（fromBlock 0 → latest）。平台金库地址{" "}
+          数据来源 · SchemeApplied 链上事件（离线索引 + 最近若干区块实时增量）。平台金库地址{" "}
           {market ? shortAddress(market, 6) : "未配置"}，任何账户均可调用 withdraw()。
         </p>
       </section>

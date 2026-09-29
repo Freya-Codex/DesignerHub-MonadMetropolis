@@ -48,7 +48,7 @@ App 侧只要导出同一格式的 JSON，就能无缝进入这套流程。
 │ Next.js 14 App Router + TS + viem + wagmi + RainbowKit      │
 │                                                              │
 │ 画廊 /scheme/[id] /create /remix/[id] /mint /trades /board   │
-│   │ 读取 SchemeMinted 事件 + IPFS 元数据                      │
+│   │ 按 totalSupply 枚举 + IPFS 元数据                        │
 │   │ 写交易：mint / applyScheme                               │
 │ ├─ /api/pin    方案JSON+预览图 → Pinata 固定 → ipfs:// URI    │
 │ ├─ /api/kimi   装修建议 → Kimi(Moonshot) API（可本地兜底）     │
@@ -71,7 +71,7 @@ App 侧只要导出同一格式的 JSON，就能无缝进入这套流程。
 | 合约 | 地址（部署后填写） | 说明 |
 | --- | --- | --- |
 | `VirtuHomeScheme` | `0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137` | ERC-721 + ERC-2981（5%）；`mint(parentId, contentHash, tokenURI)` 开放铸造；`parentId=0` 原创、`>0` remix 来源；记录 `creator`；`lineageOf` 返回完整谱系、`versionLineOf` 返回同作者版本链（v1/v2/v3）；事件 `SchemeMinted(tokenId, creator, parentId, contentHash)` |
-| `SchemeMarket` | `0x…` | `applyScheme(tokenId)` payable（预设 0.01 MON）：90% 转创作者、10% 累积 `platformAddress` 可 `withdraw()`；事件 `SchemeApplied` |
+| `SchemeMarket` | `0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513` | `applyScheme(tokenId)` payable（预设 0.01 MON）：90% 转创作者、10% 累积 `platformAddress` 可 `withdraw()`；事件 `SchemeApplied` |
 
 分账细节：创作者地址在铸造时固化，NFT 转手不影响分账对象；创作者拒收 ETH 时份额计入平台代管（`CreatorShareEscrowed`），
 避免应用流程被卡死。
@@ -210,7 +210,7 @@ SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（
 
 | 路由 | 作用 |
 | --- | --- |
-| `/` | 方案画廊信息流（SchemeMinted 事件 + IPFS 元数据） |
+| `/` | 方案画廊信息流（链上状态枚举 tokenId + IPFS 元数据） |
 | `/scheme/[id]` | 方案详情：大图、谱系树、版本时间线、签名评论、应用到我家 / Remix |
 | `/create` | 拖拽或粘贴方案 JSON → 参数摘要 → 固定 IPFS → 铸造（parentId = 0） |
 | `/remix/[id]` | 风格参数编辑器 → 铸造衍生方案；带 `?newVersion=1` 时指向自己的上一版 |
@@ -241,7 +241,7 @@ cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/publ
 | --- | --- |
 | ![移动端画廊](docs/screenshots/07-mobile-home.png) | ![移动端 Remix](docs/screenshots/08-mobile-remix.png) |
 
-> 截图均取自 Monad 测试网真实链上数据（`totalSupply = 5`、`totalApplied = 6`），非静态 Mock。
+> 截图均取自 Monad 测试网真实链上数据（`totalSupply = 5`、`totalApplied = 1`），非静态 Mock。
 
 ### 演示视频（占位）
 
@@ -285,7 +285,7 @@ cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/publ
 - **铸造按钮报「需要一个 Post-object」类错误**：钱包网络不对，切换到 Monad 测试网（10143）。
 - **Pinata 403**：确认 `PINATA_KEY/PINATA_SECRET` 有效；未配置时本地模式使用 `local://` 与 `/api/cid`，不影响演示。
 - **Kimi 无返回**：未配置 `KIMI_API_KEY`，此时使用内置规则引擎返回建议。
-- **前端报 `eth_getLogs is limited to a 100 range`**：Monad 测试网公共 RPC 把 `eth_getLogs` 限制在每次 100 个区块。画廊按 `totalSupply()` 枚举（不走日志）；`/mint` 与 `/trades` 的事件流水按 100 区块分片扫描，锚点取 `web/.env.local` 的 `NEXT_PUBLIC_DEPLOY_BLOCK`（部署脚本会输出）。
+- **前端报 `eth_getLogs is limited to a 100 range`**：Monad 测试网公共 RPC 把 `eth_getLogs` 限制在每次 100 个区块（部署块到最新块已是百万级区块，浏览器无法扫完）。画廊按 `totalSupply()` 枚举（不走日志）；`/mint` 与 `/trades` 的历史流水改由**离线索引**提供：`cd web && npm run index` 按 100 区块分片扫描、带指数退避重试，结果写入 `web/data/activity.json`（已随仓库提交，线上直接可读），前端经 `/api/activity` 读取；另叠加最近 `NEXT_PUBLIC_TAIL_SCAN_BLOCKS`（默认 2000）个区块的实时扫描，用于捕获刚刚发生的活动。
 - **前端报 `chain does not support contract multicall3`**：viem 内置链定义缺少 Monad 的 Multicall3，已补到 `web/lib/chains.ts`（canonical 地址 `0xcA11...CA11`，确认已部署在测试网）。
 - **钱包 `projectId` 报错**：`.env.local` 里 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 留空即可（`web/lib/wagmi.ts` 用 `||` 回退占位值，MetaMask 注入模式不受影响）。
 - **端到端验收**：部署后跑 `cd web && npm run verify:flow`（真实交易：Remix 衍生 + 应用到我家，并逐项核对 90/10 分账金额）。

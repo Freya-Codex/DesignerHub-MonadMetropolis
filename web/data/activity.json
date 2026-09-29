@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-09-29T11:30:16.020Z",
+  "chainId": 10143,
+  "scheme": "0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137",
+  "market": "0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513",
+  "latestBlock": "66675745",
+  "windows": [
+    [
+      "65618721",
+      "65638721"
+    ]
+  ],
+  "mints": [
+    {
+      "tokenId": "1",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "parentId": "0",
+      "contentHash": "0xba0ffb0f788c7d766c0831526eff84f5e0809df4e6d350fd68309f797c1c5b83",
+      "blockNumber": "65620520"
+    },
+    {
+      "tokenId": "2",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "parentId": "0",
+      "contentHash": "0x0ea7b38c3634a8f84b987d433aaf8c7873299c2103dd160293fa6bb1fe125770",
+      "blockNumber": "65620526"
+    },
+    {
+      "tokenId": "3",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "parentId": "0",
+      "contentHash": "0x6bd5a63642bfe1194b8c5708668129b5b4fde049b23a266b9145f7095c77ee60",
+      "blockNumber": "65620532"
+    },
+    {
+      "tokenId": "4",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "parentId": "3",
+      "contentHash": "0xb9755040f69268dd362f8bb76f6f7da587833cea5c24f7315bcd2fb72e9200bc",
+      "blockNumber": "65621437"
+    },
+    {
+      "tokenId": "5",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "parentId": "4",
+      "contentHash": "0xd4ea5d8c0e84c1ce0c58ebd3e9b1341b9a17788a226606d6e9710711758d88ec",
+      "blockNumber": "65621638"
+    }
+  ],
+  "trades": [
+    {
+      "tokenId": "3",
+      "applier": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "value": "10000000000000000",
+      "creatorShare": "9000000000000000",
+      "platformShare": "1000000000000000",
+      "blockNumber": "65621446",
+      "txHash": "0x3596d5bf8516d91d8f89bc48afe8fef2f616ecded24ec88c1efd8e2477d2e138",
+      "logIndex": 38
+    }
+  ]
+}
