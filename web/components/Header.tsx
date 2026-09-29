@@ -29,9 +29,9 @@ export default function Header() {
             </svg>
           </span>
           <span className="leading-none">
-            <span className="display-sm block text-[15px]">云筑家</span>
+            <span className="display-sm block text-[15px]">Designer Hub</span>
             <span className="mono mt-1 hidden text-[9px] tracking-[0.2em] text-white/45 sm:block">
-              VIRTUHOME · MONAD
+              DESIGNER HUB · MONAD
             </span>
           </span>
         </Link>

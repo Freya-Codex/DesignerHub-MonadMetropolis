@@ -13,7 +13,7 @@ const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() || "00000000000000000000000000000000";
 
 export const config = getDefaultConfig({
-  appName: "云筑家 · VirtuHome on Monad",
+  appName: "Designer Hub · Monad",
   projectId: walletConnectProjectId,
   chains: [monadTestnet],
   transports: {

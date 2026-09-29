@@ -56,7 +56,7 @@ export default function DocsPage() {
           <p className="eyebrow eyebrow-dark">Monad Hackathon · Social / Attention / Culture</p>
           <h1 className="display mt-5 text-[34px] text-white sm:text-[52px]">玩法与规则</h1>
           <p className="mt-5 max-w-3xl text-sm leading-relaxed text-white/70 sm:text-[15px]">
-            云筑家 VirtuHome 在 App 里完成「手机扫描房间 → 3D 虚拟装修」，导出的装修方案在这里变成
+            在「云筑家 VirtuHome」App 里完成「手机扫描房间 → 3D 虚拟装修」，导出的方案导入这里，变成
             <span className="text-white">可 remix、可归因、可分账的创作资产</span>。
             创作者的每一次迭代、被引用、被应用，都会沉淀为链上注意力资产。
           </p>

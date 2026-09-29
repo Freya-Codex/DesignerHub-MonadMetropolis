@@ -1,4 +1,4 @@
-# 云筑家 VirtuHome · Monad 参赛项目
+# Designer Hub · Monad 参赛项目
 
 > 把云筑家 App 导出的**装修设计方案**变成 Monad 链上**可 remix、可归因、可分账**的创作资产
 > ——家居设计界的 GitHub。

@@ -67,7 +67,7 @@ export function appendComment(input: {
 /** 与前端约定的签名文本（SIWE 风格，包含方案号、地址与时间戳）。 */
 export function buildCommentMessage(params: { tokenId: number; address: string; issuedAt: string }): string {
   return [
-    "云筑家 · VirtuHome 评论签名",
+    "Designer Hub · Monad 评论签名",
     `方案 #${params.tokenId}`,
     `钱包地址: ${params.address}`,
     `签署时间: ${params.issuedAt}`,

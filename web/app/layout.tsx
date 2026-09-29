@@ -5,7 +5,7 @@ import Providers from "./providers";
 import Header from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "VirtuHome · Monad 创作资产",
+  title: "Designer Hub · Monad 创作资产",
   description:
     "把装修设计方案变成 Monad 链上可 remix、可归因、可分账的创作资产 —— 家居设计界的 GitHub",
   icons: { icon: "/favicon.svg" }
