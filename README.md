@@ -1,294 +1,355 @@
-# Designer Hub · Monad 参赛项目
+# Designer Hub · Monad
 
-> 把云筑家 App 导出的**装修设计方案**变成 Monad 链上**可 remix、可归因、可分账**的创作资产
-> ——家居设计界的 GitHub。
-> 参赛赛道：Monad 黑客松 **Social / Attention / Culture**。
+> **Turn exported interior-design schemes into on-chain creative assets that can be remixed,
+> attributed, and revenue-shared — a GitHub for home design.**
+>
+> Monad Hackathon track: **Social / Attention / Culture**.
 
-本仓库是**独立可运行的参赛交付物**：一份方案 JSON 进来，一枚 ERC-721 方案 NFT 出去，
-之后所有引用与付费都在链上留下痕迹。
-
-每份装修方案 = 一枚 ERC-721 NFT：原创铸造（parentId=0）或 Remix 衍生（parentId 指向来源，谱系上链可追溯）；
-任何用户支付 0.01 MON「应用到我家」时，**90% 即时转给创作者、10% 累积到平台金库**；转售按 ERC-2981 收取 5% 版税。
-注意力（remix 数 × 被应用次数）即资产，由链上事件实时聚合为排行榜。
-同一作者持续迭代时 parentId 指向自己的上一版，形成链上 **v1 → v2 → v3 版本时间线**；评论走**链下存储 + 钱包签名验证**（SIWE 风格），零 gas。
+One scheme JSON in, one ERC-721 scheme NFT out. Every reference and every payment afterwards
+leaves an on-chain trace. Attention (remix count × times-applied) becomes an asset, aggregated
+from chain events in real time into a leaderboard. When an author iterates on their own work,
+`parentId` points to their previous version, forming an on-chain **v1 → v2 → v3 timeline**.
+Comments are stored off-chain with wallet-signature verification (SIWE-style), at zero gas.
 
 ---
 
-## 与云筑家 App 的关系
+## 中文摘要
 
-本项目与云筑家 App **完全解耦**，分属两个仓库，只通过一份 scheme JSON 交接：
+「Designer Hub」把云筑家 App 导出的装修方案变成 Monad 链上可 Remix、可归因、可分账的创作资产：
 
-| 仓库 | 职责 | 地址 |
+- **五份合约**：`DreamScheme`（方案 NFT：谱系 + ERC-2981 版税 + AI 署名）、`SchemeMarket`（创作者定价 + 谱系即时分账）、`AgentRegistry`（AI 生成器注册与声誉）、`ProvenanceRegistry`（内容承诺存证，隐私优先）、`P256PasskeyAccount` + `PasskeyAccountFactory`（WebAuthn passkey 智能账户）。
+- **新市场模型**：创作者用 `setPrice` 自主定价；买家「应用到我家」时**即时分账**（无平台金库、无 withdraw）——原创 90/10，衍生 85/10/5（创作者 / 平台 / 祖先谱系池）。
+- **主流程 Passkey**：指纹 / Face ID 登录，私钥永不出设备安全芯片；CREATE2 确定性地址；**relayer 代付 gas**（仅测试网、限额、白名单）。MetaMask 保留为「高级模式」。
+- **历史地址**：旧版 `VirtuHomeScheme` / `SchemeMarket`（固定 0.01 MON + 平台金库提取模型）已弃用，地址见下方「历史部署」。
+
+---
+
+## What it is
+
+Every interior-design scheme is an ERC-721:
+
+- **Mint original** (`parentId = 0`) or **remix** (`parentId` → source; lineage recorded on-chain and fully traceable).
+- The **creator sets their own price** (`setPrice`). When someone applies a scheme to their home,
+  payment is **split instantly and directly** — there is **no platform vault and no `withdraw()` step**:
+  - **Original scheme → 90 / 10** (creator / platform).
+  - **Remixed scheme → 85 / 10 / 5** (creator / platform / ancestor lineage pool).
+- Resale royalty follows **ERC-2981 (5%)**.
+- **AI attribution**: `AgentRegistry` registers AI generators (Kimi is pre-registered as `agentId = 1`);
+  `mint` / `remix` carry the generating `agentId` on-chain, so a scheme and the AI that made it are
+  publicly attributable. `ProvenanceRegistry` stores a **content commitment** (`keccak256(contentHash ‖ salt)`)
+  so the scheme content itself never goes on-chain, yet provenance and a timestamp are provable.
+
+---
+
+## Relationship to the 云筑家 App
+
+This repo is **fully decoupled** from the 云筑家 App; they are two repositories that only hand off a scheme JSON:
+
+| Repo | Responsibility | URL |
 | --- | --- | --- |
-| **virtu-home** | 云筑家 App 本体：手机扫描房间 → 服务端重建 3D → PC 工作台虚拟装修 → **导出方案** | <https://gitee.com/freyahhhhh/virtu-home> |
-| **monad-competition**（本仓库） | 方案的链上创作资产：**创建 / 铸造 / Remix / 交易 / 排行榜** | <https://gitee.com/freyahhhhh/monad-competition_-designer-github> |
+| **virtu-home** | The 云筑家 App itself: phone-scan a room → server rebuilds 3D → desktop workbench → **export scheme** | <https://gitee.com/freyahhhhh/virtu-home> |
+| **monad-competition** (this repo) | The on-chain creative asset: **create / mint / remix / trade / leaderboard** | <https://gitee.com/freyahhhhh/monad-competition_-designer-github> |
 
 ```text
-云筑家 App（virtu-home 仓库）                       本仓库（monad-competition）
-┌────────────────────────────┐                  ┌──────────────────────────────┐
-│ 手机扫描 → 3D 重建 → 虚拟装修 │                  │  ⑦ 画廊信息流 / 排行榜         │
-│                            │                  │  ⑥ Remix 衍生（parentId 上链） │
-│        导出 scheme JSON ────┼─── 同一份 JSON ──▶│  ⑤ 铸造 ERC-721 方案 NFT      │
-│         （房间 + 风格 + 家具）│                  │  ④ /api/pin → IPFS 固定       │
-└────────────────────────────┘                  │  ③ 参赛站 /create 拖入 JSON    │
-                                                │  ⑧ 应用到我家 90/10 自动分账    │
-                                                └──────────────────────────────┘
+云筑家 App (virtu-home)                             this repo (monad-competition)
+┌────────────────────────────┐                  ┌───────────────────────────────────┐
+│ phone scan → 3D → decorate │                  │ ⑦ Gallery feed / leaderboard        │
+│                            │                  │ ⑥ Remix (parentId on-chain)         │
+│        export scheme JSON ─┼── same JSON ────▶│ ⑤ Mint ERC-721 scheme NFT           │
+│      (room + style + items)│                  │ ④ /api/pin → IPFS pin               │
+└────────────────────────────┘                  │ ③ Passkey login → CREATE2 account   │
+                                                │ ⑧ Apply-to-my-home → instant split  │
+                                                └───────────────────────────────────┘
 ```
 
-**本仓库不依赖 App 的任何服务**：没有 App 也能跑——`assets/schemes/` 里预置了 3 份示例方案
-（北欧风客厅、日式卧室、工业风书房），`npm run seed` 可直接铸造出可供 Remix 的初始方案。
-App 侧只要导出同一格式的 JSON，就能无缝进入这套流程。
+**This repo depends on none of the App's services.** `assets/schemes/` ships 3 sample schemes
+(Nordic living room, Japanese bedroom, Industrial study); `npm run seed` mints them as initial
+schemes to remix from.
 
 ---
 
-## 架构
+## Architecture
 
 ```
 ┌──────────────────────────── web/ ────────────────────────────┐
-│ Next.js 14 App Router + TS + viem + wagmi + RainbowKit      │
-│                                                              │
-│ 画廊 /scheme/[id] /create /remix/[id] /mint /trades /board   │
-│   │ 按 totalSupply 枚举 + IPFS 元数据                        │
-│   │ 写交易：mint / applyScheme                               │
-│ ├─ /api/pin    方案JSON+预览图 → Pinata 固定 → ipfs:// URI    │
-│ ├─ /api/kimi   装修建议 → Kimi(Moonshot) API（可本地兜底）     │
-│ ├─ /api/comment 评论（钱包签名校验 + 本地 JSON 存储，零 gas）   │
-│ └─ /api/cid    本地演示模式 local:// 读取                     │
+│ Next.js 14 App Router + TS + viem + wagmi + RainbowKit        │
+│                                                                │
+│ /demo /passkey /mint /mint/create /scheme/[id] /remix/[id]    │
+│   /trades /board /docs                                        │
+│   │ enumerate by totalSupply() + IPFS metadata                │
+│   │ writes: mint / remix / applyScheme / setPrice             │
+│   ├─ /api/relay    demo gas sponsor for passkey accounts      │
+│   ├─ /api/pin      scheme JSON + preview → Pinata → ipfs://   │
+│   ├─ /api/kimi     design suggestions via Kimi (local fallback)│
+│   ├─ /api/comment  comments (wallet-signature verified, no gas)│
+│   └─ /api/cid      read local:// demo mode                    │
 └──────────────┬─────────────────────────┬─────────────────────┘
                ▼                         ▼
-┌───────────────────────┐   ┌──────────────────────────────┐
-│   Monad Testnet       │   │  IPFS（Pinata，可本地演示）    │
-│   Chain ID 10143      │   │  方案 JSON / 预览图 / 元数据   │
-│                       │   │  contentHash = keccak256()    │
-│ VirtuHomeScheme (ERC-721   │   │                              │
-│  + ERC-2981 5%)       │   └──────────────────────────────┘
-│ SchemeMarket (90/10)  │
-└───────────────────────┘
+┌────────────────────────┐   ┌────────────────────────────────┐
+│   Monad Testnet        │   │  IPFS (Pinata, local fallback)  │
+│   Chain ID 10143       │   │  scheme JSON / preview / meta   │
+│   5 contracts (below)  │   │  contentHash = keccak256()      │
+└────────────────────────┘   └────────────────────────────────┘
 ```
-
-### 合约
-
-| 合约 | 地址（部署后填写） | 说明 |
-| --- | --- | --- |
-| `VirtuHomeScheme` | `0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137` | ERC-721 + ERC-2981（5%）；`mint(parentId, contentHash, tokenURI)` 开放铸造；`parentId=0` 原创、`>0` remix 来源；记录 `creator`；`lineageOf` 返回完整谱系、`versionLineOf` 返回同作者版本链（v1/v2/v3）；事件 `SchemeMinted(tokenId, creator, parentId, contentHash)` |
-| `SchemeMarket` | `0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513` | `applyScheme(tokenId)` payable（预设 0.01 MON）：90% 转创作者、10% 累积 `platformAddress` 可 `withdraw()`；事件 `SchemeApplied` |
-
-分账细节：创作者地址在铸造时固化，NFT 转手不影响分账对象；创作者拒收 ETH 时份额计入平台代管（`CreatorShareEscrowed`），
-避免应用流程被卡死。
 
 ---
 
-## 目录结构
+## Contracts
+
+| Contract | Description |
+| --- | --- |
+| `DreamScheme` | ERC-721 + ERC-2981 (5%). `mint(parentId, contentHash, agentId, metadataURI)` and `remix(...)`; `parentId = 0` = original, `> 0` = remix source. `creatorOf`, `parentOf`, `contentHashOf`, `agentIdOf`, `lineageOf` (full ancestry), `versionLineOf` (same-author v1/v2/v3 chain), `childrenOf`, `remixCount`. Event `SchemeMinted`. |
+| `SchemeMarket` | **Creator set price, instant split.** `setPrice(tokenId, price)`; `applyScheme(tokenId)` payable → splits instantly: **90/10** (original) or **85/10/5** creator/platform/ancestor-pool (remixed). No vault, no `withdraw()`. `splitPreview` for dry-runs, `priceOf`, `appliedCount`. Events `PriceSet`, `SchemeApplied`, `AncestorPaid`. |
+| `AgentRegistry` | AI-generator registry + reputation. `registerAgent(metadataURI)`, `isRegistered`, `reputationOf`. Kimi pre-registered as `agentId = 1`. Event `AgentRegistered`, `ReputationAdded`. |
+| `ProvenanceRegistry` | Privacy-first content attestation. Stores only `commitment = keccak256(contentHash ‖ salt)` (content stays off-chain). Direct `attest(...)` for self-paying EOA/smart accounts, or `attestByRelayer(AttestRequest, signature)` with an EIP-712 authorization. Event `Attested`. |
+| `P256PasskeyAccount` + `PasskeyAccountFactory` | Mnemonic-free WebAuthn/passkey smart account. The factory derives a **CREATE2** address from `(x, y, rpIdHash, originHash)`; `execute` / `executeBatch` verify a P-256 WebAuthn assertion over a challenge that binds `account ‖ chainId ‖ nonce ‖ to ‖ value ‖ keccak256(data)` — so any relayer may submit and pay gas without being able to tamper with the call. Up to 4 keys per account (`addKey`) for multi-device recovery. |
+
+Splitting details: creator addresses are fixed at mint time and survive NFT transfers; the platform
+share accrues to `platformAddress`; the ancestor pool is distributed across a deduplicated lineage
+(depth cap 16), with dust routing to the platform.
+
+---
+
+## Deployed addresses (Monad Testnet, Chain ID 10143)
+
+| Contract | Address |
+| --- | --- |
+| `DreamScheme` | `0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB` |
+| `SchemeMarket` | `0xD89a267605B7c3Ee9B172aB58b735686b3b0DC64` |
+| `AgentRegistry` | `0x9EB3d5C336c66823577F4FBB1E31dbABcf7c268D` |
+| `ProvenanceRegistry` | `0xCe41D2fa11fC3944662b783ac895D3380B8B09ED` |
+| `PasskeyAccountFactory` | `0x41E72cc140b30891b34Da45f3ed55a525c758C76` |
+
+- Platform / deployer: `0x33DD409d85115E300B4570EeB6D4DA7eF1605D08`
+- Deploy block: `66892530` · Kimi agentId: `1`
+- Explorer: <https://testnet.monadexplorer.com> · RPC: `https://testnet-rpc.monad.xyz` · Faucet: <https://faucet.monad.xyz>
+
+### Historical deployments (deprecated)
+
+The previous version used a fixed `0.01 MON` apply price with a platform vault and `withdraw()`, and a
+two-contract set. Those contracts are **deprecated and not used by the current front end**; no on-chain
+data was migrated. They are listed here for provenance only:
+
+| Old contract | Address | Deploy block |
+| --- | --- | --- |
+| `VirtuHomeScheme` (old) | `0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137` | `65618721` |
+| `SchemeMarket` (old, fixed 0.01 MON + withdraw) | `0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513` | `65618721` |
+
+---
+
+## Passkey (primary flow) + MetaMask (advanced)
+
+The **primary flow is Passkey** — no mnemonic, no browser extension, and **no need to hold MON**:
+
+1. A passkey (P-256) is created in the device's secure chip (Secure Enclave / StrongBox / TPM) via
+   `navigator.credentials.create()`. The private key is **never exportable**.
+2. `PasskeyAccountFactory.accountOf(x, y, rpIdHash, originHash)` gives a **deterministic (counterfactual)**
+   account address that can be shown before deployment.
+3. A **relayer** deploys the account and pays gas.
+4. Each on-chain action is authorized by a single WebAuthn assertion (Face ID / Touch ID / Windows Hello).
+   The challenge covers the exact calldata hash and nonce, so the relayer cannot alter the operation.
+
+Entry point: [`/passkey`](./web/app/passkey/page.tsx).
+
+**MetaMask remains available as "advanced mode"** (top-right "高级模式" connect button) for developers who
+prefer a self-custodied EOA.
+
+### Relayer (`/api/relay`) — demo-grade gas sponsor
+
+- **Testnet only** (chainId `10143`).
+- `value` is always **0** — it never forwards ETH/MON.
+- **Target allowlist**: this project's 4 contracts, plus the account's own `addKey`.
+- **Daily caps**: global and per-account (in-process counters; reset on restart).
+- Each `execute` is **simulated before submission**, so a bad signature/challenge is caught before gas is spent.
+
+> Production would add persistent quotas, per-account metering/paid relay, metrics/alerting, and KMS-managed keys.
+
+---
+
+## Directory structure
 
 ```text
 monad/
-├── contracts/                 Foundry 合约工程
-│   ├── src/VirtuHomeScheme.sol    方案 NFT（ERC-721 + ERC-2981 5% + 谱系/版本链）
-│   ├── src/SchemeMarket.sol   应用付费与 90/10 分账
-│   ├── test/                  Foundry 单元测试（35 个用例）
-│   ├── script/Deploy.s.sol    部署脚本，输出并落盘合约地址
-│   ├── deployments/           部署记录（monad-testnet.json 部署后自动生成）
-│   └── lib/                   内置依赖源码（OpenZeppelin 5.3.0 / forge-std 1.16.2）
-├── web/                       Next.js 14 前端 + API
-│   ├── app/                   8 个页面：/ · /scheme/[id] · /create · /remix/[id] · /mint · /trades · /board · /docs
-│   ├── app/api/               5 个路由：/pin · /kimi · /comment · /cid/[cid] · /demo/[id]
-│   ├── components/            Header · SchemeCard · SchemePreview · PreviewImage · LineageTree ·
-│   │                          VersionTimeline · CommentsSection
-│   ├── lib/                   wagmi/合约/主题/IPFS/Pinata/Kimi 封装
-│   └── scripts/seed.ts        用示例数据铸造初始方案
-├── assets/schemes/            3 套示例方案 JSON + SVG 预览图（demo 冷启动用）
-├── docs/screenshots/          8 张界面截图（README 配图，取自测试网真实数据）
-├── .env.example               环境变量总览（合约 + 前端两套）
+├── contracts/                 Foundry project
+│   ├── src/DreamScheme.sol        scheme NFT (lineage + ERC-2981 royalty + AI attribution)
+│   ├── src/SchemeMarket.sol       creator pricing + instant lineage split
+│   ├── src/AgentRegistry.sol      AI generator registry + reputation
+│   ├── src/ProvenanceRegistry.sol content-commitment attestation
+│   ├── src/P256PasskeyAccount.sol passkey smart account + CREATE2 factory
+│   ├── src/lib/{P256,WebAuthn}.sol  P-256 + WebAuthn verification
+│   ├── test/                      Foundry tests (96 cases)
+│   ├── script/Deploy.s.sol        deploy script (writes deployments/*.json)
+│   └── deployments/               deployment records
+├── web/                       Next.js 14 front end + API
+│   ├── app/                   pages: /demo · /passkey · /mint · /mint/create · /trades ·
+│   │                          /board · /docs · /scheme/[id] · /remix/[id]  ( / → /demo )
+│   ├── app/api/               /relay · /pin · /kimi · /comment · /activity · /cid/[cid] · /demo/[id]
+│   ├── lib/                   wagmi / contracts / passkey / scheme / IPFS / Pinata / Kimi
+│   └── scripts/seed.ts        mint initial schemes from sample data
+├── assets/schemes/            3 sample scheme JSONs + SVG previews
+├── docs/screenshots/          UI screenshots (real testnet data)
 └── README.md
 ```
 
 ---
 
-## 快速开始
+## Quick start
 
-前置：`foundry`（≥1.0）、`node` ≥ 18、MetaMask。合约依赖已内置在 `contracts/lib`（vendored：OpenZeppelin 5.3.0、forge-std 1.16.2），
-克隆后**无需** `forge install` 即可直接编译测试。
+Prerequisites: `foundry` (≥1.0), `node` ≥ 18, a browser with WebAuthn (Chrome/Edge/Safari ≥16), and
+optionally MetaMask. Contract dependencies are **vendored** in `contracts/lib` (OpenZeppelin 5.3.0,
+forge-std 1.16.2), so no `forge install` is needed.
 
-### 1. 运行合约测试
+### 1. Run contract tests
 
 ```bash
 cd contracts
-forge test          # 35 passed（铸造/谱系/版本链/分账金额/代管/提现）
+forge test          # 96 passed (mint / lineage / versions / split amounts / attestation / P-256 · WebAuthn / passkey account)
 ```
 
-### 2. 领取测试币（Monad 测试网）
+### 2. Get testnet funds
 
-- 网络：Chain ID `10143`，RPC `https://testnet-rpc.monad.xyz`，原生代币 MON
-- 水龙头：<https://faucet.monad.xyz>（粘贴部署者钱包地址，通常几分钟到账）
-- 在 MetaMask 中添加 Monad 测试网（RPC 同上，区块浏览器 <https://testnet.monadexplorer.com>）
+- Network: Chain ID `10143`, RPC `https://testnet-rpc.monad.xyz`, native token MON.
+- Faucet: <https://faucet.monad.xyz>. Add Monad Testnet to MetaMask (explorer <https://testnet.monadexplorer.com>).
+- *Passkey users don't need MON — the relayer sponsors gas.*
 
-### 3. 部署合约
+### 3. Deploy contracts
 
 ```bash
 cd contracts
-cp .env.example .env            # 填入 DEPLOYER_PRIVATE_KEY（测试网私钥）
+cp .env.example .env            # set DEPLOYER_PRIVATE_KEY (testnet only!)
 forge script script/Deploy.s.sol --rpc-url monad_testnet --broadcast -vv
-# 输出含两个合约地址，并写入 deployments/monad-testnet.json
+# prints all contract addresses and writes deployments/monad-testnet.json
 ```
 
-验证源码（浏览器验证）：
-
-```bash
-forge verify-contract <VIRTUHOME_SCHEME_ADDR> src/VirtuHomeScheme.sol:VirtuHomeScheme \
-  --chain 10143 --verifier-url https://testnet.monadexplorer.com/api \
-  --etherscan-api-key <MONAD_EXPLORER_API_KEY>
-# SchemeMarket 同理；也可用 Explorer 网页上传 JSON 源码验证
-```
-
-### 4. 配置前端并启动
+### 4. Configure and run the front end
 
 ```bash
 cd web
 cp .env.example .env.local
-# 填入 NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS / NEXT_PUBLIC_SCHEME_MARKET_ADDRESS
-# 可选：PINATA_KEY/PINATA_SECRET（IPFS）、KIMI_API_KEY、NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
-# 不填 Pinata/Kimi 时自动进入 local:// 本地演示模式 + 内置规则引擎，全流程可跑通
+# set NEXT_PUBLIC_*_ADDRESS (see deployments/monad-testnet.json)
+# optional: PINATA_KEY/PINATA_SECRET, KIMI_API_KEY, NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+# optional passkey/relayer: NEXT_PUBLIC_PASSKEY_RP_ID / NEXT_PUBLIC_PASSKEY_ORIGIN, RELAYER_PRIVATE_KEY
 npm install
 npm run dev        # http://localhost:3000
 ```
 
-### 5. 铸造示例方案（Seed）
+Without Pinata/Kimi credentials the app falls back to a `local://` demo mode and a built-in rule
+engine, so the whole flow still works.
+
+### 5. Seed sample schemes
 
 ```bash
 cd web
-# .env.local 需含 MONAD_PRIVATE_KEY 与合约地址（seed 也会自动读取 contracts/deployments/*.json）
-npm run seed                       # 铸造 3 个原创方案
-SEED_REMIX_FROM=1 npm run seed     # 以 #1 为 parentId 铸造 remix（演示谱系与排行榜）
-SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 执行一次「应用到我家」（需账户持有 MON）
+npm run seed                       # mint 3 original schemes
+SEED_REMIX_FROM=1 npm run seed     # mint a remix with parentId = 1
+SEED_APPLY_TOKEN=1 npm run seed    # run one "apply to my home" on #1
 ```
 
-### 6. 完整 Demo 流程
+### 6. End-to-end demo
 
-连接 MetaMask（Monad 测试网）→ 领水 → 首页画廊查看方案（事件 + IPFS 元数据）→ 创建页上传/粘贴 JSON
-→ 固定到 IPFS → 铸造 NFT → 详情页「应用到我家」（0.01 MON，90/10 自动分账）→「Remix」→ 风格参数编辑器
-（主题/调色板/家具数量）→ 铸造 parentId 指向原方案的衍生 NFT → 排行榜热度实时更新。
+**Passkey**: open `/passkey` → create passkey → relayer deploys your account → sign one on-chain
+attestation (no MON needed).
 
-版本与协作：
-- 在**自己的最新版本**详情页点「🚀 发布新版本」→ 铸造 v(N+1)，parentId 指向上一版，详情页版本时间线自动出现 v1/v2/v3。
-- 详情页底部「协作讨论」：输入评论 → MetaMask 签名（SIWE 风格）→ 后端 `verifyMessage` 校验 → 写入本地 JSON，**不消耗 gas**。
+**Advanced (MetaMask)**: connect on Monad Testnet → faucet → browse `/demo` → create/import a scheme
+JSON → pin to IPFS → mint NFT → on the detail page "apply to my home" (instant 90/10 or 85/10/5 split)
+→ "Remix" in the style editor → mint a derivative with `parentId` → leaderboard updates live.
 
-### 部署信息（URL）
-
-| 项目 | 地址 |
-| --- | --- |
-| 前端 Demo（本地 / 线上） | `http://localhost:3000`（部署后替换为线上地址，如 `https://<your-app>.vercel.app`） |
-| VirtuHomeScheme 合约 | [0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137](https://testnet.monadexplorer.com/address/0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137) |
-| SchemeMarket 合约 | [0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513](https://testnet.monadexplorer.com/address/0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513) |
-| Monad 测试网 RPC | <https://testnet-rpc.monad.xyz> |
-| 测试币水龙头 | <https://faucet.monad.xyz> |
-| 演示视频 | <https://youtu.be/REPLACE_ME> |
-
-> 根目录 `.env.example` 汇总了合约与前端两套环境变量，按注释分别复制到 `contracts/.env` 与 `web/.env.local`。
-
-**当前线上部署（Monad Testnet，Chain ID 10143）**
-
-| 合约 | 地址 | 部署区块 |
-| --- | --- | --- |
-| VirtuHomeScheme | `0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137` | `65618721` |
-| SchemeMarket | `0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513` | `65618721` |
-
-浏览器：<https://testnet.monadexplorer.com/address/0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137> 与 <https://testnet.monadexplorer.com/address/0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513>。
-前端已验证：画廊、详情谱系、铸造中心、交易账本、排行榜均读取链上真实数据。
-
-### 视觉与设计规范
-
-前端整体采用 **Monad 官方风格**，并把「室内设计」的行业语言做成视觉签名。
-
-- **色板**：紫罗兰 `#6E54FF` / 深紫 `#4F47EB` / 李子 `#25043A` / 墨黑 `#0F0F12` / 纸白 `#FBFAF9` / 灰紫 `#727285` / 珊瑚 `#FFA1A1` / 发丝线 `#ECECEC`
-- **字体**：自托管 Archivo variable（标题与数字，400–800）+ 中文系统黑体（正文）+ 等宽（地址、哈希、参数）
-- **签名元素 · 蓝图标注线**：虚线尺寸线 + 端部刻度 + 等宽数字，直接标注真实数据（房间尺寸、家具数量、谱系深度、分账比例），而不是装饰性图形
-- **卡片语言**：`.sheet`（白卡片 + 发丝线）/ `.sheet-dark`（墨黑→李子→紫罗兰渐变，用于 hero 与榜首卡片）；规格表统一「等宽大写小标签 + 右对齐值 + 发丝线分隔」
-- **预览图**：`lib/scheme.ts` 的 `schemeToPreviewSvg()` 按平面施工图渲染——标题区、房间平面、家具色块、尺寸标注、调色板，全部由方案 JSON 驱动；`npm run previews` 可批量重新生成
-- **移动端**：顶部栏为两行布局（品牌 + 钱包 / 导航整行平铺），390px 下 6 个入口全部可见，8 个页面均无横向溢出
-
-### 页面一览
-
-| 路由 | 作用 |
-| --- | --- |
-| `/` | 方案画廊信息流（链上状态枚举 tokenId + IPFS 元数据） |
-| `/scheme/[id]` | 方案详情：大图、谱系树、版本时间线、签名评论、应用到我家 / Remix |
-| `/create` | 拖拽或粘贴方案 JSON → 参数摘要 → 固定 IPFS → 铸造（parentId = 0） |
-| `/remix/[id]` | 风格参数编辑器 → 铸造衍生方案；带 `?newVersion=1` 时指向自己的上一版 |
-| `/mint` | 铸造中心：我的铸造统计、可 Remix 机会、我的方案与版本迭代入口 |
-| `/trades` | 交易记录：SchemeApplied 全量流水、90/10 分账、我的支出收入与提取 |
-| `/board` | 排行榜：热度 = Remix × 2 + 被应用 × 3 |
-| `/docs` | 玩法与规则、链上参数、快速上手与 FAQ |
-
-```bash
-cd web && npm run previews   # 重新生成 assets/schemes/previews 与 web/public/previews
-```
-
-### 界面预览
-
-| 画廊（首页） | 方案详情 |
-| --- | --- |
-| ![画廊](docs/screenshots/01-home.png) | ![方案详情](docs/screenshots/02-scheme-detail.png) |
-
-| 创建原创方案 | 铸造中心 |
-| --- | --- |
-| ![创建](docs/screenshots/03-create.png) | ![铸造中心](docs/screenshots/04-mint.png) |
-
-| 交易记录（90/10 分账流水） | 排行榜 |
-| --- | --- |
-| ![交易记录](docs/screenshots/05-trades.png) | ![排行榜](docs/screenshots/06-board.png) |
-
-| 移动端 · 画廊 | 移动端 · Remix |
-| --- | --- |
-| ![移动端画廊](docs/screenshots/07-mobile-home.png) | ![移动端 Remix](docs/screenshots/08-mobile-remix.png) |
-
-> 截图均取自 Monad 测试网真实链上数据（`totalSupply = 5`、`totalApplied = 1`），非静态 Mock。
-
-### 演示视频（占位）
-
-[🎥 Demo 视频（占位，录制后替换链接）](https://youtu.be/REPLACE_ME)
+Versioning & collaboration:
+- On your own latest version's detail page, "🚀 publish new version" mints v(N+1) with `parentId`
+  pointing at the previous one; the version timeline appears automatically.
+- "Discussion" at the bottom: type a comment → sign with wallet (SIWE-style) → backend `verifyMessage`
+  → stored in local JSON, at **zero gas**.
 
 ---
 
-## 验收标准对照
+## Routes
 
-| 要求 | 状态 | 位置 |
-| --- | --- | --- |
-| `forge test` 全通过 | ✅ 35/35 | `contracts/test/` |
-| VirtuHomeScheme（ERC-721+ERC-2981 5%，mint 开放，谱系事件） | ✅ | `contracts/src/VirtuHomeScheme.sol` |
-| SchemeMarket（applyScheme 90/10 分账 + withdraw） | ✅ | `contracts/src/SchemeMarket.sol` |
-| 部署脚本输出地址 | ✅ | `contracts/script/Deploy.s.sol` + `deployments/` |
-| `/api/pin`（Pinata，`PINATA_KEY/SECRET`）+ `.env.example` | ✅ | `web/app/api/pin/route.ts` |
-| `/api/kimi` 转发 Kimi API | ✅ | `web/app/api/kimi/route.ts` |
-| 8 页面（画廊/详情/创建/Remix/铸造中心/交易记录/排行榜/玩法文档），中文移动端自适应 | ✅ | `web/app/**` |
-| viem 读事件 + IPFS 元数据（画廊）、谱系树、应用/Remix 按钮 | ✅ | `web/lib/contracts.ts`、`web/components/LineageTree.tsx` |
-| `assets/` 3 套示例方案 + 预览图 + seed 脚本 | ✅ | `assets/schemes/`、`web/scripts/seed.ts` |
-| 版本管理（链上谱系 v1/v2/v3 时间线） | ✅ | `VirtuHomeScheme.versionLineOf` + `web/components/VersionTimeline.tsx` |
-| 评论（链下存储 + 钱包签名验证，POST/GET `/api/comment`） | ✅ | `web/app/api/comment/route.ts`、`web/lib/comments.ts` |
-| 创建页拖拽上传 JSON + 参数摘要确认 | ✅ | `web/app/create/page.tsx` |
-| git 提交 feat/test/docs 分开 | ✅ | 见 `git log` |
+| Route | Purpose |
+| --- | --- |
+| `/` | Redirects (307) to `/demo` |
+| `/demo` | Scheme gallery feed (enumerate `tokenId` by `totalSupply()` + IPFS metadata) |
+| `/passkey` | **Passkey wallet** (primary): create → derive address → relayer deploy → sign on-chain |
+| `/mint` | Mint hub: your mint stats, remix opportunities, your schemes |
+| `/mint/create` | Create an original scheme (drag/drop or paste scheme JSON → IPFS → mint) |
+| `/scheme/[id]` | Scheme detail: lineage tree, version timeline, comments, apply / remix |
+| `/remix/[id]` | Style-parameter editor → mint a derivative (`?newVersion=1` targets your own previous version) |
+| `/trades` | Trade ledger: `SchemeApplied` stream, splits, my spend/income |
+| `/board` | Leaderboard: heat = remixes × 2 + times-applied × 3 |
+| `/docs` | Mechanics, on-chain parameters, quick start, FAQ |
 
-## 持续集成（CI）
+---
 
-仓库内置两套流水线，默认都**不需要任何密钥**即可跑通（合约依赖已内置，前端用默认配置构建）：
+## UI preview
 
-| 平台 | 文件 | 触发 | 内容 |
+| Gallery (`/demo`) | Scheme detail |
+| --- | --- |
+| ![gallery](docs/screenshots/01-home.png) | ![detail](docs/screenshots/02-scheme-detail.png) |
+
+| Create original | Mint hub |
+| --- | --- |
+| ![create](docs/screenshots/03-create.png) | ![mint](docs/screenshots/04-mint.png) |
+
+| Trades (split ledger) | Leaderboard |
+| --- | --- |
+| ![trades](docs/screenshots/05-trades.png) | ![board](docs/screenshots/06-board.png) |
+
+| Mobile · gallery | Mobile · remix |
+| --- | --- |
+| ![mobile gallery](docs/screenshots/07-mobile-home.png) | ![mobile remix](docs/screenshots/08-mobile-remix.png) |
+
+> Screenshots use real Monad-testnet on-chain data, not static mocks.
+
+### Demo video (placeholder)
+
+[🎥 Demo video (placeholder — replace the link after recording)](https://youtu.be/REPLACE_ME)
+
+---
+
+## Design & visual language
+
+The front end follows the **Monad visual style** and makes "interior design" the product's visual signature.
+
+- **Palette**: violet `#6E54FF` / deep violet `#4F47EB` / plum `#25043A` / ink `#0F0F12` /
+  paper `#FBFAF9` / grey-violet `#727285` / coral `#FFA1A1` / hairline `#ECECEC`.
+- **Type**: self-hosted Archivo variable (headings, numerals) + system CJK sans (body) + monospace (addresses, hashes).
+- **Signature element — blueprint dimension lines**: dashed dimension lines with end ticks and monospace
+  numerals annotating real data (room size, furniture count, lineage depth, split ratios).
+- **Card language**: `.sheet` (white card + hairline) / `.sheet-dark` (ink→plum→violet gradient hero);
+  spec tables use "monospace uppercase small label + right-aligned value + hairline".
+- **Previews**: `lib/scheme.ts`'s `schemeToPreviewSvg()` renders a floor-plan-style preview entirely from the scheme JSON.
+- **Mobile**: two-row header; all nav entries remain visible at 390px with no horizontal overflow.
+
+---
+
+## CI
+
+| Platform | File | Trigger | Content |
 | --- | --- | --- | --- |
-| Gitee Go（原生） | `.workflow/forge-test.yml` | push / PR 到 `main` | `forge build` + `forge test -vv` + `npm ci && npm run build` |
-| GitHub Actions | `.github/workflows/ci.yml` | push / PR 到 `main` | 同上（两个 job 并行，带 npm 缓存） |
+| Gitee Go | `.workflow/forge-test.yml` | push / PR to `main` | `forge build` + `forge test -vv` + `npm ci && npm run build` |
+| GitHub Actions | `.github/workflows/ci.yml` | push / PR to `main` | same (two parallel jobs, npm cache) |
 
-启用 Gitee Go：仓库 → **服务 → Gitee Go** → 新建流水线 → 选择 `.workflow/forge-test.yml`。
+Both run **without any secrets** (contract deps are vendored; the front end builds with defaults).
 
-## 常见问题
+---
 
-- **这个仓库和云筑家 App 的关系**：两者完全解耦，只通过 scheme JSON 交接。本仓库是黑客松交付用的独立仓库，只包含 Monad 相关内容（合约 / 前端 / 示例数据）；App 本体的扫描、建模与虚拟装修在 `virtu-home` 仓库，见上方「与云筑家 App 的关系」。
-- **画廊一直显示演示数据**：`web/.env.local` 未配置合约地址，或部署后未重启 `npm run dev`。
-- **铸造按钮报「需要一个 Post-object」类错误**：钱包网络不对，切换到 Monad 测试网（10143）。
-- **Pinata 403**：确认 `PINATA_KEY/PINATA_SECRET` 有效；未配置时本地模式使用 `local://` 与 `/api/cid`，不影响演示。
-- **Kimi 无返回**：未配置 `KIMI_API_KEY`，此时使用内置规则引擎返回建议。
-- **前端报 `eth_getLogs is limited to a 100 range`**：Monad 测试网公共 RPC 把 `eth_getLogs` 限制在每次 100 个区块（部署块到最新块已是百万级区块，浏览器无法扫完）。画廊按 `totalSupply()` 枚举（不走日志）；`/mint` 与 `/trades` 的历史流水改由**离线索引**提供：`cd web && npm run index` 按 100 区块分片扫描、带指数退避重试，结果写入 `web/data/activity.json`（已随仓库提交，线上直接可读），前端经 `/api/activity` 读取；另叠加最近 `NEXT_PUBLIC_TAIL_SCAN_BLOCKS`（默认 2000）个区块的实时扫描，用于捕获刚刚发生的活动。
-- **前端报 `chain does not support contract multicall3`**：viem 内置链定义缺少 Monad 的 Multicall3，已补到 `web/lib/chains.ts`（canonical 地址 `0xcA11...CA11`，确认已部署在测试网）。
-- **钱包 `projectId` 报错**：`.env.local` 里 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 留空即可（`web/lib/wagmi.ts` 用 `||` 回退占位值，MetaMask 注入模式不受影响）。
-- **端到端验收**：部署后跑 `cd web && npm run verify:flow`（真实交易：Remix 衍生 + 应用到我家，并逐项核对 90/10 分账金额）。
-- **排行榜未更新**：页面每 20s 重新拉取事件与合约状态；也可以在页面刷新。
-- **评论发布失败（401）**：签名内容需与提交的 message 完全一致，且 message 必须包含「方案 #tokenId」；重新点击签名发布即可。
-- **评论存在哪里**：`web/data/comments/<tokenId>.json`（已 gitignore），可通过 `COMMENTS_DATA_DIR` 改路径。
+## FAQ
+
+- **Relationship to the 云筑家 App**: fully decoupled; only a scheme JSON is handed off. This repo is
+  the standalone hackathon deliverable (contracts / front end / sample data). The App itself lives in `virtu-home`.
+- **Gallery keeps showing demo data**: `web/.env.local` has no contract addresses, or the dev server was
+  not restarted after deployment.
+- **Mint fails with a "post-object" style error**: wrong network — switch the wallet to Monad Testnet (10143).
+- **Pinata 403**: check `PINATA_KEY/PINATA_SECRET`; without them the local `local://` mode + `/api/cid` is used.
+- **Kimi returns nothing**: `KIMI_API_KEY` is unset; the built-in rule engine answers instead.
+- **`eth_getLogs is limited to a 100 range`**: Monad's public RPC caps `eth_getLogs` at 100 blocks (deploy-to-latest
+  spans millions of blocks). The gallery enumerates via `totalSupply()` (no logs); `/mint` and `/trades`
+  history comes from an **offline index** (`cd web && npm run index` → `web/data/activity.json`, committed
+  and read via `/api/activity`), plus a recent tail scan of `NEXT_PUBLIC_TAIL_SCAN_BLOCKS` (default 2000).
+- **`chain does not support contract multicall3`**: Monad's multicall3 is added in `web/lib/chains.ts`
+  (canonical address `0xcA11…CA11`).
+- **Wallet `projectId` error**: leave `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` empty (MetaMask injected mode is unaffected).
+- **Passkey account address differs between visits**: the address is bound to `(passkey, RP ID, Origin)` —
+  a different domain or port (localhost ↔ 127.0.0.1) yields a different account. The local record lives in `localStorage`.
+- **Passkey flow errors "relayer_disabled"**: set `RELAYER_PRIVATE_KEY` (or `MONAD_PRIVATE_KEY`) to enable the demo sponsor.
+- **Comments**: stored in `web/data/comments/<tokenId>.json` (gitignored); a 401 means the signed message
+  must exactly match the submitted one and must include "方案 #tokenId".
