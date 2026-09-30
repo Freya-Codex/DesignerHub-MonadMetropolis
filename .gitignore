@@ -28,3 +28,7 @@ web/.env.*.local
 
 # ClawHive agent 本地工作记忆（非项目文件）
 /memory/
+
+# SDK (@yunzhujia/sdk)
+sdk/node_modules/
+sdk/dist/

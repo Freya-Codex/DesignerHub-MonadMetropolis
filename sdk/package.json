@@ -1,0 +1,40 @@
+{
+  "name": "@yunzhujia/sdk",
+  "version": "0.1.0",
+  "description": "Typed client for the Designer Hub on-chain primitive on Monad: passkey (WebAuthn/P-256) smart accounts, provenance attestation, and remixable design-scheme assets with lineage revenue-splitting.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "viem": "^2.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "monad",
+    "webauthn",
+    "passkey",
+    "p256",
+    "erc-4337-free",
+    "smart-account",
+    "provenance",
+    "erc-721",
+    "lineage",
+    "revenue-split"
+  ]
+}
