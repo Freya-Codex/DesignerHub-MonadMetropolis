@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
-import { virtuHomeSchemeAddress, schemeMarketAddress, useSchemes, type SchemeSummary } from "@/lib/contracts";
+import { dreamSchemeAddress, schemeMarketAddress, useSchemes, type SchemeSummary } from "@/lib/contracts";
 import { demoActivity, useActivity } from "@/lib/events";
 import { demoSchemes } from "@/lib/demo";
 import { monadTestnet } from "@/lib/chains";
@@ -16,7 +16,7 @@ export default function MintPage() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
-  const isDemo = !virtuHomeSchemeAddress();
+  const isDemo = !dreamSchemeAddress();
 
   const { data: schemesData, isLoading: schemesLoading } = useSchemes();
   const { data: activityData } = useActivity();

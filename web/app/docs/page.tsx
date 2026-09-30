@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { virtuHomeSchemeAddress, schemeMarketAddress, APPLY_PRICE } from "@/lib/contracts";
+import {
+  dreamSchemeAddress,
+  schemeMarketAddress,
+  agentRegistryAddress,
+  provenanceRegistryAddress,
+  passkeyFactoryAddress
+} from "@/lib/contracts";
 import { formatWeiToMon } from "@/lib/scheme";
 
 const EXPLORER = "https://testnet.monadexplorer.com";
@@ -24,13 +30,23 @@ const MECHANISMS = [
   },
   {
     tag: "04",
-    title: "90 / 10 自动分账",
-    body: "他人「应用到我家」支付 0.01 MON：90% 即时转给创作者，10% 累积到平台金库，任何账户可 withdraw()；转售按 ERC-2981 收 5% 版税。"
+    title: "创作者定价 · 谱系分账",
+    body: "创作者用 setPrice 自主定价；他人「应用到我家」按定价支付，原创 90/10、衍生 85/10/5（创作者/平台/祖先谱系）即时分账到账；转售按 ERC-2981 收 5% 版税。"
   },
   {
     tag: "05",
     title: "链下签名评论",
     body: "评论不消耗 gas：前端用 MetaMask 对评论文本签名（SIWE 风格），后端 verifyMessage 校验后按 tokenId 存入本地 JSON，实现零成本的协作讨论。"
+  },
+  {
+    tag: "06",
+    title: "AI 生成器归因",
+    body: "AgentRegistry 注册 AI 生成器（Kimi 预注册为 agentId=1）；mint/remix 携带 agentId 上链，方案与生成它的 AI 可公开归因，声誉随确权次数累积。ProvenanceRegistry 支持 EIP-712 签名存证生成过程。"
+  },
+  {
+    tag: "07",
+    title: "Passkey 无助记词账户",
+    body: "P256PasskeyAccount 用 WebAuthn Passkey（指纹 / Face ID）替代助记词：CREATE2 工厂预计算地址，relayer 代付 gas 执行交易，多设备可添加多把公钥。"
   },
   {
     tag: "06",
@@ -40,10 +56,12 @@ const MECHANISMS = [
 ];
 
 export default function DocsPage() {
-  const scheme = virtuHomeSchemeAddress();
+  const scheme = dreamSchemeAddress();
   const market = schemeMarketAddress();
-  const creatorShare = (APPLY_PRICE * 9n) / 10n;
-  const platformShare = APPLY_PRICE - creatorShare;
+  const price = 10_000_000_000_000_000n; // 0.01 MON 示例
+  const creatorShare = (price * 85n) / 100n; // 衍生方案示例
+  const platformShare = price / 10n;
+  const lineageShare = price - creatorShare - platformShare;
 
   return (
     <div className="space-y-10">
@@ -98,19 +116,25 @@ export default function DocsPage() {
           <p className="eyebrow">Ledger · 分账账本</p>
           <h2 className="display-sm mt-3 text-lg text-ink">一次「应用到我家」</h2>
           <p className="mono mt-2 text-[11px] text-muted">
-            PRESET TESTNET PRICE {formatWeiToMon(APPLY_PRICE)} MON
+            EXAMPLE PRICE {formatWeiToMon(price)} MON
           </p>
           <ul className="mt-5 divide-y divide-hairline border-y border-hairline">
             <li className="flex items-center justify-between py-3">
               <span className="text-[13px] text-muted">创作者即时到账</span>
               <span className="mono text-[13px] font-semibold text-violet-deep">
-                {formatWeiToMon(creatorShare)} MON · 90%
+                {formatWeiToMon(creatorShare)} MON · 85%
               </span>
             </li>
             <li className="flex items-center justify-between py-3">
-              <span className="text-[13px] text-muted">平台金库累积（可 withdraw）</span>
+              <span className="text-[13px] text-muted">平台（即时到账）</span>
               <span className="mono text-[13px] font-semibold text-ink">
                 {formatWeiToMon(platformShare)} MON · 10%
+              </span>
+            </li>
+            <li className="flex items-center justify-between py-3">
+              <span className="text-[13px] text-muted">祖先谱系池（衍生方案）</span>
+              <span className="mono text-[13px] font-semibold text-ink">
+                {formatWeiToMon(lineageShare)} MON · 5%
               </span>
             </li>
             <li className="flex items-center justify-between py-3">
@@ -119,8 +143,9 @@ export default function DocsPage() {
             </li>
           </ul>
           <p className="mt-4 text-xs leading-relaxed text-muted">
-            创作者为拒收 ETH 的合约时，份额会记入平台代管（事件{" "}
-            <code className="mono text-ink">CreatorShareEscrowed</code>），不会卡住应用流程。
+            衍生方案的应用收入会沿 <code className="mono text-ink">parentId</code> 谱系向所有祖先创作者
+            均分 5%（事件 <code className="mono text-ink">AncestorPaid</code>），原创的 remix 价值持续回流。
+            原创方案无祖先池，创作者拿 90%。
           </p>
         </div>
 
@@ -144,7 +169,7 @@ export default function DocsPage() {
                 faucet.monad.xyz ↗
               </a>
             </Row>
-            <Row label="VirtuHomeScheme">
+            <Row label="DreamScheme">
               {scheme ? (
                 <a
                   className="link mono text-[11px]"
@@ -158,6 +183,42 @@ export default function DocsPage() {
               ) : (
                 <span className="text-muted">未配置（演示数据模式）</span>
               )}
+            </Row>
+            <Row label="AgentRegistry">
+              {(() => {
+                const a = agentRegistryAddress();
+                return a ? (
+                  <a className="link mono text-[11px]" href={`${EXPLORER}/address/${a}`} target="_blank" rel="noreferrer" title={a}>
+                    {a.slice(0, 10)}…{a.slice(-6)} ↗
+                  </a>
+                ) : (
+                  <span className="text-muted">未配置</span>
+                );
+              })()}
+            </Row>
+            <Row label="ProvenanceRegistry">
+              {(() => {
+                const a = provenanceRegistryAddress();
+                return a ? (
+                  <a className="link mono text-[11px]" href={`${EXPLORER}/address/${a}`} target="_blank" rel="noreferrer" title={a}>
+                    {a.slice(0, 10)}…{a.slice(-6)} ↗
+                  </a>
+                ) : (
+                  <span className="text-muted">未配置</span>
+                );
+              })()}
+            </Row>
+            <Row label="PasskeyAccountFactory">
+              {(() => {
+                const a = passkeyFactoryAddress();
+                return a ? (
+                  <a className="link mono text-[11px]" href={`${EXPLORER}/address/${a}`} target="_blank" rel="noreferrer" title={a}>
+                    {a.slice(0, 10)}…{a.slice(-6)} ↗
+                  </a>
+                ) : (
+                  <span className="text-muted">未配置</span>
+                );
+              })()}
             </Row>
             <Row label="SchemeMarket">
               {market ? (
@@ -197,7 +258,7 @@ export default function DocsPage() {
             </>,
             <>
               在 <Link className="link" href="/">画廊</Link>{" "}
-              浏览方案，进入详情页点「应用到我家」（0.01 MON，自动 90/10 分账）
+              浏览方案，进入详情页点「应用到我家」（按创作者定价支付，自动分账）
             </>,
             <>点「Remix」调整主题/调色板/家具数量，铸造衍生方案（parentId 自动指向原方案）</>,
             <>
@@ -226,7 +287,7 @@ export default function DocsPage() {
           {[
             {
               q: "铸造和 Remix 要花钱吗？",
-              a: "铸造只消耗测试网 gas（MON）；只有「应用到我家」需要支付 0.01 MON，其中 90% 直达创作者。"
+              a: "铸造只消耗测试网 gas（MON）；「应用到我家」按创作者 setPrice 定价支付，原创 90% 直达创作者。"
             },
             {
               q: "评论为什么不用 gas？",

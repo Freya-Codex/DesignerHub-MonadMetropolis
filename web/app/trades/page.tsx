@@ -2,11 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useAccount, useChainId, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { virtuHomeSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
+import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { dreamSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
 import { demoActivity, useActivity, type TradeRecord } from "@/lib/events";
 import { demoSchemes } from "@/lib/demo";
-import { schemeMarketAbi } from "@/lib/abis";
 import { monadTestnet } from "@/lib/chains";
 import { shortAddress } from "@/lib/scheme";
 
@@ -18,7 +17,7 @@ export default function TradesPage() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
-  const isDemo = !virtuHomeSchemeAddress();
+  const isDemo = !dreamSchemeAddress();
   const market = schemeMarketAddress();
 
   const { data: schemesData } = useSchemes();
@@ -42,11 +41,11 @@ export default function TradesPage() {
     let spent = 0n;
     let earned = 0n;
     for (const t of activity.trades) {
-      volume += t.value;
-      creatorPaid += t.creatorShare;
-      platformPaid += t.platformShare;
-      if (me && t.applier.toLowerCase() === me) spent += t.value;
-      if (me && t.creator.toLowerCase() === me) earned += t.creatorShare;
+      volume += t.price;
+      creatorPaid += t.creatorCut;
+      platformPaid += t.platformCut;
+      if (me && t.applier.toLowerCase() === me) spent += t.price;
+      if (me && t.creator.toLowerCase() === me) earned += t.creatorCut;
     }
     return { volume, creatorPaid, platformPaid, spent, earned, count: activity.trades.length };
   }, [activity.trades, me]);
@@ -60,27 +59,6 @@ export default function TradesPage() {
 
   const wrongNetwork = isConnected && chainId !== monadTestnet.id;
 
-  const {
-    writeContractAsync: withdrawAsync,
-    data: withdrawHash,
-    isPending: isWithdrawing,
-    error: withdrawError
-  } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isWithdrawn } = useWaitForTransactionReceipt({
-    hash: withdrawHash,
-    confirmations: 1
-  });
-
-  const onWithdraw = async () => {
-    if (!market) return;
-    if (switchChainAsync) await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
-    try {
-      await withdrawAsync({ address: market, abi: schemeMarketAbi, functionName: "withdraw" });
-    } catch {
-      /* 错误由 withdrawError 呈现 */
-    }
-  };
-
   return (
     <div className="space-y-10">
       <header className="rise">
@@ -89,8 +67,9 @@ export default function TradesPage() {
         <div className="dim-line mt-6" />
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
           每一次「应用到我家」都会触发 <span className="mono text-ink">SchemeApplied</span> 事件：
-          费用按 <span className="mono text-ink">90%</span> 即时转给创作者、
-          <span className="mono text-ink"> 10% </span>累积到平台金库。这里是完整、不可篡改的流水。
+          按创作者自主定价支付，原创 <span className="mono text-ink">90/10</span>、
+          衍生 <span className="mono text-ink">85/10/5</span>（创作者/平台/祖先谱系）即时分账到账，
+          无需提取。这里是完整、不可篡改的流水。
         </p>
       </header>
 
@@ -157,45 +136,19 @@ export default function TradesPage() {
             <Row label="EARNED / 我作为创作者收到">
               <span className="mono font-semibold text-violet-deep">{fmtMon(totals.earned)} MON</span>
             </Row>
-            <Row label="PENDING / 待提取（合约内）">
-              <span className="mono text-muted">
-                {market ? "在下方提取，或到浏览器查看 pendingWithdrawals" : "未配置市场合约"}
-              </span>
+            <Row label="SETTLEMENT / 结算方式">
+              <span className="mono text-muted">即时分账，无需提取</span>
             </Row>
           </dl>
 
           {market && (
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                onClick={() => void onWithdraw()}
-                disabled={isWithdrawing || isConfirming || !market}
-                className="btn-primary"
-              >
-                {isWithdrawing || isConfirming ? "提取中…" : isWithdrawn ? "已提取 ✓" : "提取待领份额"}
-              </button>
-              <a
-                className="link mono text-[11px]"
-                href={`${EXPLORER}/address/${market}#writeContract`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                在浏览器中查看金库 ↗
-              </a>
-            </div>
-          )}
-          {withdrawError && (
-            <p className="mt-3 rounded-xl border border-coral/40 bg-coral/10 p-2.5 text-[11px] text-[#a53f52]">
-              {withdrawError.message}
-            </p>
-          )}
-          {withdrawHash && (
             <a
-              href={`${EXPLORER}/tx/${withdrawHash}`}
+              className="link mono mt-5 inline-block text-[11px]"
+              href={`${EXPLORER}/address/${market}`}
               target="_blank"
               rel="noreferrer"
-              className="mono mt-3 block break-all text-[11px] text-violet-deep hover:underline"
             >
-              提取交易 ↗ {withdrawHash.slice(0, 24)}…
+              在浏览器中查看 SchemeMarket ↗
             </a>
           )}
         </section>
@@ -240,8 +193,8 @@ export default function TradesPage() {
                   <Th>Scheme</Th>
                   <Th>Applier</Th>
                   <Th right>Value</Th>
-                  <Th right>Creator 90%</Th>
-                  <Th right>Treasury 10%</Th>
+                  <Th right>Creator Cut</Th>
+                  <Th right>Platform Cut</Th>
                   <Th right>Tx</Th>
                 </tr>
               </thead>
@@ -286,8 +239,8 @@ export default function TradesPage() {
         </div>
 
         <p className="mono mt-5 text-[11px] leading-relaxed text-muted">
-          数据来源 · SchemeApplied 链上事件（离线索引 + 最近若干区块实时增量）。平台金库地址{" "}
-          {market ? shortAddress(market, 6) : "未配置"}，任何账户均可调用 withdraw()。
+          数据来源 · SchemeApplied 链上事件（离线索引 + 最近若干区块实时增量）。市场合约{" "}
+          {market ? shortAddress(market, 6) : "未配置"}，收入在购买交易中即时分账。
         </p>
       </section>
     </div>
@@ -326,13 +279,13 @@ function TradeRow({
         {isMine(trade.applier) && <span className="mono ml-2 text-[10px] text-violet-deep">你</span>}
       </Td>
       <Td right>
-        <span className="mono text-[12.5px]">{fmtMon(trade.value)}</span>
+        <span className="mono text-[12.5px]">{fmtMon(trade.price)}</span>
       </Td>
       <Td right>
-        <span className="mono text-[12.5px] font-semibold text-violet-deep">{fmtMon(trade.creatorShare)}</span>
+        <span className="mono text-[12.5px] font-semibold text-violet-deep">{fmtMon(trade.creatorCut)}</span>
       </Td>
       <Td right>
-        <span className="mono text-[12.5px] text-muted">{fmtMon(trade.platformShare)}</span>
+        <span className="mono text-[12.5px] text-muted">{fmtMon(trade.platformCut)}</span>
       </Td>
       <Td right>
         <a

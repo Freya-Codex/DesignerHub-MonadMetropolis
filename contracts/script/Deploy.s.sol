@@ -19,10 +19,11 @@ contract Deploy is Script {
 
     function run() public {
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address platform = vm.envOr("PLATFORM_ADDRESS", vm.addr(deployerKey));
+        address deployer = vm.addr(deployerKey);
+        address platform = vm.envOr("PLATFORM_ADDRESS", deployer);
         vm.startBroadcast(deployerKey);
 
-        AgentRegistry agents = new AgentRegistry(msg.sender);
+        AgentRegistry agents = new AgentRegistry(deployer);
         ProvenanceRegistry provenance = new ProvenanceRegistry(agents);
         agents.setProvenanceRegistry(address(provenance));
         DreamScheme scheme = new DreamScheme(agents);
@@ -39,7 +40,7 @@ contract Deploy is Script {
         vm.serializeString(json, "network", "monad-testnet");
         vm.serializeString(json, "chainAlias", chainAlias);
         vm.serializeUint(json, "chainId", block.chainid);
-        vm.serializeAddress(json, "deployer", msg.sender);
+        vm.serializeAddress(json, "deployer", deployer);
         vm.serializeAddress(json, "platformAddress", platform);
         vm.serializeUint(json, "kimiAgentId", kimiAgentId);
         vm.serializeAddress(json, "AgentRegistry", address(agents));

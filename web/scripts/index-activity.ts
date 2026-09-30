@@ -126,14 +126,14 @@ async function scanWindow(
 }
 
 async function main(): Promise<void> {
-  const scheme = resolveAddress("NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS", "VirtuHomeScheme");
+  const scheme = resolveAddress("NEXT_PUBLIC_DREAM_SCHEME_ADDRESS", "DreamScheme");
   const market = resolveAddress("NEXT_PUBLIC_SCHEME_MARKET_ADDRESS", "SchemeMarket");
-  if (!scheme) throw new Error("无法确定 VirtuHomeScheme 地址（NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS）");
+  if (!scheme) throw new Error("无法确定 DreamScheme 地址（NEXT_PUBLIC_DREAM_SCHEME_ADDRESS）");
 
   const latest = await client.getBlockNumber();
   const deployBlock = env.NEXT_PUBLIC_DEPLOY_BLOCK ? BigInt(env.NEXT_PUBLIC_DEPLOY_BLOCK) : 0n;
 
-  console.log("🏠 VirtuHomeScheme :", scheme);
+  console.log("🏠 DreamScheme :", scheme);
   console.log("🏪 SchemeMarket   :", market ?? "未配置");
   console.log("⛓️  部署块 / 最新块 :", deployBlock.toString(), "/", latest.toString());
 
@@ -165,6 +165,7 @@ async function main(): Promise<void> {
         creator: l.args.creator as Address,
         parentId: (l.args.parentId as bigint).toString(),
         contentHash: l.args.contentHash as string,
+        agentId: ((l.args.agentId as bigint) ?? 0n).toString(),
         blockNumber: (l.blockNumber ?? 0n).toString()
       });
     }
@@ -176,9 +177,9 @@ async function main(): Promise<void> {
           tokenId: (l.args.tokenId as bigint).toString(),
           applier: l.args.applier as Address,
           creator: l.args.creator as Address,
-          value: (l.args.value as bigint).toString(),
-          creatorShare: (l.args.creatorShare as bigint).toString(),
-          platformShare: (l.args.platformShare as bigint).toString(),
+          price: (l.args.price as bigint).toString(),
+          creatorCut: (l.args.creatorCut as bigint).toString(),
+          platformCut: (l.args.platformCut as bigint).toString(),
           blockNumber: (l.blockNumber ?? 0n).toString(),
           txHash: l.transactionHash as string,
           logIndex: l.logIndex

@@ -6,8 +6,8 @@ import { useParams } from "next/navigation";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { decodeEventLog, type Hex } from "viem";
-import { virtuHomeSchemeAbi } from "@/lib/abis";
-import { virtuHomeSchemeAddress, publicClientFor, useSchemeDetail } from "@/lib/contracts";
+import { dreamSchemeAbi, KIMI_AGENT_ID } from "@/lib/abis";
+import { dreamSchemeAddress, publicClientFor, useSchemeDetail } from "@/lib/contracts";
 import { monadTestnet } from "@/lib/chains";
 import { fetchUriJson } from "@/lib/ipfs";
 import {
@@ -27,7 +27,7 @@ export default function RemixPage() {
     return Number.isFinite(n) && n > 0 ? BigInt(n) : undefined;
   }, [params?.id]);
 
-  const isDemoMode = !virtuHomeSchemeAddress();
+  const isDemoMode = !dreamSchemeAddress();
   const { data: detail } = useSchemeDetail(tokenId);
 
   const [base, setBase] = useState<DesignScheme | null>(null);
@@ -134,7 +134,7 @@ export default function RemixPage() {
     setError(null);
     setTokenIdOut(null);
     if (!tokenId || !remixed) return;
-    const addr = virtuHomeSchemeAddress();
+    const addr = dreamSchemeAddress();
     if (!addr) {
       setError("未配置合约地址，请先部署合约并写入 web/.env.local");
       return;
@@ -169,9 +169,9 @@ export default function RemixPage() {
       }
       const hash = await writeContractAsync({
         address: addr,
-        abi: virtuHomeSchemeAbi,
-        functionName: "mint",
-        args: [tokenId, data.contentHash as Hex, data.tokenUri as string]
+        abi: dreamSchemeAbi,
+        functionName: "remix",
+        args: [tokenId, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string]
       });
       setMintHash(hash);
       setStep("idle");
@@ -190,7 +190,7 @@ export default function RemixPage() {
         const receipt = await client.getTransactionReceipt({ hash: mintHash });
         for (const log of receipt.logs) {
           try {
-            const decoded = decodeEventLog({ abi: virtuHomeSchemeAbi, data: log.data, topics: log.topics });
+            const decoded = decodeEventLog({ abi: dreamSchemeAbi, data: log.data, topics: log.topics });
             if (decoded.eventName === "SchemeMinted" && decoded.args.parentId === tokenId) {
               setTokenIdOut(decoded.args.tokenId);
             }
@@ -429,7 +429,7 @@ export default function RemixPage() {
               </li>
               <li className="flex gap-3">
                 <span className="mono shrink-0 text-violet">02</span>
-                新方案被「应用到我家」时，90% 费用归你，10% 进入平台金库
+                新方案被「应用到我家」时，85% 费用归你、10% 给平台、5% 沿谱系回馈原创
               </li>
               <li className="flex gap-3">
                 <span className="mono shrink-0 text-violet">03</span>

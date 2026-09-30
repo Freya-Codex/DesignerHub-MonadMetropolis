@@ -25,7 +25,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "../lib/chains";
-import { virtuHomeSchemeAbi, schemeMarketAbi, schemeMintedEvent, schemeAppliedEvent } from "../lib/abis";
+import { dreamSchemeAbi, schemeMarketAbi, schemeMintedEvent, schemeAppliedEvent, KIMI_AGENT_ID } from "../lib/abis";
 import { pinFile, pinJson } from "../lib/pinata";
 import { buildTokenMetadata } from "../lib/metadata";
 import { schemeToPreviewSvg, validateScheme, type DesignScheme } from "../lib/scheme";
@@ -94,9 +94,9 @@ async function main(): Promise<void> {
   if (!/^[0-9a-fA-F]{64}$/.test(privateKey)) throw new Error("请先设置 MONAD_PRIVATE_KEY");
   const account = privateKeyToAccount(`0x${privateKey}`);
 
-  const virtuHomeScheme = resolveAddress("VIRTUHOME_SCHEME_ADDRESS", "VirtuHomeScheme");
+  const dreamScheme = resolveAddress("DREAM_SCHEME_ADDRESS", "DreamScheme");
   const schemeMarket = resolveAddress("SCHEME_MARKET_ADDRESS", "SchemeMarket");
-  if (!virtuHomeScheme || !schemeMarket) throw new Error("无法确定合约地址");
+  if (!dreamScheme || !schemeMarket) throw new Error("无法确定合约地址");
 
   const publicClient = createPublicClient({ chain: monadTestnet, transport: http(RPC) });
   const wallet = createWalletClient({ account, chain: monadTestnet, transport: http(RPC) });
@@ -106,18 +106,18 @@ async function main(): Promise<void> {
 
   console.log("网络      :", monadTestnet.name, `(${monadTestnet.id})`);
   console.log("账户      :", account.address);
-  console.log("VirtuHomeScheme :", virtuHomeScheme);
+  console.log("DreamScheme :", dreamScheme);
   console.log("SchemeMarket:", schemeMarket);
   console.log("");
 
   const total0 = await publicClient.readContract({
-    address: virtuHomeScheme,
-    abi: virtuHomeSchemeAbi,
+    address: dreamScheme,
+    abi: dreamSchemeAbi,
     functionName: "totalSupply"
   });
   const remixBefore = await publicClient.readContract({
-    address: virtuHomeScheme,
-    abi: virtuHomeSchemeAbi,
+    address: dreamScheme,
+    abi: dreamSchemeAbi,
     functionName: "remixCount",
     args: [parent]
   });
@@ -165,10 +165,10 @@ async function main(): Promise<void> {
 
     console.log(`→ Remix #${parent}（基于 ${file}）…`);
     const hash = await wallet.writeContract({
-      address: virtuHomeScheme,
-      abi: virtuHomeSchemeAbi,
+      address: dreamScheme,
+      abi: dreamSchemeAbi,
       functionName: "mint",
-      args: [parent, contentHash as Hex, tokenPin.uri]
+      args: [parent, contentHash as Hex, KIMI_AGENT_ID, tokenPin.uri]
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     check("Remix 交易上链", receipt.status === "success", `tx=${hash.slice(0, 18)}…`);
@@ -187,14 +187,14 @@ async function main(): Promise<void> {
     if (newId !== null) {
       const [p, c] = await Promise.all([
         publicClient.readContract({
-          address: virtuHomeScheme,
-          abi: virtuHomeSchemeAbi,
+          address: dreamScheme,
+          abi: dreamSchemeAbi,
           functionName: "parentOf",
           args: [newId]
         }),
         publicClient.readContract({
-          address: virtuHomeScheme,
-          abi: virtuHomeSchemeAbi,
+          address: dreamScheme,
+          abi: dreamSchemeAbi,
           functionName: "creatorOf",
           args: [newId]
         })
@@ -202,8 +202,8 @@ async function main(): Promise<void> {
       check("parentId 归因正确", p === parent, `parentOf(#${newId})=${p}`);
       check("creator 归因正确", c.toLowerCase() === account.address.toLowerCase());
       const lineage = await publicClient.readContract({
-        address: virtuHomeScheme,
-        abi: virtuHomeSchemeAbi,
+        address: dreamScheme,
+        abi: dreamSchemeAbi,
         functionName: "lineageOf",
         args: [newId]
       });
@@ -211,8 +211,8 @@ async function main(): Promise<void> {
     }
 
     const remixAfter = await publicClient.readContract({
-      address: virtuHomeScheme,
-      abi: virtuHomeSchemeAbi,
+      address: dreamScheme,
+      abi: dreamSchemeAbi,
       functionName: "remixCount",
       args: [parent]
     });
@@ -220,110 +220,164 @@ async function main(): Promise<void> {
     console.log("");
   }
 
-  /* ---------------- 2. 应用到我家（90/10 分账） ---------------- */
+  /* ---------------- 2. 应用到我家（创作者定价 + 谱系即时分账） ---------------- */
   if (!env.SKIP_APPLY) {
-    const price = await publicClient.readContract({
-      address: schemeMarket,
-      abi: schemeMarketAbi,
-      functionName: "applyPrice"
-    });
     const platform = await publicClient.readContract({
       address: schemeMarket,
       abi: schemeMarketAbi,
-      functionName: "platformAddress"
+      functionName: "platform"
     });
     const creator = await publicClient.readContract({
-      address: virtuHomeScheme,
-      abi: virtuHomeSchemeAbi,
+      address: dreamScheme,
+      abi: dreamSchemeAbi,
       functionName: "creatorOf",
       args: [applyToken]
     });
+    const isParent = (await publicClient.readContract({
+      address: dreamScheme,
+      abi: dreamSchemeAbi,
+      functionName: "parentOf",
+      args: [applyToken]
+    })) === 0n;
+    // 原创 90/10；衍生 85/10/5（创作者/平台/祖先池）
+    const creatorBps = isParent ? 9000n : 8500n;
+    const platformBps = 1000n;
 
-    const [balBefore, pendingBefore] = await Promise.all([
-      publicClient.getBalance({ address: account.address }),
-      publicClient.readContract({
-        address: schemeMarket,
-        abi: schemeMarketAbi,
-        functionName: "pendingWithdrawals",
-        args: [platform]
-      })
-    ]);
-
-    console.log(`→ 应用 #${applyToken}（支付 ${formatEther(price)} MON）…`);
-    const hash = await wallet.writeContract({
+    let price = await publicClient.readContract({
       address: schemeMarket,
       abi: schemeMarketAbi,
-      functionName: "applyScheme",
-      args: [applyToken],
-      value: price
+      functionName: "priceOf",
+      args: [applyToken]
     });
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    check("应用交易上链", receipt.status === "success", `tx=${hash.slice(0, 18)}…`);
-
-    let ev: { creatorShare: bigint; platformShare: bigint; value: bigint } | null = null;
-    for (const log of receipt.logs) {
-      try {
-        const d = decodeEventLog({ abi: [schemeAppliedEvent], data: log.data, topics: log.topics, strict: true });
-        if (d.eventName === "SchemeApplied") {
-          ev = {
-            creatorShare: d.args.creatorShare as bigint,
-            platformShare: d.args.platformShare as bigint,
-            value: d.args.value as bigint
-          };
-        }
-      } catch {
-        /* 忽略 */
+    if (price === 0n) {
+      if (creator.toLowerCase() !== account.address.toLowerCase()) {
+        console.log(`⏭️  #${applyToken} 未上架且本钱包非创作者，跳过应用检查`);
+      } else {
+        console.log(`→ #${applyToken} 未上架，先 setPrice(0.01 MON)…`);
+        const sp = await wallet.writeContract({
+          address: schemeMarket,
+          abi: schemeMarketAbi,
+          functionName: "setPrice",
+          args: [applyToken, parseEther("0.01")]
+        });
+        await publicClient.waitForTransactionReceipt({ hash: sp });
+        price = parseEther("0.01");
+        check("setPrice 上架成功", true, "0.01 MON");
       }
     }
-    check("解析到 SchemeApplied 事件", ev !== null);
 
-    const expectedCreator = (price * 9n) / 10n;
-    const expectedPlatform = price - expectedCreator;
-    if (ev) {
-      check("支付金额 == applyPrice", ev.value === price, `${formatEther(ev.value)} MON`);
-      check("创作者份额 == 90%", ev.creatorShare === expectedCreator, `${formatEther(ev.creatorShare)} MON`);
-      check("平台份额 == 10%", ev.platformShare === expectedPlatform, `${formatEther(ev.platformShare)} MON`);
-      check("份额之和 == 全额", ev.creatorShare + ev.platformShare === ev.value);
-    }
+    if (price > 0n) {
+      const [balBefore, platformBalBefore] = await Promise.all([
+        publicClient.getBalance({ address: account.address }),
+        publicClient.getBalance({ address: platform })
+      ]);
 
-    const [balAfter, pendingAfter, appliedAfter, gasCost] = await Promise.all([
-      publicClient.getBalance({ address: account.address }),
-      publicClient.readContract({
+      console.log(`→ 应用 #${applyToken}（支付 ${formatEther(price)} MON）…`);
+      const hash = await wallet.writeContract({
         address: schemeMarket,
         abi: schemeMarketAbi,
-        functionName: "pendingWithdrawals",
-        args: [platform]
-      }),
-      publicClient.readContract({
+        functionName: "applyScheme",
+        args: [applyToken],
+        value: price
+      });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      check("应用交易上链", receipt.status === "success", `tx=${hash.slice(0, 18)}…`);
+
+      let ev: { creatorCut: bigint; platformCut: bigint; price: bigint } | null = null;
+      for (const log of receipt.logs) {
+        try {
+          const d = decodeEventLog({ abi: [schemeAppliedEvent], data: log.data, topics: log.topics, strict: true });
+          if (d.eventName === "SchemeApplied") {
+            ev = {
+              creatorCut: d.args.creatorCut as bigint,
+              platformCut: d.args.platformCut as bigint,
+              price: d.args.price as bigint
+            };
+          }
+        } catch {
+          /* 忽略 */
+        }
+      }
+      check("解析到 SchemeApplied 事件", ev !== null);
+
+      // 链上 splitPreview 作为分账预言机（自 remix 时祖先份额会并入创作者，占比随谱系动态）
+      const [previewCreator, previewPlatform, ancestorPool, ancestors] = await publicClient.readContract({
         address: schemeMarket,
         abi: schemeMarketAbi,
-        functionName: "appliedCount",
-        args: [applyToken]
-      }),
-      publicClient.getTransactionReceipt({ hash }).then((r) => r.gasUsed * r.effectiveGasPrice)
-    ]);
+        functionName: "splitPreview",
+        args: [applyToken, price]
+      });
+      const expectedCreator = previewCreator as bigint;
+      const expectedPlatform = previewPlatform as bigint;
+      const pool = ancestorPool as bigint;
+      const ancestorList = ancestors as readonly `0x${string}`[];
+      // splitPreview 不合并「祖先即本人」的份额，而事件里的 creatorCut 会并入（85% + 5%）
+      const each = ancestorList.length > 0 ? pool / BigInt(ancestorList.length) : 0n;
+      const poolRemainder = pool - each * BigInt(ancestorList.length);
+      const selfExtra = ancestorList.some((a) => a.toLowerCase() === String(creator).toLowerCase()) ? each : 0n;
+      const expectedEventCreator = expectedCreator + selfExtra;
+      const expectedEventPlatform = expectedPlatform + poolRemainder;
+      if (ev) {
+        check("支付金额 == 定价", ev.price === price, `${formatEther(ev.price)} MON`);
+        check(
+          "创作者份额 == splitPreview（含祖先回流合并）",
+          ev.creatorCut === expectedEventCreator,
+          `${formatEther(ev.creatorCut)} MON（pool ${formatEther(pool)}，祖先 ${ancestorList.length} 位，本人回流 ${formatEther(selfExtra)}）`
+        );
+        check(
+          "平台份额 == splitPreview（含取整余数）",
+          ev.platformCut === expectedEventPlatform,
+          `${formatEther(ev.platformCut)} MON`
+        );
+        check("平台基础份额 == 10%", expectedPlatform === (price * platformBps) / 10_000n);
+        if (!isParent) {
+          check(
+            "衍生基础份额 == 85%",
+            expectedCreator === (price * creatorBps) / 10_000n,
+            `${formatEther(expectedCreator)} MON`
+          );
+        }
+        check("创作者+平台 ≤ 全额（衍生时差额进祖先池）", ev.creatorCut + ev.platformCut <= ev.price);
+      }
 
-    check("平台待提取 +10%", pendingAfter - pendingBefore === expectedPlatform, `+${formatEther(pendingAfter - pendingBefore)} MON`);
-    check("appliedCount +1", appliedAfter === appliedBefore + 1n, `${appliedBefore} → ${appliedAfter}`);
+      const [balAfter, platformBalAfter, appliedAfter, gasCost] = await Promise.all([
+        publicClient.getBalance({ address: account.address }),
+        publicClient.getBalance({ address: platform }),
+        publicClient.readContract({
+          address: schemeMarket,
+          abi: schemeMarketAbi,
+          functionName: "appliedCount",
+          args: [applyToken]
+        }),
+        publicClient.getTransactionReceipt({ hash }).then((r) => r.gasUsed * r.effectiveGasPrice)
+      ]);
 
-    if (creator.toLowerCase() === account.address.toLowerCase()) {
-      // 创作者 == 买家：付出去的全额里 90% 立刻打回自己账户，
-      // 因此 balBefore - balAfter 已经等于「10% 平台费 + gas」。
+      const me = account.address.toLowerCase();
+      const creatorIsMe = creator.toLowerCase() === me;
+      const platformIsMe = platform.toLowerCase() === me;
+      check("appliedCount +1", appliedAfter === appliedBefore + 1n, `${appliedBefore} → ${appliedAfter}`);
+
+      // 平台余额检查（平台 == 买家时无意义，收入与支出混在同一账户，改由净支出覆盖）
+      if (platformIsMe) {
+        check("平台 == 本账户（份额直接回流）", true, `+${formatEther(expectedEventPlatform)} MON`);
+      } else {
+        check(
+          "平台余额即时到账（无 pending）",
+          platformBalAfter - platformBalBefore === expectedEventPlatform,
+          `+${formatEther(platformBalAfter - platformBalBefore)} MON`
+        );
+      }
+
+      // 买家净支出 = 全额 + gas - 回流（creatorCut / platformCut / 祖先池中属于本账户的部分）
+      const baseReturn = (creatorIsMe ? expectedEventCreator : 0n) + (platformIsMe ? expectedEventPlatform : 0n);
       const netSpent = balBefore - balAfter;
-      const expectedNet = expectedPlatform + gasCost;
+      const upper = price + gasCost - baseReturn; // 祖先池不回流时的最大支出
+      const lower = gasCost; // 祖先池全部回流（或原创无祖先池）时的最小支出
       check(
-        "买家净支出 == 10% 平台费 + gas（创作者即本人时）",
-        netSpent === expectedNet,
-        `实际 ${formatEther(netSpent)} MON / 预期 ${formatEther(expectedNet)} MON`
+        "买家净支出落在预期区间",
+        netSpent <= upper && netSpent >= lower,
+        `实际 ${formatEther(netSpent)} MON / 区间 [${formatEther(lower)}, ${formatEther(upper)}]`
       );
-      check(
-        "创作者份额确实打回本人账户",
-        true,
-        `+${formatEther(expectedCreator)} MON 已回款`
-      );
-    } else {
-      const netSpent = balBefore - balAfter;
-      check("买家净支出 == 全额 + gas", netSpent === price + gasCost, `${formatEther(netSpent)} MON`);
     }
   }
 

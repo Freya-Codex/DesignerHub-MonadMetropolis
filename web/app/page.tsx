@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import SchemeCard from "@/components/SchemeCard";
-import { virtuHomeSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
+import { dreamSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
 import { demoSchemes } from "@/lib/demo";
 
 export default function GalleryPage() {
   const { data, isLoading, isError, error } = useSchemes();
-  const isDemo = !virtuHomeSchemeAddress();
+  const isDemo = !dreamSchemeAddress();
   const schemes = data && data.length > 0 ? data : isDemo ? demoSchemes : [];
 
   const totalRemix = schemes.reduce((sum, s) => sum + s.remixCount, 0);
@@ -47,11 +47,10 @@ export default function GalleryPage() {
           <p className="mt-6 max-w-2xl text-sm leading-relaxed text-white/70 sm:text-[15px]">
             手机扫描房间生成 3D 模型 → 在这里发布设计方案 → 任何人都能 Remix 衍生，
             <span className="mono text-white/90"> parentId </span>
-            上链归因。他人「应用到我家」时，费用
+            上链归因。他人「应用到我家」时，费用按创作者定价支付，原创
             <span className="mono text-white/90"> 90% </span>
-            直达原创作者、
-            <span className="mono text-white/90"> 10% </span>
-            进入平台金库。就像家居设计界的 GitHub：谱系可追溯，收益自动分账。
+            直达作者、衍生 <span className="mono text-white/90"> 85%+5%谱系 </span>
+            自动分账。就像家居设计界的 GitHub：谱系可追溯，收益自动分账。
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -84,7 +83,7 @@ export default function GalleryPage() {
         <div className="sheet rise flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:gap-5">
           <span className="chip chip-violet shrink-0 self-start">演示数据模式</span>
           <p className="text-[13px] leading-relaxed text-muted">
-            尚未配置 <code className="mono text-ink">NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS</code>，当前展示{" "}
+            尚未配置 <code className="mono text-ink">NEXT_PUBLIC_DREAM_SCHEME_ADDRESS</code>，当前展示{" "}
             <code className="mono text-ink">assets/schemes</code> 中的示例方案。部署合约后把地址写入{" "}
             <code className="mono text-ink">web/.env.local</code>（或运行{" "}
             <code className="mono text-ink">npm run seed</code>），画廊会自动切换为链上数据。
@@ -94,7 +93,7 @@ export default function GalleryPage() {
 
       {!isDemo && (
         <p className="mono text-[11px] leading-relaxed text-muted">
-          VirtuHomeScheme <span className="text-ink">{virtuHomeSchemeAddress()}</span>
+          DreamScheme <span className="text-ink">{dreamSchemeAddress()}</span>
           <br />
           SchemeMarket{" "}
           <span className="text-ink">{schemeMarketAddress() ?? "未配置（仅画廊可读）"}</span>

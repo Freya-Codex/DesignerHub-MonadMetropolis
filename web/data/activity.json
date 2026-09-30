@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-29T11:30:16.020Z",
+  "generatedAt": "2026-09-30T06:21:00.728Z",
   "chainId": 10143,
-  "scheme": "0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137",
-  "market": "0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513",
-  "latestBlock": "66675745",
+  "scheme": "0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB",
+  "market": "0xD89a267605B7c3Ee9B172aB58b735686b3b0DC64",
+  "latestBlock": "66898384",
   "windows": [
     [
-      "65618721",
-      "65638721"
+      "66892530",
+      "66898384"
     ]
   ],
   "mints": [
@@ -16,48 +16,105 @@
       "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
       "parentId": "0",
       "contentHash": "0xba0ffb0f788c7d766c0831526eff84f5e0809df4e6d350fd68309f797c1c5b83",
-      "blockNumber": "65620520"
+      "agentId": "1",
+      "blockNumber": "66896801"
     },
     {
       "tokenId": "2",
       "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
       "parentId": "0",
       "contentHash": "0x0ea7b38c3634a8f84b987d433aaf8c7873299c2103dd160293fa6bb1fe125770",
-      "blockNumber": "65620526"
+      "agentId": "1",
+      "blockNumber": "66896813"
     },
     {
       "tokenId": "3",
       "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
       "parentId": "0",
       "contentHash": "0x6bd5a63642bfe1194b8c5708668129b5b4fde049b23a266b9145f7095c77ee60",
-      "blockNumber": "65620532"
+      "agentId": "1",
+      "blockNumber": "66896816"
     },
     {
       "tokenId": "4",
       "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
       "parentId": "3",
       "contentHash": "0xb9755040f69268dd362f8bb76f6f7da587833cea5c24f7315bcd2fb72e9200bc",
-      "blockNumber": "65621437"
+      "agentId": "1",
+      "blockNumber": "66896911"
     },
     {
       "tokenId": "5",
       "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
-      "parentId": "4",
-      "contentHash": "0xd4ea5d8c0e84c1ce0c58ebd3e9b1341b9a17788a226606d6e9710711758d88ec",
-      "blockNumber": "65621638"
+      "parentId": "3",
+      "contentHash": "0xb9755040f69268dd362f8bb76f6f7da587833cea5c24f7315bcd2fb72e9200bc",
+      "agentId": "1",
+      "blockNumber": "66897272"
+    },
+    {
+      "tokenId": "6",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "parentId": "3",
+      "contentHash": "0xb9755040f69268dd362f8bb76f6f7da587833cea5c24f7315bcd2fb72e9200bc",
+      "agentId": "1",
+      "blockNumber": "66897324"
     }
   ],
   "trades": [
     {
+      "tokenId": "4",
+      "applier": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "price": "10000000000000000",
+      "creatorCut": "9000000000000000",
+      "platformCut": "1000000000000000",
+      "blockNumber": "66897551",
+      "txHash": "0xd4c8f3276d2241fd5f2b5da52f65e93e0e2cd285c81f9c4516d32c480e9be994",
+      "logIndex": 34
+    },
+    {
+      "tokenId": "4",
+      "applier": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "price": "10000000000000000",
+      "creatorCut": "9000000000000000",
+      "platformCut": "1000000000000000",
+      "blockNumber": "66897333",
+      "txHash": "0x495c0b772003734b1eb4295b77339ec6119a4ab6df849e3f14ab12ed3fc59d10",
+      "logIndex": 1
+    },
+    {
       "tokenId": "3",
       "applier": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
       "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
-      "value": "10000000000000000",
-      "creatorShare": "9000000000000000",
-      "platformShare": "1000000000000000",
-      "blockNumber": "65621446",
-      "txHash": "0x3596d5bf8516d91d8f89bc48afe8fef2f616ecded24ec88c1efd8e2477d2e138",
-      "logIndex": 38
+      "price": "10000000000000000",
+      "creatorCut": "9000000000000000",
+      "platformCut": "1000000000000000",
+      "blockNumber": "66897277",
+      "txHash": "0x511f45a82d16945be57d09e3424f6ec8cad70702ed85812d7ec9ebebea3a6e80",
+      "logIndex": 1
+    },
+    {
+      "tokenId": "3",
+      "applier": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "price": "10000000000000000",
+      "creatorCut": "9000000000000000",
+      "platformCut": "1000000000000000",
+      "blockNumber": "66896922",
+      "txHash": "0x6b3368a91a30f5e8d09b501ec3514d80f20a1a2e6d7004328d801897768d9779",
+      "logIndex": 42
+    },
+    {
+      "tokenId": "1",
+      "applier": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "creator": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+      "price": "10000000000000000",
+      "creatorCut": "9000000000000000",
+      "platformCut": "1000000000000000",
+      "blockNumber": "66896809",
+      "txHash": "0x66311ae640ad379c4e3c1f5e6017925dfe8f14b96a81997975ccbe8695c68faf",
+      "logIndex": 48
     }
   ]
 }

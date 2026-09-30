@@ -12,13 +12,14 @@ import { useQuery } from "@tanstack/react-query";
 import type { Address, Hex, PublicClient } from "viem";
 import { usePublicClient } from "wagmi";
 import { schemeAppliedEvent, schemeMintedEvent } from "./abis";
-import { virtuHomeSchemeAddress, publicClientFor, schemeMarketAddress } from "./contracts";
+import { dreamSchemeAddress, publicClientFor, schemeMarketAddress } from "./contracts";
 
 export interface MintRecord {
   tokenId: bigint;
   creator: Address;
   parentId: bigint;
   contentHash: Hex;
+  agentId: bigint;
   blockNumber: bigint;
 }
 
@@ -26,9 +27,9 @@ export interface TradeRecord {
   tokenId: bigint;
   applier: Address;
   creator: Address;
-  value: bigint;
-  creatorShare: bigint;
-  platformShare: bigint;
+  price: bigint;
+  creatorCut: bigint;
+  platformCut: bigint;
   blockNumber: bigint;
   txHash: Hex;
   logIndex: number;
@@ -97,7 +98,7 @@ async function getLogsChunked(
 
 /** 尾部窗口实时扫描：只覆盖最近 TAIL_SCAN_BLOCKS 个区块，快速且不会超限。 */
 export async function fetchTailActivity(client: PublicClient): Promise<ChainActivity> {
-  const dream = virtuHomeSchemeAddress();
+  const dream = dreamSchemeAddress();
   const market = schemeMarketAddress();
   if (!dream && !market) return { mints: [], trades: [] };
 
@@ -113,6 +114,7 @@ export async function fetchTailActivity(client: PublicClient): Promise<ChainActi
               creator: l.args.creator as Address,
               parentId: l.args.parentId as bigint,
               contentHash: l.args.contentHash as Hex,
+              agentId: (l.args.agentId as bigint) ?? 0n,
               blockNumber: l.blockNumber ?? 0n
             }))
           )
@@ -125,9 +127,9 @@ export async function fetchTailActivity(client: PublicClient): Promise<ChainActi
               tokenId: l.args.tokenId as bigint,
               applier: l.args.applier as Address,
               creator: l.args.creator as Address,
-              value: l.args.value as bigint,
-              creatorShare: l.args.creatorShare as bigint,
-              platformShare: l.args.platformShare as bigint,
+              price: l.args.price as bigint,
+              creatorCut: l.args.creatorCut as bigint,
+              platformCut: l.args.platformCut as bigint,
               blockNumber: l.blockNumber ?? 0n,
               txHash: l.transactionHash as Hex,
               logIndex: l.logIndex
@@ -151,15 +153,16 @@ export async function fetchIndexedActivity(): Promise<ActivityResult> {
       creator: m.creator as Address,
       parentId: BigInt(m.parentId),
       contentHash: m.contentHash as Hex,
+      agentId: BigInt(m.agentId ?? 0),
       blockNumber: BigInt(m.blockNumber)
     }));
     const trades: TradeRecord[] = (data.trades ?? []).map((t: any) => ({
       tokenId: BigInt(t.tokenId),
       applier: t.applier as Address,
       creator: t.creator as Address,
-      value: BigInt(t.value),
-      creatorShare: BigInt(t.creatorShare),
-      platformShare: BigInt(t.platformShare),
+      price: BigInt(t.price),
+      creatorCut: BigInt(t.creatorCut),
+      platformCut: BigInt(t.platformCut),
       blockNumber: BigInt(t.blockNumber),
       txHash: t.txHash as Hex,
       logIndex: Number(t.logIndex)
@@ -188,7 +191,7 @@ function mergeActivity(indexed: ActivityResult, tail: ChainActivity): ActivityRe
 
 export function useActivity() {
   const client = usePublicClient();
-  const dream = virtuHomeSchemeAddress();
+  const dream = dreamSchemeAddress();
   return useQuery<ActivityResult>({
     queryKey: ["activity", dream ?? "none", schemeMarketAddress() ?? "none", TAIL_SCAN_BLOCKS.toString()],
     queryFn: async () => {
@@ -219,6 +222,7 @@ export const demoActivity: ChainActivity = {
     creator: DEMO_CREATOR,
     parentId: s.parentId,
     contentHash: s.contentHash,
+    agentId: s.agentId,
     blockNumber: BigInt(1_000_000 + i * 37)
   })),
   trades: [
@@ -229,15 +233,15 @@ export const demoActivity: ChainActivity = {
     { tokenId: 3n, applier: "0x3C4d5E6f7A8b9C0d1E2f3A4b5C6d7E8f9A0b1C2d", blockNumber: 1_000_455, logIndex: 0 },
     { tokenId: 2n, applier: "0x5E6f7A8b9C0d1E2f3A4b5C6d7E8f9A0b1C2d3E4f", blockNumber: 1_000_301, logIndex: 1 }
   ].map((t): TradeRecord => {
-    const value = 10_000_000_000_000_000n; // 0.01 MON
-    const creatorShare = (value * 9n) / 10n;
+    const price = 10_000_000_000_000_000n; // 0.01 MON
+    const creatorCut = (price * 9n) / 10n;
     return {
       tokenId: t.tokenId,
       applier: t.applier as Address,
       creator: DEMO_CREATOR,
-      value,
-      creatorShare,
-      platformShare: value - creatorShare,
+      price,
+      creatorCut,
+      platformCut: price - creatorCut,
       blockNumber: BigInt(t.blockNumber),
       txHash: demoTxHash(t.blockNumber),
       logIndex: t.logIndex

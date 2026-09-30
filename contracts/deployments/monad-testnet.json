@@ -1,0 +1,13 @@
+{
+  "AgentRegistry": "0x9EB3d5C336c66823577F4FBB1E31dbABcf7c268D",
+  "DreamScheme": "0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB",
+  "PasskeyAccountFactory": "0x41E72cc140b30891b34Da45f3ed55a525c758C76",
+  "ProvenanceRegistry": "0xCe41D2fa11fC3944662b783ac895D3380B8B09ED",
+  "SchemeMarket": "0xD89a267605B7c3Ee9B172aB58b735686b3b0DC64",
+  "chainAlias": "10143",
+  "chainId": 10143,
+  "deployer": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
+  "kimiAgentId": 1,
+  "network": "monad-testnet",
+  "platformAddress": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08"
+}

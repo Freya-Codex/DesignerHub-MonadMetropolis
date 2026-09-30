@@ -9,12 +9,12 @@ import {
   type PublicClient
 } from "viem";
 import { usePublicClient } from "wagmi";
-import { virtuHomeSchemeAbi, schemeMarketAbi } from "./abis";
+import { dreamSchemeAbi, schemeMarketAbi } from "./abis";
 import { monadTestnet } from "./chains";
 import { fetchUriJson } from "./ipfs";
 
-export function virtuHomeSchemeAddress(): Address | undefined {
-  const raw = process.env.NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS;
+export function dreamSchemeAddress(): Address | undefined {
+  const raw = process.env.NEXT_PUBLIC_DREAM_SCHEME_ADDRESS;
   if (!raw) return undefined;
   try {
     return getAddress(raw);
@@ -33,18 +33,46 @@ export function schemeMarketAddress(): Address | undefined {
   }
 }
 
-/** 单次「应用到我家」的价格（wei），默认 0.01 MON。 */
+/** 单次「应用到我家」的默认展示价（wei）。真实价格以链上 priceOf(tokenId) 为准。 */
 export const APPLY_PRICE: bigint = parseEther(
   process.env.NEXT_PUBLIC_APPLY_PRICE_ETH || "0.01"
 );
+
+/** AgentRegistry 地址（可选，用于 AI 署名展示）。 */
+export function agentRegistryAddress(): Address | undefined {
+  const raw = process.env.NEXT_PUBLIC_AGENT_REGISTRY_ADDRESS;
+  return raw ? maybeAddress(raw) : undefined;
+}
+
+/** ProvenanceRegistry 地址（可选，生成过程存证）。 */
+export function provenanceRegistryAddress(): Address | undefined {
+  const raw = process.env.NEXT_PUBLIC_PROVENANCE_REGISTRY_ADDRESS;
+  return raw ? maybeAddress(raw) : undefined;
+}
+
+/** PasskeyAccountFactory 地址（可选，无助记词账户）。 */
+export function passkeyFactoryAddress(): Address | undefined {
+  const raw = process.env.NEXT_PUBLIC_PASSKEY_FACTORY_ADDRESS;
+  return raw ? maybeAddress(raw) : undefined;
+}
+
+function maybeAddress(raw: string): Address | undefined {
+  try {
+    return getAddress(raw);
+  } catch {
+    return undefined;
+  }
+}
 
 export interface SchemeSummary {
   tokenId: bigint;
   creator: Address;
   parentId: bigint;
   contentHash: Hex;
+  agentId: bigint;
   remixCount: number;
   appliedCount: number;
+  price: bigint;
   tokenUri: string;
   schemeUri: string;
   name: string;
@@ -61,8 +89,10 @@ interface SchemeOnChain {
   creator: Address;
   parentId: bigint;
   contentHash: Hex;
+  agentId: bigint;
   remixCount: number;
   appliedCount: number;
+  price: bigint; // 0 = 未上架（创作者尚未 setPrice）
   tokenUri: string;
   createdAt: number;
 }
@@ -90,33 +120,45 @@ async function readSchemeOnChain(
   marketAddr: Address | undefined,
   tokenId: bigint
 ): Promise<SchemeOnChain> {
-  const [uri, createdAt, remixCount, creator, parentId, contentHash] = await client.multicall({
+  const [uri, createdAt, remixCount, creator, parentId, contentHash, agentId] = await client.multicall({
     contracts: [
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "tokenURI", args: [tokenId] },
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "createdAtOf", args: [tokenId] },
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "remixCount", args: [tokenId] },
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "creatorOf", args: [tokenId] },
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "parentOf", args: [tokenId] },
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "contentHashOf", args: [tokenId] }
+      { address: addr, abi: dreamSchemeAbi, functionName: "tokenURI", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "createdAtOf", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "remixCount", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "creatorOf", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "parentOf", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "contentHashOf", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "agentIdOf", args: [tokenId] }
     ]
   });
 
-  if (uri.error || createdAt.error || remixCount.error || creator.error || parentId.error || contentHash.error) {
+  if (
+    uri.error ||
+    createdAt.error ||
+    remixCount.error ||
+    creator.error ||
+    parentId.error ||
+    contentHash.error ||
+    agentId.error
+  ) {
     throw new Error(`链上读取失败：tokenId=${tokenId.toString()}`);
   }
 
   let appliedCount = 0;
+  let price = 0n;
   if (marketAddr) {
     try {
-      const count = await client.readContract({
-        address: marketAddr,
-        abi: schemeMarketAbi,
-        functionName: "appliedCount",
-        args: [tokenId]
+      const [count, p] = await client.multicall({
+        contracts: [
+          { address: marketAddr, abi: schemeMarketAbi, functionName: "appliedCount", args: [tokenId] },
+          { address: marketAddr, abi: schemeMarketAbi, functionName: "priceOf", args: [tokenId] }
+        ]
       });
-      appliedCount = Number(count);
+      appliedCount = Number(count.result ?? 0);
+      price = (p.result as bigint) ?? 0n;
     } catch {
       appliedCount = 0;
+      price = 0n;
     }
   }
 
@@ -125,8 +167,10 @@ async function readSchemeOnChain(
     creator: creator.result as Address,
     parentId: parentId.result as bigint,
     contentHash: contentHash.result as Hex,
+    agentId: agentId.result as bigint,
     remixCount: Number(remixCount.result ?? 0),
     appliedCount,
+    price,
     tokenUri: uri.result as string,
     createdAt: Number(createdAt.result ?? 0)
   };
@@ -163,19 +207,19 @@ async function attachMetadata(state: SchemeOnChain): Promise<SchemeSummary> {
  * 读取全部方案（链上状态 + IPFS 元数据）。
  *
  * 注意：Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 个区块内，
- * 无法用它扫描「从 0 到 latest」的全部铸造事件。由于 VirtuHomeScheme 的
+ * 无法用它扫描「从 0 到 latest」的全部铸造事件。由于 DreamScheme 的
  * tokenId 由 `++_nextTokenId` 连续自增、`totalSupply()` 即当前最大 id，
  * 这里改为按 totalSupply() 枚举 tokenId 逐个读取状态，既不受区块范围限制，
  * 也避免了海量日志扫描。
  */
 export async function fetchAllSchemes(client: PublicClient): Promise<SchemeSummary[]> {
-  const addr = virtuHomeSchemeAddress();
+  const addr = dreamSchemeAddress();
   if (!addr) return [];
   const marketAddr = schemeMarketAddress();
 
   const total = await client.readContract({
     address: addr,
-    abi: virtuHomeSchemeAbi,
+    abi: dreamSchemeAbi,
     functionName: "totalSupply"
   });
   const count = Number(total);
@@ -192,7 +236,7 @@ export async function fetchAllSchemes(client: PublicClient): Promise<SchemeSumma
 
 export function useSchemes() {
   const client = usePublicClient();
-  const addr = virtuHomeSchemeAddress();
+  const addr = dreamSchemeAddress();
   return useQuery({
     queryKey: ["schemes", addr ?? "none"],
     queryFn: async () => {
@@ -215,17 +259,17 @@ export interface SchemeDetail extends SchemeSummary {
 }
 
 export async function fetchSchemeDetail(client: PublicClient, tokenId: bigint): Promise<SchemeDetail> {
-  const addr = virtuHomeSchemeAddress();
-  if (!addr) throw new Error("未配置 VIRTUHOME_SCHEME 合约地址");
+  const addr = dreamSchemeAddress();
+  if (!addr) throw new Error("未配置 DreamScheme 合约地址");
   const marketAddr = schemeMarketAddress();
 
   const base = await readSchemeOnChain(client, addr, marketAddr, tokenId);
   const [lineage, versionLine, children, totalSupply] = await client.multicall({
     contracts: [
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "lineageOf", args: [tokenId] },
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "versionLineOf", args: [tokenId] },
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "childrenOf", args: [tokenId] },
-      { address: addr, abi: virtuHomeSchemeAbi, functionName: "totalSupply", args: [] }
+      { address: addr, abi: dreamSchemeAbi, functionName: "lineageOf", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "versionLineOf", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "childrenOf", args: [tokenId] },
+      { address: addr, abi: dreamSchemeAbi, functionName: "totalSupply", args: [] }
     ]
   });
   const summary = await attachMetadata(base);
@@ -241,11 +285,11 @@ export async function fetchSchemeDetail(client: PublicClient, tokenId: bigint): 
 export function useSchemeDetail(tokenId: bigint | undefined) {
   const client = usePublicClient();
   return useQuery({
-    queryKey: ["scheme-detail", tokenId?.toString(), virtuHomeSchemeAddress()],
+    queryKey: ["scheme-detail", tokenId?.toString(), dreamSchemeAddress()],
     queryFn: async () => {
       if (!tokenId || !client) throw new Error("no token");
       return fetchSchemeDetail(client, tokenId);
     },
-    enabled: Boolean(tokenId) && Boolean(client) && Boolean(virtuHomeSchemeAddress())
+    enabled: Boolean(tokenId) && Boolean(client) && Boolean(dreamSchemeAddress())
   });
 }

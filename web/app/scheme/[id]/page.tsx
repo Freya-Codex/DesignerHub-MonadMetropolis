@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { virtuHomeSchemeAddress, schemeMarketAddress, useSchemeDetail, useSchemes, APPLY_PRICE } from "@/lib/contracts";
+import { dreamSchemeAddress, schemeMarketAddress, useSchemeDetail, useSchemes } from "@/lib/contracts";
 import { schemeMarketAbi } from "@/lib/abis";
 import { demoSchemes } from "@/lib/demo";
 import LineageTree from "@/components/LineageTree";
@@ -26,10 +27,11 @@ export default function SchemeDetailPage() {
   const { data: walletClient } = useWalletClient();
   const { switchChainAsync } = useSwitchChain();
   const { data: detail, isLoading, error } = useSchemeDetail(tokenId);
+  const queryClient = useQueryClient();
   const { data: allSchemes } = useSchemes();
   const [txNote, setTxNote] = useState<string>("");
 
-  const isDemo = !virtuHomeSchemeAddress();
+  const isDemo = !dreamSchemeAddress();
   const demo = useMemo(
     () => (isDemo && tokenId ? demoSchemes.find((d) => d.tokenId === tokenId) : undefined),
     [isDemo, tokenId]
@@ -45,6 +47,25 @@ export default function SchemeDetailPage() {
     hash: applyTxHash,
     confirmations: 1
   });
+
+  const {
+    writeContractAsync: setPriceAsync,
+    data: priceTxHash,
+    isPending: isSetPricePending,
+    error: setPriceError
+  } = useWriteContract();
+  const { isLoading: isPriceConfirming, isSuccess: isPriceDone } = useWaitForTransactionReceipt({
+    hash: priceTxHash,
+    confirmations: 1
+  });
+  useEffect(() => {
+    if (isPriceDone) refreshDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPriceDone]);
+  const refreshDetail = () =>
+    queryClient.invalidateQueries({ queryKey: ["scheme-detail"] }).then(() =>
+      queryClient.invalidateQueries({ queryKey: ["schemes"] })
+    );
 
   const names = useMemo(() => {
     const map: Record<string, string> = {};
@@ -62,17 +83,45 @@ export default function SchemeDetailPage() {
     if (switchChainAsync) {
       await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
     }
+    const price = (detail?.price ?? 0n) as bigint;
+    if (price <= 0n) {
+      setTxNote("创作者尚未上架该方案（价格未设置）");
+      return;
+    }
     try {
       const hash = await applyAsync({
         address: market,
         abi: schemeMarketAbi,
         functionName: "applyScheme",
         args: [tokenId ?? 0n],
-        value: APPLY_PRICE
+        value: price
       });
       setTxNote(`交易已提交：${hash}`);
     } catch (e) {
       setTxNote(e instanceof Error ? e.message : "交易失败");
+    }
+  };
+
+  const onSetPrice = async (priceWei: bigint) => {
+    setTxNote("");
+    const market = schemeMarketAddress();
+    if (!market) {
+      setTxNote("未配置 SchemeMarket 合约地址");
+      return;
+    }
+    if (switchChainAsync) {
+      await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
+    }
+    try {
+      const hash = await setPriceAsync({
+        address: market,
+        abi: schemeMarketAbi,
+        functionName: "setPrice",
+        args: [tokenId ?? 0n, priceWei]
+      });
+      setTxNote(`定价交易已提交：${hash}`);
+    } catch (e) {
+      setTxNote(e instanceof Error ? e.message : "定价失败");
     }
   };
 
@@ -128,6 +177,10 @@ export default function SchemeDetailPage() {
       applyError={applyError ? String(applyError) : undefined}
       txNote={txNote}
       isConnected={isConnected}
+      onSetPrice={onSetPrice}
+      isSetPricePending={isSetPricePending || isPriceConfirming}
+      setPriceError={setPriceError ? String(setPriceError) : undefined}
+      onApplied={refreshDetail}
     />
   );
 }
@@ -144,6 +197,10 @@ interface DetailFrameProps {
   applyError?: string | null;
   txNote?: string;
   isConnected?: boolean;
+  onSetPrice?: (priceWei: bigint) => void;
+  isSetPricePending?: boolean;
+  setPriceError?: string | null;
+  onApplied?: () => void;
 }
 
 function DetailFrame(props: DetailFrameProps) {
@@ -158,13 +215,27 @@ function DetailFrame(props: DetailFrameProps) {
     applyTxHash,
     applyError,
     txNote,
-    isConnected
+    isConnected,
+    onSetPrice,
+    isSetPricePending,
+    setPriceError,
+    onApplied
   } = props;
+
+  useEffect(() => {
+    if (isApplied) onApplied?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isApplied]);
 
   const creator = d.creator as string;
   const explorerBase = "https://testnet.monadexplorer.com";
-  const isDemoMode = !virtuHomeSchemeAddress();
-  const canAct = !isDemoMode && Boolean(isConnected && onApply);
+  const isDemoMode = !dreamSchemeAddress();
+  const price: bigint = d.price ?? 0n;
+  const isRemix = d.parentId !== undefined && d.parentId > 0n;
+  const splitNote = isRemix ? "85% creator · 10% treasury · 5% lineage" : "90% creator · 10% treasury";
+  const agentId: bigint = d.agentId ?? 0n;
+  const agentLabel = agentId === 1n ? "Kimi" : agentId > 0n ? `Agent #${agentId.toString()}` : "";
+  const canAct = !isDemoMode && Boolean(isConnected && onApply) && (price > 0n || isDemoMode);
 
   const versions: bigint[] = d.versionLine ?? [];
   const headId = versions.length > 0 ? versions[versions.length - 1] : (d.tokenId as bigint);
@@ -230,6 +301,18 @@ function DetailFrame(props: DetailFrameProps) {
                 {shortAddress(creator, 8)}
               </a>
             </Row>
+            <Row label="PRICE / 使用权">
+              {price > 0n ? (
+                <span className="mono">{fmtMon(price)} MON</span>
+              ) : (
+                <span className="text-muted">未上架</span>
+              )}
+            </Row>
+            {agentLabel && (
+              <Row label="AI / 生成器">
+                <span className="chip chip-violet !py-0.5 !text-[10px]">{agentLabel} · agentId {agentId.toString()}</span>
+              </Row>
+            )}
             <Row label="ROOM / 房间">{d.roomType}</Row>
             <Row label="STYLE / 风格">{d.theme}</Row>
             <Row label="FURNITURE / 家具">
@@ -247,10 +330,20 @@ function DetailFrame(props: DetailFrameProps) {
             </Row>
           </dl>
 
+          {!isDemoMode && isCreator && onSetPrice && (
+            <CreatorPricePanel price={price} pending={Boolean(isSetPricePending)} onSubmit={onSetPrice} />
+          )}
+
           {!isDemoMode && (
             <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
               <button onClick={onApply} disabled={!canAct || isApplyPending} className="btn-primary flex-1">
-                {isApplyPending ? "交易确认中…" : isApplied ? "已应用到我家 ✓" : "应用到我家 · 0.01 MON"}
+                {isApplyPending
+                  ? "交易确认中…"
+                  : isApplied
+                    ? "已应用到我家 ✓"
+                    : price > 0n
+                      ? `应用到我家 · ${fmtMon(price)} MON`
+                      : "未上架（创作者未定价）"}
               </button>
               <Link href={`/remix/${d.tokenId.toString()}`} className="btn-secondary flex-1">
                 Remix
@@ -271,6 +364,11 @@ function DetailFrame(props: DetailFrameProps) {
               {applyError}
             </p>
           )}
+          {setPriceError && (
+            <p className="mt-3 rounded-xl border border-coral/40 bg-coral/10 p-2.5 text-[11px] text-[#a53f52]">
+              {setPriceError}
+            </p>
+          )}
           {applyTxHash && (
             <a
               href={`${explorerBase}/tx/${applyTxHash}`}
@@ -283,7 +381,7 @@ function DetailFrame(props: DetailFrameProps) {
           )}
 
           <p className="mono mt-auto pt-6 text-[10px] uppercase tracking-[0.14em] text-muted">
-            90% → creator · 10% → treasury
+            {splitNote}
           </p>
         </div>
       </div>
@@ -330,13 +428,19 @@ function DetailFrame(props: DetailFrameProps) {
             NFT 转手不影响分账对象。
           </p>
           <p>
-            「应用到我家」费用为 0.01 MON：90% 即时转给创作者，10% 累积到平台金库{" "}
-            <code className="mono text-ink">{schemeMarketAddress() ?? "未配置"}</code>，任何账户均可 withdraw。
+            「应用到我家」按创作者 <code className="mono text-ink">setPrice</code> 自主定价支付，
+            收入即时分账：{splitNote}。市场合约{" "}
+            <code className="mono text-ink">{schemeMarketAddress() ?? "未配置"}</code>，款项直达，无需提取。
           </p>
         </div>
       </div>
     </div>
   );
+}
+
+function fmtMon(wei: bigint): string {
+  const mon = Number(wei) / 1e18;
+  return mon.toFixed(4);
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -378,4 +482,62 @@ function namesFrom(allSchemes: any[]): Record<string, string> {
   const map: Record<string, string> = {};
   for (const s of allSchemes) map[s.tokenId.toString()] = s.name;
   return map;
+}
+
+/** 创作者定价面板：setPrice 上架 / 改价 / 下架（0 = 下架）。 */
+function CreatorPricePanel({
+  price,
+  pending,
+  onSubmit
+}: {
+  price: bigint;
+  pending: boolean;
+  onSubmit: (priceWei: bigint) => void;
+}) {
+  const [input, setInput] = useState<string>(price > 0n ? fmtMon(price) : "");
+
+  const parseMon = (v: string): bigint | null => {
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return BigInt(Math.round(n * 1e6)) * 10n ** 12n; // 1e18 精度
+  };
+  const wei = parseMon(input);
+  const changed = wei !== null && wei !== price;
+
+  return (
+    <div className="mt-6 rounded-xl border border-violet/30 bg-violet/5 p-3.5">
+      <p className="eyebrow mb-2 text-violet-deep">SELLER / 创作者定价</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          inputMode="decimal"
+          placeholder="0.01"
+          disabled={pending}
+          className="mono w-28 rounded-lg border border-hairline bg-white px-2.5 py-1.5 text-[13px] outline-none focus:border-violet"
+        />
+        <span className="text-xs text-muted">MON</span>
+        <button
+          onClick={() => changed && wei !== null && onSubmit(wei)}
+          disabled={pending || !changed || wei === null}
+          className="btn-primary !py-1.5 !text-[12px]"
+        >
+          {pending ? "确认中…" : price > 0n ? "更新定价" : "上架"}
+        </button>
+        {price > 0n && (
+          <button
+            onClick={() => onSubmit(0n)}
+            disabled={pending}
+            className="btn-secondary !py-1.5 !text-[12px]"
+          >
+            下架
+          </button>
+        )}
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-muted">
+        定价后他人「应用到我家」按此价格支付，分账即时到账（原创 90/10，衍生 85/10/5）。
+        {price > 0n ? " 设为 0 或点「下架」可暂停售卖。" : " 上架前该方案显示为「未上架」。"}
+      </p>
+    </div>
+  );
 }

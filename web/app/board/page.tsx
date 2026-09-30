@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { virtuHomeSchemeAddress, useSchemes, type SchemeSummary } from "@/lib/contracts";
+import { dreamSchemeAddress, useSchemes, type SchemeSummary } from "@/lib/contracts";
 import { demoSchemes } from "@/lib/demo";
 import { shortAddress } from "@/lib/scheme";
 
@@ -9,7 +9,7 @@ const score = (s: SchemeSummary) => s.remixCount * 2 + s.appliedCount * 3;
 
 export default function BoardPage() {
   const { data, isLoading } = useSchemes();
-  const isDemo = !virtuHomeSchemeAddress();
+  const isDemo = !dreamSchemeAddress();
   const schemes = data && data.length > 0 ? data : isDemo ? demoSchemes : [];
   const ranked = [...schemes].sort((a, b) => score(b) - score(a) || a.createdAt - b.createdAt);
   const top = ranked[0];
@@ -134,8 +134,8 @@ export default function BoardPage() {
       </section>
 
       <p className="mono text-[11px] leading-relaxed text-muted">
-        归属规则 · 创作者地址在铸造时上链，NFT 转手不影响作者归因；每次「应用到我家」支付 0.01 MON，
-        90% 即时转给作者、10% 累积到平台金库。
+        归属规则 · 创作者地址在铸造时上链，NFT 转手不影响作者归因；「应用到我家」按创作者定价支付，
+        原创 90% / 衍生 85%（+5% 祖先谱系）即时转给作者，10% 给平台。
       </p>
     </div>
   );
