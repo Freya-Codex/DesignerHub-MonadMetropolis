@@ -6,10 +6,11 @@ test = "test"
 script = "script"
 solc = "0.8.24"
 evm_version = "cancun"
+via_ir = true
 optimizer = true
 optimizer_runs = 200
-gas_reports = ["VirtuHomeScheme", "SchemeMarket"]
-fs_permissions = [{ access = "read-write", path = "./deployments" }]
+gas_reports = ["P256PasskeyAccount", "ProvenanceRegistry", "DreamScheme", "SchemeMarket"]
+fs_permissions = [{ access = "read-write", path = "./deployments" }, { access = "read", path = "./test/fixtures" }]
 
 [fmt]
 line_length = 120

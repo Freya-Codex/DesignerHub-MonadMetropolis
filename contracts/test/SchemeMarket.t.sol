@@ -2,208 +2,265 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {VirtuHomeScheme} from "../src/VirtuHomeScheme.sol";
+import {AgentRegistry} from "../src/AgentRegistry.sol";
+import {DreamScheme} from "../src/DreamScheme.sol";
 import {SchemeMarket} from "../src/SchemeMarket.sol";
 
-/// @notice 可持有 NFT、但拒绝接收原生 ETH 的合约，用于测试创作者代管分支。
-contract RejectEth is IERC721Receiver {
-    function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
-        return IERC721Receiver.onERC721Received.selector;
+contract RevertingReceiver {
+    receive() external payable {
+        revert("no eth");
     }
 
-    receive() external payable {
-        revert("reject eth");
+    function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }
 
-/// @notice SchemeMarket 付费应用到我家 + 90/10 分账的单元测试。
+/// @title SchemeMarketTest — 使用权交易与谱系分账
 contract SchemeMarketTest is Test {
-    VirtuHomeScheme internal scheme;
+    AgentRegistry internal agents;
+    DreamScheme internal scheme;
     SchemeMarket internal market;
 
-    address internal owner = makeAddr("owner");
     address internal platform = makeAddr("platform");
-    address internal creator = makeAddr("creator");
-    address internal creator2 = makeAddr("creator2");
-    address internal applier = makeAddr("applier");
-
-    uint256 internal constant PRICE = 0.01 ether;
-    bytes32 internal constant HASH_1 = keccak256("scheme-1");
-    bytes32 internal constant HASH_2 = keccak256("scheme-2");
-
-    event SchemeApplied(
-        uint256 indexed tokenId,
-        address indexed applier,
-        address indexed creator,
-        uint256 value,
-        uint256 creatorShare,
-        uint256 platformShare
-    );
-    event CreatorShareEscrowed(uint256 indexed tokenId, address indexed creator, uint256 amount);
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+    address internal carol = makeAddr("carol");
 
     function setUp() public {
-        vm.prank(owner);
-        scheme = new VirtuHomeScheme(owner, address(0));
-        vm.prank(owner);
-        market = new SchemeMarket(scheme, owner, platform);
-
-        vm.prank(creator);
-        scheme.mint(0, HASH_1, "ipfs://one");
-        vm.prank(creator2);
-        scheme.mint(1, HASH_2, "ipfs://two");
+        agents = new AgentRegistry(address(this));
+        scheme = new DreamScheme(agents);
+        market = new SchemeMarket(scheme, payable(platform));
+        deal(carol, 10 ether);
     }
 
-    function test_ApplyScheme_Splits90ToCreator10ToPlatform() public {
-        vm.deal(applier, PRICE);
+    function _mintOriginal(address creator) internal returns (uint256) {
+        vm.prank(creator);
+        return scheme.mint(0, keccak256(abi.encodePacked(creator, "orig")), 0, "ipfs://o");
+    }
 
-        uint256 expectedCreatorShare = (PRICE * 9_000) / 10_000; // exactly 90%
-        uint256 expectedPlatformShare = PRICE - expectedCreatorShare; // exactly 10%
+    function _remix(address creator, uint256 parentId) internal returns (uint256) {
+        vm.prank(creator);
+        return scheme.remix(parentId, keccak256(abi.encodePacked(creator, parentId)), 0, "ipfs://r");
+    }
 
-        vm.expectEmit(true, true, true, true, address(market));
-        emit SchemeApplied(1, applier, creator, PRICE, expectedCreatorShare, expectedPlatformShare);
+    // ------------------------------- 定价 --------------------------------- //
 
-        vm.prank(applier);
-        (uint256 creatorShare, uint256 platformShare) = market.applyScheme{value: PRICE}(1);
+    function test_SetPrice_OnlyCreator() public {
+        _mintOriginal(alice);
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.NotCreator.selector, bob, 1));
+        market.setPrice(1, 0.1 ether);
+    }
 
-        assertEq(creatorShare, expectedCreatorShare, "creator gets 90%");
-        assertEq(platformShare, expectedPlatformShare, "platform gets 10%");
-        assertEq(creator.balance, expectedCreatorShare, "creator balance credited");
-        assertEq(market.pendingWithdrawals(platform), expectedPlatformShare, "platform share accummulated");
-        assertEq(applier.balance, 0, "applier paid exactly the price");
+    function test_SetPrice_UnmintedRejected() public {
+        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.SchemeNotMinted.selector, 99));
+        market.setPrice(99, 0.1 ether);
+    }
+
+    function test_SetPrice_AndDelist() public {
+        _mintOriginal(alice);
+        vm.prank(alice);
+        market.setPrice(1, 0.1 ether);
+        assertEq(market.priceOf(1), 0.1 ether);
+
+        // 价格 0 = 下架
+        vm.prank(alice);
+        market.setPrice(1, 0);
+        vm.prank(carol);
+        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.NotListed.selector, 1));
+        market.applyScheme{value: 0.1 ether}(1);
+    }
+
+    // ---------------------------- 购买：原创 ------------------------------ //
+
+    function test_Apply_Original_90_10() public {
+        _mintOriginal(alice);
+        vm.prank(alice);
+        market.setPrice(1, 1 ether);
+
+        vm.prank(carol);
+        market.applyScheme{value: 1 ether}(1);
+
+        assertEq(alice.balance, 0.9 ether);
+        assertEq(platform.balance, 0.1 ether);
         assertEq(market.appliedCount(1), 1);
         assertEq(market.totalApplied(), 1);
+        assertEq(carol.balance, 9 ether);
     }
 
-    function test_Apply_AccumulatesCountsAndPlatformBalance() public {
-        vm.deal(applier, PRICE * 3);
-        uint256 balanceBefore = platform.balance;
-
-        vm.prank(applier);
-        market.applyScheme{value: PRICE}(1);
-        vm.prank(applier);
-        market.applyScheme{value: PRICE}(1);
-        vm.prank(applier);
-        market.applyScheme{value: PRICE}(2);
-
-        assertEq(market.appliedCount(1), 2);
-        assertEq(market.appliedCount(2), 1);
-        assertEq(market.totalApplied(), 3);
-        assertEq(platform.balance, balanceBefore, "platform balance untouched before withdraw");
-        assertEq(market.pendingWithdrawals(platform), PRICE * 3 / 10);
-        assertEq(creator.balance, PRICE * 2 * 9 / 10, "creator credited twice");
-        assertEq(creator2.balance, PRICE * 9 / 10);
+    function test_Apply_UnderpayRejected() public {
+        _mintOriginal(alice);
+        vm.prank(alice);
+        market.setPrice(1, 0.1 ether);
+        vm.prank(carol);
+        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.InvalidPaymentAmount.selector, 0.05 ether, 0.1 ether));
+        market.applyScheme{value: 0.05 ether}(1);
     }
 
-    function test_SplitOf_MatchesBps() public {
-        (uint256 creatorShare, uint256 platformShare) = market.splitOf(PRICE);
-        assertEq(creatorShare, PRICE * 90 / 100);
-        assertEq(platformShare, PRICE * 10 / 100);
-        assertEq(creatorShare + platformShare, PRICE, "no rounding dust outside split");
-    }
-
-    function test_RevertWhen_WrongPaymentAmount() public {
-        vm.deal(applier, 1 ether);
-        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.InvalidPaymentAmount.selector, 1 ether, PRICE));
-        vm.prank(applier);
+    function test_Apply_NotListedRejected() public {
+        _mintOriginal(alice);
+        vm.prank(carol);
+        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.NotListed.selector, 1));
         market.applyScheme{value: 1 ether}(1);
     }
 
-    function test_RevertWhen_ZeroPayment() public {
-        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.InvalidPaymentAmount.selector, 0, PRICE));
-        vm.prank(applier);
-        market.applyScheme(1);
+    function test_Apply_OverpayRefunded() public {
+        _mintOriginal(alice);
+        vm.prank(alice);
+        market.setPrice(1, 0.1 ether);
+
+        vm.prank(carol);
+        market.applyScheme{value: 0.15 ether}(1);
+
+        assertEq(alice.balance, 0.09 ether);
+        assertEq(platform.balance, 0.01 ether);
+        assertEq(carol.balance, 10 ether - 0.1 ether, unicode"多付部分应退回");
     }
 
-    function test_RevertWhen_SchemeNotMinted() public {
-        vm.deal(applier, PRICE);
-        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.SchemeNotMinted.selector, 999));
-        vm.prank(applier);
-        market.applyScheme{value: PRICE}(999);
+    // ---------------------------- 购买：衍生 ------------------------------ //
+
+    function test_Apply_Remix_85_10_5() public {
+        _mintOriginal(alice); // 1
+        _remix(bob, 1); // 2：bob 的衍生方案
+        vm.prank(bob);
+        market.setPrice(2, 0.1 ether);
+
+        vm.prank(carol);
+        market.applyScheme{value: 0.1 ether}(2);
+
+        // bob（二创作者）85%，alice（原作）5%，平台 10%
+        assertEq(bob.balance, 0.085 ether);
+        assertEq(alice.balance, 0.005 ether);
+        assertEq(platform.balance, 0.01 ether);
+        // 守恒：0.085 + 0.005 + 0.01 = 0.1
     }
 
-    function test_Platform_CanWithdrawAccumulatedShare() public {
-        vm.deal(applier, PRICE);
-        vm.prank(applier);
-        market.applyScheme{value: PRICE}(1);
+    function test_Apply_SelfRemix_AncestorShareMergesIntoCreator() public {
+        _mintOriginal(alice); // 1
+        _remix(alice, 1); // 2：alice remix 自己的原作
+        vm.prank(alice);
+        market.setPrice(2, 0.1 ether);
 
-        uint256 platformShare = market.pendingWithdrawals(platform);
-        assertGt(platformShare, 0);
+        vm.prank(carol);
+        market.applyScheme{value: 0.1 ether}(2);
 
-        vm.expectEmit(true, true, true, true, address(market));
-        emit SchemeMarket.Withdrawn(platform, platformShare);
-
-        vm.prank(platform);
-        uint256 amount = market.withdraw();
-
-        assertEq(amount, platformShare);
-        assertEq(platform.balance, platformShare);
-        assertEq(market.pendingWithdrawals(platform), 0, "balance zeroed after withdraw");
+        // 祖先（= 原作作者 = alice 本人）份额并入主体：85% + 5% = 90%
+        assertEq(alice.balance, 0.09 ether);
+        assertEq(platform.balance, 0.01 ether);
     }
 
-    function test_RevertWhen_NothingToWithdraw() public {
-        vm.expectRevert(SchemeMarket.NothingToWithdraw.selector);
-        vm.prank(platform);
-        market.withdraw();
+    function test_Apply_DeepLineage_UniqueAncestors() public {
+        // A(1) ← B(2) ← C(3) ← D(4)，四位不同创作者；买家 erin 与链上创作者无重叠
+        _mintOriginal(alice);
+        _remix(bob, 1);
+        _remix(carol, 2);
+        address dave = makeAddr("dave");
+        _remix(dave, 3);
+        vm.prank(dave);
+        market.setPrice(4, 1 ether);
+
+        address erin = makeAddr("erin");
+        deal(erin, 2 ether);
+        vm.prank(erin);
+        market.applyScheme{value: 1 ether}(4);
+
+        // 二创作者 dave 85%；祖先 {C, B, A} 去重均分 5%；平台 10%
+        uint256 each = uint256(0.05 ether) / 3;
+        assertEq(dave.balance, 0.85 ether);
+        assertEq(carol.balance, 10 ether + each, unicode"carol 是祖先创作者（deal 初始 10 ETH）");
+        assertEq(bob.balance, each);
+        assertEq(alice.balance, each);
+        assertEq(platform.balance, 0.1 ether + (0.05 ether - each * 3), unicode"取整余数归平台");
+        assertEq(erin.balance, 1 ether, unicode"买家付 1 ether");
     }
 
-    function test_CreatorShareEscrowed_WhenCreatorRejectsEth() public {
-        RejectEth reject = new RejectEth();
-        vm.prank(address(reject));
-        scheme.mint(0, keccak256("reject-scheme"), "ipfs://reject");
+    function test_Apply_DuplicateAncestorCountedOnce() public {
+        // A(1) ← B(2) ← A(3)：3 的祖先 = {B, A}，且 A 同时是二创作者
+        _mintOriginal(alice);
+        _remix(bob, 1);
+        _remix(alice, 2); // 3：alice remix bob 的衍生
+        vm.prank(alice);
+        market.setPrice(3, 0.06 ether);
 
-        vm.deal(applier, PRICE);
-        vm.expectEmit(true, true, true, true, address(market));
-        emit CreatorShareEscrowed(3, address(reject), PRICE * 9 / 10);
+        vm.prank(carol);
+        market.applyScheme{value: 0.06 ether}(3);
 
-        vm.prank(applier);
-        market.applyScheme{value: PRICE}(3);
-
-        uint256 expectedPlatform = (PRICE * 10 / 100) + (PRICE * 90 / 100);
-        assertEq(market.pendingWithdrawals(platform), expectedPlatform, "creator share escrowed to platform account");
-        assertEq(address(reject).balance, 0, "rejecting contract received nothing");
-        assertEq(market.appliedCount(3), 1, "apply still succeeds");
+        // 主体 85% = 0.051；祖先池 5% = 0.003，祖先 {B, A} 均分 → each = 0.0015
+        // alice 的祖先份额并入主体：0.051 + 0.0015
+        uint256 each = 0.003 ether / 2;
+        assertEq(alice.balance, 0.051 ether + each);
+        assertEq(bob.balance, each);
+        assertEq(platform.balance, 0.006 ether);
     }
 
-    function test_Owner_CanUpdatePlatformAddressAndPrice() public {
-        address newPlatform = makeAddr("newPlatform");
+    function test_Apply_DustOneWei_AllToPlatform() public {
+        // 1 wei 的衍生方案：主体/祖先份额全为 0，灰尘归平台（金额守恒）
+        _mintOriginal(alice); // 1
+        _remix(bob, 1); // 2
+        address cat = makeAddr("cat");
+        _remix(cat, 2); // 3：祖先 = {bob, alice}
+        vm.prank(cat);
+        market.setPrice(3, 1 wei);
 
-        vm.prank(owner);
-        market.setPlatformAddress(newPlatform);
-        assertEq(market.platformAddress(), newPlatform);
+        vm.prank(carol);
+        market.applyScheme{value: 1 wei}(3);
 
-        vm.prank(owner);
-        market.setApplyPrice(2 ether);
-        assertEq(market.applyPrice(), 2 ether);
-
-        vm.deal(applier, 2 ether);
-        vm.prank(applier);
-        market.applyScheme{value: 2 ether}(1);
-        assertEq(market.pendingWithdrawals(newPlatform), 2 ether * 10 / 100, "new platform collects");
-        assertEq(creator.balance, 2 ether * 90 / 100);
+        assertEq(cat.balance, 0, "creator cut = 0");
+        assertEq(bob.balance, 0, "ancestor each = 0");
+        assertEq(alice.balance, 0, "ancestor each = 0");
+        assertEq(platform.balance, 1, unicode"1 wei 灰尘归平台");
     }
 
-    function test_RevertWhen_NonOwnerUpdatesConfig() public {
-        vm.expectRevert();
-        vm.prank(creator);
-        market.setPlatformAddress(creator);
+    function test_Apply_PaymentFailedReverts() public {
+        RevertingReceiver rr = new RevertingReceiver();
+        vm.prank(address(rr));
+        scheme.mint(0, keccak256("rr-plan"), 0, "ipfs://rr");
+        vm.prank(address(rr));
+        market.setPrice(1, 0.1 ether);
 
-        vm.expectRevert();
-        vm.prank(creator);
-        market.setApplyPrice(1 ether);
-
-        vm.expectRevert();
-        vm.prank(creator);
-        market.setCreatorShareBps(5_000);
+        vm.prank(carol);
+        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.PaymentFailed.selector, address(rr)));
+        market.applyScheme{value: 0.1 ether}(1);
     }
 
-    function test_RevertWhen_PlatformAddressZero() public {
-        vm.expectRevert(SchemeMarket.InvalidPlatformAddress.selector);
-        vm.prank(owner);
-        market.setPlatformAddress(address(0));
+    // ------------------------------ 预览 ---------------------------------- //
+
+    function test_SplitPreview_Original() public view {
+        (uint256 creatorCut, uint256 platformCut, uint256 pool,) = market.splitPreview(1, 1 ether);
+        // token 1 未铸造 → parentOf = 0 → 原创路径
+        assertEq(creatorCut, 0.9 ether);
+        assertEq(platformCut, 0.1 ether);
+        assertEq(pool, 0);
     }
 
-    function test_DefaultApplyPriceIsTenMillis() public {
-        assertEq(market.applyPrice(), 0.01 ether, "default price is 0.01 MON");
+    function test_SplitPreview_Remix() public {
+        _mintOriginal(alice);
+        _remix(bob, 1);
+        (uint256 creatorCut, uint256 platformCut, uint256 pool, address[] memory ancestors) =
+            market.splitPreview(2, 0.1 ether);
+        assertEq(creatorCut, 0.085 ether);
+        assertEq(platformCut, 0.01 ether);
+        assertEq(pool, 0.005 ether);
+        assertEq(ancestors.length, 1);
+        assertEq(ancestors[0], alice);
+    }
+
+    // ------------------------------ 计数 ---------------------------------- //
+
+    function test_AppliedCount_Accumulates() public {
+        _mintOriginal(alice);
+        vm.prank(alice);
+        market.setPrice(1, 0.01 ether);
+
+        vm.startPrank(carol);
+        market.applyScheme{value: 0.01 ether}(1);
+        market.applyScheme{value: 0.01 ether}(1);
+        vm.stopPrank();
+
+        assertEq(market.appliedCount(1), 2);
+        assertEq(market.totalApplied(), 2);
+        assertEq(alice.balance, 0.018 ether);
+        assertEq(platform.balance, 0.002 ether);
     }
 }

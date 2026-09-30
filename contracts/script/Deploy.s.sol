@@ -1,96 +1,60 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Script, console2} from "forge-std/Script.sol";
-import {VirtuHomeScheme} from "../src/VirtuHomeScheme.sol";
+import {Script} from "forge-std/Script.sol";
+import {console2} from "forge-std/console2.sol";
+import {AgentRegistry} from "../src/AgentRegistry.sol";
+import {ProvenanceRegistry} from "../src/ProvenanceRegistry.sol";
+import {DreamScheme} from "../src/DreamScheme.sol";
 import {SchemeMarket} from "../src/SchemeMarket.sol";
+import {PasskeyAccountFactory} from "../src/P256PasskeyAccount.sol";
 
-/// @title DeployScript
-/// @notice 在 Monad 测试网（Chain ID 10143）部署 VirtuHomeScheme + SchemeMarket，
-///         并在终端输出合约地址，同时把地址写入 contracts/deployments/*.json。
-///
-/// 用法：
-///   cd contracts
-///   cp .env.example .env   # 填入 DEPLOYER_PRIVATE_KEY
-///   forge script script/Deploy.s.sol --rpc-url monad_testnet --broadcast -vv
-///
-/// 可选环境变量：
-///   ROYALTY_RECEIVER  版税接收地址（缺省为部署者）
-///   PLATFORM_ADDRESS  平台分账地址（缺省为部署者）
-///   APPLY_PRICE_WEI   「应用到我家」价格（缺省 0.01 MON = 10000000000000000）
-contract DeployScript is Script {
-    uint256 internal constant MONAD_TESTNET_CHAIN_ID = 10143;
+/// @title Deploy — Designer Hub 协议全家桶部署脚本
+/// @notice 部署顺序（接线关系决定）：
+///         AgentRegistry → ProvenanceRegistry → 接线 → DreamScheme → SchemeMarket
+///         → PasskeyAccountFactory → 预注册 Kimi agent。
+contract Deploy is Script {
+    /// @notice Kimi（AI 生成器）的元数据 URI，Phase 2 换成固定到 IPFS 的正式元数据。
+    string public constant KIMI_METADATA_URI = "https://designerhub.xyz/agents/kimi.json";
 
-    function run() external {
+    function run() public {
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address deployer = vm.addr(deployerKey);
-
-        address royaltyReceiver = vm.envOr("ROYALTY_RECEIVER", deployer);
-        address platformAddress = vm.envOr("PLATFORM_ADDRESS", deployer);
-        uint256 applyPriceWei = vm.envOr("APPLY_PRICE_WEI", uint256(0));
-
+        address platform = vm.envOr("PLATFORM_ADDRESS", vm.addr(deployerKey));
         vm.startBroadcast(deployerKey);
-        VirtuHomeScheme virtuHomeScheme = new VirtuHomeScheme(deployer, royaltyReceiver);
-        SchemeMarket schemeMarket = new SchemeMarket(virtuHomeScheme, deployer, platformAddress);
-        if (applyPriceWei != 0) {
-            schemeMarket.setApplyPrice(applyPriceWei);
-        }
+
+        AgentRegistry agents = new AgentRegistry(msg.sender);
+        ProvenanceRegistry provenance = new ProvenanceRegistry(agents);
+        agents.setProvenanceRegistry(address(provenance));
+        DreamScheme scheme = new DreamScheme(agents);
+        SchemeMarket market = new SchemeMarket(scheme, payable(platform));
+        PasskeyAccountFactory factory = new PasskeyAccountFactory();
+
+        // 预注册 Kimi agent（agentId = 1）
+        uint256 kimiAgentId = agents.registerAgent(KIMI_METADATA_URI);
+
         vm.stopBroadcast();
 
-        console2.log("=== VirtuHomeScheme / SchemeMarket deployed ===");
-        console2.log("chainId          :", block.chainid);
-        console2.log("deployer         :", deployer);
-        console2.log("VirtuHomeScheme      :", address(virtuHomeScheme));
-        console2.log("SchemeMarket     :", address(schemeMarket));
-        console2.log("royaltyReceiver  :", royaltyReceiver);
-        console2.log("platformAddress  :", platformAddress);
-        console2.log("applyPrice (wei) :", schemeMarket.applyPrice());
-        console2.log("deploy block     :", block.number);
+        string memory chainAlias = vm.toString(block.chainid);
+        string memory json = "deployment";
+        vm.serializeString(json, "network", "monad-testnet");
+        vm.serializeString(json, "chainAlias", chainAlias);
+        vm.serializeUint(json, "chainId", block.chainid);
+        vm.serializeAddress(json, "deployer", msg.sender);
+        vm.serializeAddress(json, "platformAddress", platform);
+        vm.serializeUint(json, "kimiAgentId", kimiAgentId);
+        vm.serializeAddress(json, "AgentRegistry", address(agents));
+        vm.serializeAddress(json, "ProvenanceRegistry", address(provenance));
+        vm.serializeAddress(json, "DreamScheme", address(scheme));
+        vm.serializeAddress(json, "SchemeMarket", address(market));
+        string memory finalJson = vm.serializeAddress(json, "PasskeyAccountFactory", address(factory));
 
-        _saveDeployment(address(virtuHomeScheme), address(schemeMarket), deployer, platformAddress);
-    }
+        vm.writeJson(finalJson, "deployments/monad-testnet.json");
 
-    function _saveDeployment(address schemeAddr, address marketAddr, address deployer, address platformAddress)
-        internal
-    {
-        string memory dir = string.concat(vm.projectRoot(), "/deployments");
-        vm.createDir(dir, true);
-
-        string memory json = string.concat(
-            "{\n",
-            '  "network": "monad-testnet",\n',
-            '  "chainId": ',
-            vm.toString(block.chainid),
-            ",\n",
-            '  "deployBlock": ',
-            vm.toString(block.number),
-            ",\n",
-            '  "deployer": "',
-            vm.toString(deployer),
-            '",\n',
-            '  "platformAddress": "',
-            vm.toString(platformAddress),
-            '",\n',
-            '  "VirtuHomeScheme": "',
-            vm.toString(schemeAddr),
-            '",\n',
-            '  "SchemeMarket": "',
-            vm.toString(marketAddr),
-            '"\n',
-            "}\n"
-        );
-
-        string memory fileName = block.chainid == MONAD_TESTNET_CHAIN_ID
-            ? "monad-testnet.json"
-            : string.concat("chain-", vm.toString(block.chainid), ".json");
-
-        string memory path = string.concat(dir, "/", fileName);
-        vm.writeFile(path, json);
-        console2.log("deployment file  :", path);
-        console2.log("");
-        console2.log("Next: write these into web/.env.local");
-        console2.log("  NEXT_PUBLIC_VIRTUHOME_SCHEME_ADDRESS=", schemeAddr);
-        console2.log("  NEXT_PUBLIC_SCHEME_MARKET_ADDRESS=", marketAddr);
-        console2.log("  NEXT_PUBLIC_DEPLOY_BLOCK=", block.number);
+        console2.log("AgentRegistry:          ", address(agents));
+        console2.log("ProvenanceRegistry:     ", address(provenance));
+        console2.log("DreamScheme:            ", address(scheme));
+        console2.log("SchemeMarket:           ", address(market));
+        console2.log("PasskeyAccountFactory:  ", address(factory));
+        console2.log("Kimi agentId:           ", kimiAgentId);
     }
 }

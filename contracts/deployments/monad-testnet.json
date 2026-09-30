@@ -1,9 +1,0 @@
-{
-  "network": "monad-testnet",
-  "chainId": 10143,
-  "deployBlock": 65618721,
-  "deployer": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
-  "platformAddress": "0x33DD409d85115E300B4570EeB6D4DA7eF1605D08",
-  "VirtuHomeScheme": "0xE04077c0FfFEce593Bf7bB87F009EB7E3ced3137",
-  "SchemeMarket": "0x1E2f4a8c70371A27f6232c9806aa8b85Ce705513"
-}
