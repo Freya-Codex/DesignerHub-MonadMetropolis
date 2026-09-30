@@ -41,6 +41,36 @@ Every interior-design scheme is an ERC-721:
 
 ---
 
+## Build on it (developer primitive)
+
+This repo is not only an app — it is a small **on-chain primitive set** you can integrate without our UI.
+Use the typed SDK and skip the cryptography:
+
+```bash
+npm i @yunzhujia/sdk viem
+```
+
+```ts
+import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@yunzhujia/sdk";
+
+const client = publicClient();                 // Monad Testnet
+const s = await readScheme(client, await readTotalSupply(client));
+console.log(s.creator, s.parentId, s.remixCount, s.priceWei);
+```
+
+Source: [`sdk/`](./sdk) (typed, buildable, not yet published to npm).
+
+**Documentation:**
+
+| Doc | What's inside |
+| --- | --- |
+| [`docs/INTEGRATING.md`](./docs/INTEGRATING.md) | the primitive, adopters & “why not roll your own”, integration paths, gas sponsorship, post-event plan |
+| [`docs/SECURITY.md`](./docs/SECURITY.md) | threat model, P-256/WebAuthn correctness, relayer trust, secrets handling |
+| [`docs/JUDGING-ALIGNMENT.md`](./docs/JUDGING-ALIGNMENT.md) | repo vs the judging rubric (evidence, gaps, actions) |
+| [`sdk/README.md`](./sdk/README.md) | SDK API reference + examples |
+
+---
+
 ## Relationship to the 云筑家 App
 
 This repo is **fully decoupled** from the 云筑家 App; they are two repositories that only hand off a scheme JSON:
@@ -187,7 +217,8 @@ monad/
 │   ├── lib/                   wagmi / contracts / passkey / scheme / IPFS / Pinata / Kimi
 │   └── scripts/seed.ts        mint initial schemes from sample data
 ├── assets/schemes/            3 sample scheme JSONs + SVG previews
-├── docs/screenshots/          UI screenshots (real testnet data)
+├── sdk/                       @yunzhujia/sdk — typed client (passkey account, provenance, schemes)
+├── docs/                      INTEGRATING.md · SECURITY.md · JUDGING-ALIGNMENT.md · screenshots/
 └── README.md
 ```
 
