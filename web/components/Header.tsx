@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const NAV = [
-  { href: "/", label: "画廊", en: "GALLERY" },
-  { href: "/create", label: "创建", en: "CREATE" },
+  { href: "/demo", label: "画廊", en: "GALLERY" },
   { href: "/mint", label: "铸造", en: "MINT" },
   { href: "/trades", label: "交易", en: "TRADES" },
   { href: "/board", label: "排行榜", en: "BOARD" },
@@ -16,12 +15,12 @@ const NAV = [
 export default function Header() {
   const pathname = usePathname();
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/mint" ? pathname === "/mint" : pathname.startsWith(href);
 
   return (
     <header className="sticky top-0 z-40 bg-ink/95 text-white backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-2 px-3 py-1.5 sm:h-16 sm:flex-nowrap sm:gap-x-3 sm:py-0 sm:px-4">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+        <Link href="/demo" className="flex shrink-0 items-center gap-2.5">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet shadow-glow sm:h-9 sm:w-9">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               <path d="M2.5 15.5V2.5H15.5" stroke="white" strokeWidth="2.2" strokeLinecap="square" />

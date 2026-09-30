@@ -79,7 +79,7 @@ export default function DocsPage() {
             创作者的每一次迭代、被引用、被应用，都会沉淀为链上注意力资产。
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/create" className="btn-primary">
+            <Link href="/mint/create" className="btn-primary">
               创建方案
             </Link>
             <Link href="/board" className="btn-outline-light">
@@ -253,11 +253,11 @@ export default function DocsPage() {
               领取测试 MON
             </>,
             <>
-              在 <Link className="link" href="/create">创建页</Link>{" "}
+              在 <Link className="link" href="/mint/create">创建页</Link>{" "}
               拖拽/粘贴方案 JSON → 查看参数摘要 → 固定到 IPFS 并铸造
             </>,
             <>
-              在 <Link className="link" href="/">画廊</Link>{" "}
+              在 <Link className="link" href="/demo">画廊</Link>{" "}
               浏览方案，进入详情页点「应用到我家」（按创作者定价支付，自动分账）
             </>,
             <>点「Remix」调整主题/调色板/家具数量，铸造衍生方案（parentId 自动指向原方案）</>,

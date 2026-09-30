@@ -248,7 +248,7 @@ function DetailFrame(props: DetailFrameProps) {
   return (
     <div className="space-y-8">
       <nav className="eyebrow flex items-center gap-2">
-        <Link href="/" className="transition hover:text-violet-deep">
+        <Link href="/demo" className="transition hover:text-violet-deep">
           画廊
         </Link>
         <span className="text-hairline">/</span>

@@ -54,7 +54,7 @@ export default function GalleryPage() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/create" className="btn-primary">
+            <Link href="/mint/create" className="btn-primary">
               创建我的方案
             </Link>
             <Link href="/board" className="btn-outline-light">
@@ -134,7 +134,7 @@ export default function GalleryPage() {
               还没有任何方案。运行 <code className="mono text-ink">cd web &amp;&amp; npm run seed</code>{" "}
               铸造示例方案，或直接发布第一份原创设计。
             </p>
-            <Link href="/create" className="btn-primary mt-5">
+            <Link href="/mint/create" className="btn-primary mt-5">
               去创建
             </Link>
           </div>

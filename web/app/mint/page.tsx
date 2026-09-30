@@ -132,7 +132,7 @@ export default function MintPage() {
           eyebrow="Origin · 原创"
           title="铸造原创方案"
           body="上传或粘贴方案 JSON，固定到 IPFS 并铸造，parentId = 0，你是该谱系的原作者。"
-          href="/create"
+          href="/mint/create"
           cta="去创建页"
         />
         <ActionCard
@@ -169,7 +169,7 @@ export default function MintPage() {
             <p className="text-sm text-muted">
               {isConnected ? "暂无可 Remix 的他人方案。" : "连接钱包后会显示为你筛选的 Remix 机会。"}
             </p>
-            <Link href="/" className="btn-secondary mt-4">
+            <Link href="/demo" className="btn-secondary mt-4">
               先去画廊看看
             </Link>
           </div>
@@ -206,7 +206,7 @@ export default function MintPage() {
         ) : mine.length === 0 ? (
           <div className="sheet mt-6 p-10 text-center">
             <p className="text-sm text-muted">你还没有铸造过方案，从第一份原创设计开始吧。</p>
-            <Link href="/create" className="btn-primary mt-4">
+            <Link href="/mint/create" className="btn-primary mt-4">
               铸造第一份方案
             </Link>
           </div>

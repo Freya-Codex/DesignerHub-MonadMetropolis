@@ -216,7 +216,7 @@ export default function TradesPage() {
                         : "这个筛选下暂无记录。"}
                       {filter === "all" && (
                         <div className="mt-4">
-                          <Link href="/" className="btn-secondary">
+                          <Link href="/demo" className="btn-secondary">
                             去画廊
                           </Link>
                         </div>
