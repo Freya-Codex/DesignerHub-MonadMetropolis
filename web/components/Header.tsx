@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const NAV = [
+  { href: "/passkey", label: "Passkey", en: "PASSKEY" },
   { href: "/demo", label: "画廊", en: "GALLERY" },
   { href: "/mint", label: "铸造", en: "MINT" },
   { href: "/trades", label: "交易", en: "TRADES" },
@@ -52,7 +53,8 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="ml-auto shrink-0 sm:ml-0 [&_button]:!px-2.5 [&_button]:!text-[12px] sm:[&_button]:!px-4 sm:[&_button]:!text-[13.5px]">
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0 [&_button]:!px-2.5 [&_button]:!text-[12px] sm:[&_button]:!px-4 sm:[&_button]:!text-[13.5px]">
+          <span className="mono hidden text-[9px] tracking-[0.15em] text-white/40 sm:inline">高级模式</span>
           <ConnectButton chainStatus="icon" accountStatus="address" showBalance={false} />
         </div>
       </div>

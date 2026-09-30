@@ -46,7 +46,7 @@ const MECHANISMS = [
   {
     tag: "07",
     title: "Passkey 无助记词账户",
-    body: "P256PasskeyAccount 用 WebAuthn Passkey（指纹 / Face ID）替代助记词：CREATE2 工厂预计算地址，relayer 代付 gas 执行交易，多设备可添加多把公钥。"
+    body: "主流程：P256PasskeyAccount 用 WebAuthn Passkey（指纹 / Face ID）替代助记词——CREATE2 工厂预计算地址，relayer 代付 gas 执行交易，私钥永不出设备安全芯片；多设备可添加多把公钥。习惯自托管 EOA 的开发者仍可用 MetaMask（高级模式）。入口：/passkey。"
   },
   {
     tag: "06",
@@ -79,7 +79,10 @@ export default function DocsPage() {
             创作者的每一次迭代、被引用、被应用，都会沉淀为链上注意力资产。
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/mint/create" className="btn-primary">
+            <Link href="/passkey" className="btn-primary">
+              用 Passkey 登录（主流程）
+            </Link>
+            <Link href="/mint/create" className="btn-outline-light">
               创建方案
             </Link>
             <Link href="/board" className="btn-outline-light">

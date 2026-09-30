@@ -68,3 +68,119 @@ export const schemeAppliedEvent = parseAbi([
 
 /** Kimi 在 AgentRegistry 的预注册 ID（部署脚本固定为 1）。 */
 export const KIMI_AGENT_ID = 1n;
+
+// ------------------------------------------------------------------ //
+//  Passkey（无助记词智能账户）—— 含 tuple 形参，用 JSON ABI            //
+//  abitype 的 parseAbi 不支持 human-readable 里的 struct/tuple，        //
+//  execute/executeBatch 的 assertion 形参是 struct，故此处直接写 JSON。 //
+// ------------------------------------------------------------------ //
+
+const ASSERTION_COMPONENTS = [
+  { name: "authenticatorData", type: "bytes" },
+  { name: "clientDataJSON", type: "bytes" },
+  { name: "r", type: "uint256" },
+  { name: "s", type: "uint256" }
+] as const;
+
+/** P256PasskeyAccount —— WebAuthn/passkey 智能账户（免 gas 由 relayer 代付）。 */
+export const passkeyAccountAbi = [
+  { type: "function", name: "nonce", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "keyCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "rpIdHash", stateMutability: "view", inputs: [], outputs: [{ type: "bytes32" }] },
+  { type: "function", name: "originHash", stateMutability: "view", inputs: [], outputs: [{ type: "bytes32" }] },
+  {
+    type: "function",
+    name: "challengePreview",
+    stateMutability: "view",
+    inputs: [
+      { name: "n", type: "uint256" },
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "dataHash", type: "bytes32" }
+    ],
+    outputs: [{ type: "bytes32" }]
+  },
+  {
+    type: "function",
+    name: "addKey",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "x", type: "uint256" },
+      { name: "y", type: "uint256" }
+    ],
+    outputs: []
+  },
+  {
+    type: "function",
+    name: "execute",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "data", type: "bytes" },
+      { name: "assertion", type: "tuple", components: ASSERTION_COMPONENTS }
+    ],
+    outputs: []
+  },
+  {
+    type: "function",
+    name: "executeBatch",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address[]" },
+      { name: "value", type: "uint256[]" },
+      { name: "data", type: "bytes[]" },
+      { name: "assertion", type: "tuple", components: ASSERTION_COMPONENTS }
+    ],
+    outputs: []
+  },
+  {
+    type: "event",
+    name: "Executed",
+    inputs: [
+      { name: "to", type: "address", indexed: true },
+      { name: "value", type: "uint256", indexed: false },
+      { name: "nonceAfter", type: "uint256", indexed: false }
+    ]
+  },
+  { type: "error", name: "InvalidSignature", inputs: [] },
+  { type: "error", name: "BadOrigin", inputs: [] }
+] as const;
+
+/** PasskeyAccountFactory —— CREATE2 确定性部署 passkey 账户。 */
+export const passkeyFactoryAbi = [
+  {
+    type: "function",
+    name: "accountOf",
+    stateMutability: "view",
+    inputs: [
+      { name: "x", type: "uint256" },
+      { name: "y", type: "uint256" },
+      { name: "rpIdHash", type: "bytes32" },
+      { name: "originHash", type: "bytes32" }
+    ],
+    outputs: [{ type: "address" }]
+  },
+  {
+    type: "function",
+    name: "createAccount",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "x", type: "uint256" },
+      { name: "y", type: "uint256" },
+      { name: "rpIdHash", type: "bytes32" },
+      { name: "originHash", type: "bytes32" }
+    ],
+    outputs: [{ type: "address" }]
+  },
+  {
+    type: "event",
+    name: "AccountCreated",
+    inputs: [
+      { name: "account", type: "address", indexed: true },
+      { name: "x", type: "uint256", indexed: false },
+      { name: "y", type: "uint256", indexed: false }
+    ]
+  },
+  { type: "error", name: "AccountExists", inputs: [{ name: "account", type: "address" }] }
+] as const;
