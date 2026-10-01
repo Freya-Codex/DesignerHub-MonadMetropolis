@@ -53,7 +53,19 @@ Designer Hub 不是「一个 App」，而是一组**可被第三方集成**的�
 
 ---
 
-## 三、对照评分标准
+## 三、对照 Track 04 评分标准（What judges look for）
+
+> 以下 5 项、权重 20 / 20 / 15 / 25 / 20，来自 Track 04 官方评分标准。每项列出「评委要看什么」→「我们的证据」。
+
+### 评分速览
+
+| 评分项 | 权重 | 一句话落点 | 状态 |
+| --- | --- | --- | --- |
+| Technical Execution | 20% | 真实 WebAuthn/P256 链上验签、CREATE2 密钥派生、无密钥泄漏（96 测试 + 测试网 E2E） | ✅ 强 |
+| Design & Craft（DX） | 20% | 类型化 SDK + 集成指南 + 可运行示例，可脱离 UI 使用 | ✅ 强（新补） |
+| Originality & Track Insight | 15% | 内容本体不上链 + 无平台金库 + 无许可可替换 relayer | ✅ 强 |
+| Founder & Market Readiness | 25% | 四类具名采用方 + 「为什么不自己造」成本论证 + 第一方集成方 | ✅ 强（新补） |
+| Traction & Path Forward | 20% | 集成套件已就绪；**尚无第三方集成**（如实）+ 4 步赛后计划 | ⚠️ 部分（缺口在第三方） |
 
 ### 1. Technical Execution — 20%
 **要求**：信任 / 身份 / 数据原语实现正确且安全——WebAuthn/P256 使用正确、密钥派生合理、无密钥泄漏。
