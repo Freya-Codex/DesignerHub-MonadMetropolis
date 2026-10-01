@@ -1,11 +1,28 @@
 # Designer Hub · Monad — 项目简介
 
-> **把「生成式内容」变成链上可署名、可 Remix、可即时分账的创作资产——一套面向开发者的信任 / 身份 / 数据所有权原语。**
+> **把「生成式内容」变成链上可署名、可 Remix、可即时分账的创作资产——一套面向开发者的身份 / 溯源 / 数据所有权 / 代理信任原语。**
 
-- **赛道**：Social / Attention / Culture
+- **赛道**：**Track 04 — Trust, Identity & AI Infrastructure**
 - **网络**：Monad Testnet（chainId `10143`）
-- **交付物**：5 份已部署合约 + 前端应用 + 类型化 SDK（`@yunzhujia/sdk`）+ 集成文档
+- **交付物**：5 份已部署合约 + 前端应用 + 类型化 SDK（`@yunzhujia/sdk`）+ 集成文档（Track 04 要求的「原语」形态）
 - **本简介按比赛评分标准（Technical 20% / Design 20% / Originality 15% / Market 25% / Traction 20%）逐项组织**
+
+---
+
+## 〇、为什么这属于 Track 04
+
+官方对 Track 04 的定义：**「AI has made identity, provenance, data ownership, and agent trust urgent infrastructure problems」**，面向 **AI-native internet 的协议级原语**（proof of personhood / content passports / data lockers），适合「comfortable with cryptography, protocol design, or agent frameworks」的团队；并且明确要求这是**别的应用可以在其上构建的原语，而不是一个独立的消费级产品**。
+
+Designer Hub 与这条赛道逐点对应，且**全部以「可被第三方集成的原语」形态交付**（含 SDK 与集成文档，而非只是一个 App）：
+
+| Track 04 关键词 | 本项目对应的原语 |
+| --- | --- |
+| **Identity（身份）** | `P256PasskeyAccount` + `PasskeyAccountFactory`——WebAuthn/P-256 无种子智能账户，私钥不出设备安全芯片 |
+| **Provenance（溯源）** | `ProvenanceRegistry`——只上链内容承诺 `keccak256(contentHash ‖ salt)`，内容本体永不上链；`DreamScheme` 记录链上谱系 |
+| **Data ownership（数据所有权）** | 谱系与分账在链上、不锁在单一平台数据库；无平台金库 |
+| **Agent trust（代理信任）** | `AgentRegistry`——AI 生成器注册 + 声誉 + 链上 `agentId` 归因 |
+| **「原语而非产品」** | 交付 `@yunzhujia/sdk` + `docs/INTEGRATING.md`，第三方可脱离我们的 UI 直接构建 |
+| **cryptography / protocol design / agent frameworks** | 真实 P-256 + WebAuthn 链上验签、CREATE2 账户协议、AI agent 注册表 |
 
 ---
 
@@ -62,7 +79,7 @@ Designer Hub 不是「一个 App」，而是一组**可被第三方集成**的�
 **证据**：`sdk/`（typed、buildable）· `docs/INTEGRATING.md` · `sdk/README.md`
 
 ### 3. Originality & Track Insight — 15%
-**要求**：以**隐私优先、且不被单一平台俘获**的方式解决信任 / 溯源 / 数据所有权，而不是换个姿势中心化。
+**要求**：以**隐私优先、且不被单一平台俘获**的方式解决信任 / 溯源 / 数据所有权，而不是换个姿势中心化。（对应 Track 04 的 provenance / data ownership / AI-native 原语）
 
 - **隐私优先**：`ProvenanceRegistry` 只存承诺哈希，内容本体永不上链。
 - **不被俘获**：
@@ -82,7 +99,7 @@ Designer Hub 不是「一个 App」，而是一组**可被第三方集成**的�
 | --- | --- |
 | **生成式 / 设计工具**（如云筑家 App 本身） | 直接获得链上归因 + 收益分账，无需自己写 WebAuthn/P256 验证、CREATE2 账户与谱系分账逻辑。 |
 | **内容市场 / 资产库**（3D 资产、户型图、预设） | 即插即用 passkey 登录（无种子短语、转化率更高）+ 可执行的转售版税与 Remix 谱系。 |
-| **AI agent 平台 / 模型与数据方** | `AgentRegistry` + `ProvenanceRegistry` 提供「哪个模型产出了什么」的中立链上记录，用于审计、争议与声誉。 |
+| **AI agent 平台 / 模型与数据方** | `AgentRegistry` + `ProvenanceRegistry` 提供「哪个模型产出了什么」的中立链上记录，用于审计、争议与声誉（Track 04 的 agent trust 场景）。 |
 | **身份 / 钱包 SDK** | P-256 WebAuthn 账户 + 纯 Solidity 验证器的参考实现（可在无 RIP-7212 预编译的链上跑）。 |
 
 **自己造意味着重写**：WebAuthn 断言解析 + P-256 验证（EC2 COSE key、DER→(r,s)、low-s/边界）、带重放安全 nonce 的 CREATE2 账户、防篡改 challenge 方案、存证注册表、谱系感知的分账器——约一周安全敏感工作；SDK 把它压缩成几个类型化调用。

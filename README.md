@@ -3,7 +3,7 @@
 > **Turn exported interior-design schemes into on-chain creative assets that can be remixed,
 > attributed, and revenue-shared — a GitHub for home design.**
 >
-> Monad Hackathon track: **Social / Attention / Culture**.
+> Monad Metropolis hackathon track: **04 — Trust, Identity & AI Infrastructure**.
 
 One scheme JSON in, one ERC-721 scheme NFT out. Every reference and every payment afterwards
 leaves an on-chain trace. Attention (remix count × times-applied) becomes an asset, aggregated
