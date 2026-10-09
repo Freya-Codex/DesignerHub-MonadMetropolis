@@ -1,14 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { decodeEventLog, type Hex } from "viem";
+import { decodeEventLog, encodeFunctionData, type Address, type Hex } from "viem";
 import { dreamSchemeAbi, KIMI_AGENT_ID } from "@/lib/abis";
 import { dreamSchemeAddress, publicClientFor } from "@/lib/contracts";
 import { monadTestnet } from "@/lib/chains";
 import { schemeToPreviewSvg, svgToDataUri, validateScheme, type DesignScheme } from "@/lib/scheme";
+import {
+  deployPasskeyAccount,
+  executeViaPasskey,
+  isAccountDeployed,
+  loadStoredPasskey,
+  passkeyAccountAddress,
+  type StoredPasskey
+} from "@/lib/passkeyAccount";
+import { decodeSchemeCode, encodeSchemeCode } from "@/lib/schemeCodec";
 import SchemePreview from "@/components/SchemePreview";
 
 type Step = "idle" | "pin" | "mint" | "done";
@@ -46,7 +55,16 @@ export default function CreatePage() {
   const [error, setError] = useState<string | null>(null);
   const [pinInfo, setPinInfo] = useState<{ tokenUri: string; schemeUri: string; contentHash: string } | null>(null);
   const [tokenId, setTokenId] = useState<bigint | null>(null);
+  const [txHash, setTxHash] = useState<Hex | null>(null);
+  const [pk, setPk] = useState<StoredPasskey | null>(null);
+  const [pkAccount, setPkAccount] = useState<Address | null>(null);
+  const [pkDeployed, setPkDeployed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [inputMode, setInputMode] = useState<"json" | "code">("json");
+  const [codeText, setCodeText] = useState("");
+  const [codeNote, setCodeNote] = useState<string | null>(null);
+  const [decoding, setDecoding] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const scheme = useMemo<DesignScheme | null>(() => {
     if (!raw.trim()) return null;
@@ -74,30 +92,48 @@ export default function CreatePage() {
     return copy;
   }, [scheme, nameOverride]);
 
-  // 交易确认后从收据日志解析 tokenId
+  // 从收据日志里解析 SchemeMinted 的 tokenId
+  const tokenIdFromReceipt = useCallback(async (hash: Hex): Promise<bigint | null> => {
+    try {
+      const client = publicClientFor();
+      if (!client) return null;
+      const receipt = await client.getTransactionReceipt({ hash });
+      for (const log of receipt.logs) {
+        try {
+          const decoded = decodeEventLog({ abi: dreamSchemeAbi, data: log.data, topics: log.topics });
+          if (decoded.eventName === "SchemeMinted") return decoded.args.tokenId as bigint;
+        } catch {
+          // 忽略其他合约日志
+        }
+      }
+    } catch {
+      /* 收据解析失败 */
+    }
+    return null;
+  }, []);
+
+  // 载入本机 passkey（用于免 MetaMask 铸造）
+  useEffect(() => {
+    const c = loadStoredPasskey();
+    if (!c) return;
+    setPk(c);
+    void (async () => {
+      const acc = await passkeyAccountAddress(c).catch(() => undefined);
+      if (!acc) return;
+      setPkAccount(acc);
+      setPkDeployed(await isAccountDeployed(acc).catch(() => false));
+    })();
+  }, []);
+
+  // MetaMask 路径：交易确认后从收据日志解析 tokenId
   useEffect(() => {
     if (!isConfirmed || !mintHash || tokenId !== null) return;
     void (async () => {
-      try {
-        const client = publicClientFor();
-        if (!client) return;
-        const receipt = await client.getTransactionReceipt({ hash: mintHash });
-        for (const log of receipt.logs) {
-          try {
-            const decoded = decodeEventLog({ abi: dreamSchemeAbi, data: log.data, topics: log.topics });
-            if (decoded.eventName === "SchemeMinted") {
-              setTokenId(decoded.args.tokenId);
-              setStep("done");
-            }
-          } catch {
-            // 忽略其他合约日志
-          }
-        }
-      } catch {
-        setStep("done"); // 收据解析失败时仍显示成功
-      }
+      const id = await tokenIdFromReceipt(mintHash);
+      setTokenId(id); // 解析失败时仍进入完成态
+      setStep("done");
     })();
-  }, [isConfirmed, mintHash, tokenId]);
+  }, [isConfirmed, mintHash, tokenId, tokenIdFromReceipt]);
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
@@ -131,10 +167,43 @@ export default function CreatePage() {
     }
   };
 
+  // 方案码（base64url）→ 方案 JSON
+  const handleDecode = async () => {
+    setError(null);
+    setCodeNote(null);
+    setDecoding(true);
+    try {
+      const { scheme, source, note } = await decodeSchemeCode(codeText);
+      setRaw(JSON.stringify(scheme, null, 2));
+      setFileName(source === "homeplan" ? "方案码 · VirtuHome" : "方案码");
+      setCodeNote(`✓ ${note}`);
+      setInputMode("json");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "方案码解析失败");
+    } finally {
+      setDecoding(false);
+    }
+  };
+
+  // 当前方案 → 方案码（写入剪贴板）
+  const handleCopyCode = async () => {
+    if (!displayScheme) return;
+    setError(null);
+    try {
+      const code = await encodeSchemeCode(displayScheme);
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setError("复制方案码失败（浏览器可能未授权剪贴板）");
+    }
+  };
+
   const handleMint = async () => {
     setError(null);
     setPinInfo(null);
     setTokenId(null);
+    setTxHash(null);
     const addr = dreamSchemeAddress();
     if (!addr) {
       setError("未配置 DreamScheme 合约地址。请先部署合约，并把地址写入 web/.env.local 后重启 dev 服务。");
@@ -144,13 +213,17 @@ export default function CreatePage() {
       setError("请先粘贴或上传有效的方案 JSON");
       return;
     }
-    if (!isConnected) {
-      setError("请先连接钱包（MetaMask，切换到 Monad 测试网）");
+
+    const useMetaMask = isConnected;
+    const usePasskey = !useMetaMask && Boolean(pk);
+    if (!useMetaMask && !usePasskey) {
+      setError("请先在「Passkey」页创建通行密钥，或在 /passkey 连接 MetaMask（备选）。");
       return;
     }
 
     setStep("pin");
     try {
+      // 1) 固定到 IPFS（两条路径共用）
       const previewDataUri = svgToDataUri(schemeToPreviewSvg(displayScheme));
       const res = await fetch("/api/pin", {
         method: "POST",
@@ -166,16 +239,36 @@ export default function CreatePage() {
       if (!res.ok) throw new Error(data?.error ?? "固定到 IPFS 失败");
       setPinInfo(data);
 
-      setStep("mint");
-      if (switchChainAsync) {
-        await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
+      const mintArgs = [0n, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string] as const;
+
+      if (useMetaMask) {
+        // 2a) MetaMask（备选）
+        setStep("mint");
+        if (switchChainAsync) {
+          await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
+        }
+        await writeContractAsync({ address: addr, abi: dreamSchemeAbi, functionName: "mint", args: mintArgs });
+        return; // 收据确认后由 effect 解析 tokenId
       }
-      await writeContractAsync({
-        address: addr,
-        abi: dreamSchemeAbi,
-        functionName: "mint",
-        args: [0n, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string]
-      });
+
+      // 2b) Passkey 智能账户 + relayer 代付（无需 MetaMask、无需持有 MON）
+      if (!pk) throw new Error("缺少本机 passkey 记录");
+      setStep("mint");
+      let account: Address | null = pkAccount ?? (await passkeyAccountAddress(pk)) ?? null;
+      if (!account) throw new Error("无法推导 Passkey 账户地址");
+      setPkAccount(account);
+      if (!(await isAccountDeployed(account))) {
+        const dep = await deployPasskeyAccount(pk);
+        account = dep.account ?? account;
+        setPkAccount(account);
+      }
+      setPkDeployed(true);
+      const callData = encodeFunctionData({ abi: dreamSchemeAbi, functionName: "mint", args: mintArgs });
+      const hash = await executeViaPasskey({ account, cred: pk, to: addr, data: callData });
+      setTxHash(hash);
+      const id = await tokenIdFromReceipt(hash);
+      setTokenId(id);
+      setStep("done");
     } catch (e) {
       setError(e instanceof Error ? e.message : "铸造失败");
       setStep("idle");
@@ -191,7 +284,7 @@ export default function CreatePage() {
         <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">创建原创方案</h1>
         <div className="dim-line mt-6" />
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
-          上传 / 粘贴方案 JSON → 自动生成蓝图预览 → 固定到 IPFS → 铸造为 Monad 链上 NFT（
+          上传 JSON / 粘贴方案码 → 自动生成蓝图预览 → 固定到 IPFS → 铸造为 Monad 链上 NFT（
           <span className="mono text-ink">parentId = 0</span>）。创作者地址在铸造时上链固化。
         </p>
       </header>
@@ -199,64 +292,122 @@ export default function CreatePage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-5">
           <div className="sheet p-5">
-            <label className="field-label">Scheme JSON · 方案文件</label>
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => fileRef.current?.click()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") fileRef.current?.click();
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={onDrop}
-              className={`grid min-h-[124px] cursor-pointer place-items-center rounded-xl border-2 border-dashed p-5 text-center transition ${
-                dragOver
-                  ? "border-violet bg-violet/10"
-                  : "border-hairline bg-paper-2/60 hover:border-violet/60 hover:bg-violet/[0.04]"
-              }`}
-            >
-              <div className="text-sm">
-                <span
-                  aria-hidden
-                  className={`mono block text-[18px] ${dragOver ? "text-violet" : "text-muted"}`}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="field-label !mb-0">Scheme · 方案来源</label>
+              <div className="inline-flex rounded-lg border border-hairline p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setInputMode("json")}
+                  className={`rounded-md px-2.5 py-1 transition ${
+                    inputMode === "json" ? "bg-violet text-white" : "text-muted hover:text-ink"
+                  }`}
                 >
-                  ⤓
-                </span>
-                <p className="mt-2 font-medium text-ink">
-                  {dragOver ? "松开即可载入" : "拖拽方案 JSON 到此处，或点击选择文件"}
-                </p>
-                <p className="mono mt-1.5 text-[10.5px] uppercase tracking-[0.12em] text-muted">
-                  .json / application/json
-                </p>
+                  JSON 文件
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInputMode("code")}
+                  className={`rounded-md px-2.5 py-1 transition ${
+                    inputMode === "code" ? "bg-violet text-white" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  方案码
+                </button>
               </div>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".json,application/json"
-                className="hidden"
-                onChange={(e) => void handleFile(e.target.files?.[0])}
-              />
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button className="btn-secondary !py-1.5 !text-xs" onClick={() => void loadSample(1)}>
-                载入示例（北欧客厅）
-              </button>
-              {fileName && <span className="mono text-[11px] text-muted">已加载 · {fileName}</span>}
-            </div>
-            <textarea
-              value={raw}
-              onChange={(e) => setRaw(e.target.value)}
-              rows={12}
-              spellCheck={false}
-              placeholder={SAMPLE_JSON}
-              className="input mono mt-3 text-xs leading-relaxed"
-            />
-            {validationError && (
-              <p className="mt-2 text-xs text-[#a53f52]">{validationError}</p>
+
+            {inputMode === "json" ? (
+              <>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => fileRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") fileRef.current?.click();
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={onDrop}
+                  className={`mt-3 grid min-h-[124px] cursor-pointer place-items-center rounded-xl border-2 border-dashed p-5 text-center transition ${
+                    dragOver
+                      ? "border-violet bg-violet/10"
+                      : "border-hairline bg-paper-2/60 hover:border-violet/60 hover:bg-violet/[0.04]"
+                  }`}
+                >
+                  <div className="text-sm">
+                    <span
+                      aria-hidden
+                      className={`mono block text-[18px] ${dragOver ? "text-violet" : "text-muted"}`}
+                    >
+                      ⤓
+                    </span>
+                    <p className="mt-2 font-medium text-ink">
+                      {dragOver ? "松开即可载入" : "拖拽方案 JSON 到此处，或点击选择文件"}
+                    </p>
+                    <p className="mono mt-1.5 text-[10.5px] uppercase tracking-[0.12em] text-muted">
+                      .json / application/json
+                    </p>
+                  </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept=".json,application/json"
+                    className="hidden"
+                    onChange={(e) => void handleFile(e.target.files?.[0])}
+                  />
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button className="btn-secondary !py-1.5 !text-xs" onClick={() => void loadSample(1)}>
+                    载入示例（北欧客厅）
+                  </button>
+                  <button
+                    className="btn-secondary !py-1.5 !text-xs"
+                    onClick={() => void handleCopyCode()}
+                    disabled={!displayScheme}
+                  >
+                    {copied ? "已复制 ✓" : "复制方案码"}
+                  </button>
+                  {fileName && <span className="mono text-[11px] text-muted">已加载 · {fileName}</span>}
+                </div>
+                <textarea
+                  value={raw}
+                  onChange={(e) => setRaw(e.target.value)}
+                  rows={12}
+                  spellCheck={false}
+                  placeholder={SAMPLE_JSON}
+                  className="input mono mt-3 text-xs leading-relaxed"
+                />
+                {validationError && (
+                  <p className="mt-2 text-xs text-[#a53f52]">{validationError}</p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="mt-3 text-xs leading-relaxed text-muted">
+                  粘贴 <span className="mono">base64url</span> 方案码（本站 DesignScheme 或 VirtuHome HomePlan），自动解码为方案 JSON 后走同一套预览 / 铸造流程。
+                </p>
+                <textarea
+                  value={codeText}
+                  onChange={(e) => setCodeText(e.target.value)}
+                  rows={6}
+                  spellCheck={false}
+                  placeholder="粘贴方案码，例如：3sY9x…"
+                  className="input mono mt-3 text-xs leading-relaxed"
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    className="btn-primary !py-1.5 !text-xs"
+                    onClick={() => void handleDecode()}
+                    disabled={decoding || !codeText.trim()}
+                  >
+                    {decoding ? "解码中…" : "解析方案码"}
+                  </button>
+                  {codeNote && <span className="mono text-[11px] text-violet-deep">{codeNote}</span>}
+                </div>
+              </>
             )}
           </div>
 
@@ -298,11 +449,12 @@ export default function CreatePage() {
             </div>
           )}
 
-          {tokenId !== null && isConfirmed && (
+          {tokenId !== null && (
             <div className="sheet border-violet/40 bg-violet/[0.06] p-5 text-sm">
               <p className="text-ink">
                 铸造成功！你的原创方案是 <span className="mono font-semibold text-violet-deep">#{tokenId.toString()}</span>
               </p>
+              {txHash && <p className="mono mt-2 break-all text-[11px] text-muted">tx: {txHash}</p>}
               <Link href={`/scheme/${tokenId.toString()}`} className="btn-primary mt-3">
                 查看方案详情
               </Link>
@@ -392,10 +544,29 @@ export default function CreatePage() {
               <SummaryRow label="NETWORK">
                 <span className="mono">Monad Testnet · 10143</span>
               </SummaryRow>
+              {isConnected ? (
+                <SummaryRow label="SIGNER">
+                  <span className="mono">MetaMask · 备选</span>
+                </SummaryRow>
+              ) : pkAccount ? (
+                <SummaryRow label="SIGNER">
+                  <span className="mono text-[11px]">Passkey · {pkAccount}</span>
+                </SummaryRow>
+              ) : null}
             </dl>
-            {!isConnected && (
+            {isConnected ? (
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
-                铸造前请先连接 MetaMask 并切换到 Monad 测试网。
+                将用 MetaMask 铸造，请确认已切换到 Monad 测试网。
+              </p>
+            ) : pk ? (
+              <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
+                将用 Passkey 智能账户铸造，relayer 代付 gas（无需 MetaMask、无需持有 MON）。
+                {pkAccount && (pkDeployed ? " 账户已部署。" : " 首次铸造会自动部署账户。")}
+              </p>
+            ) : (
+              <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
+                铸造前请先在 <Link href="/passkey" className="text-violet-deep underline">Passkey 页</Link>{" "}
+                创建通行密钥，或到 /passkey 连接 MetaMask（备选）。
               </p>
             )}
           </div>

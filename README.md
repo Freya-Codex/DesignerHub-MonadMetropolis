@@ -378,7 +378,8 @@ Both run **without any secrets** (contract deps are vendored; the front end buil
   and read via `/api/activity`), plus a recent tail scan of `NEXT_PUBLIC_TAIL_SCAN_BLOCKS` (default 2000).
 - **`chain does not support contract multicall3`**: Monad's multicall3 is added in `web/lib/chains.ts`
   (canonical address `0xcA11…CA11`).
-- **Wallet `projectId` error**: leave `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` empty (MetaMask injected mode is unaffected).
+- **Wallet `projectId` error**: leave `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` empty (MetaMask injected mode is unaffected). To enable WalletConnect (and mobile scanning), get a real `projectId` at <https://cloud.reown.com> and set `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` — with no real value the UI shows injected MetaMask only and makes no WalletConnect network calls.
+- **Connect-wallet crash (`invalid border=0`)**: caused by `qr@0.7.0` (pulled by `@rainbow-me/rainbowkit` → `cuer`) rejecting the `border: 0` that RainbowKit's wallet QR passes. `package.json` pins `"overrides": { "qr": "0.5.5" }`; run `npm install` after pulling. Do not remove the override or RainbowKit's QR screen will throw `RangeError: invalid border=0` during `render`.
 - **Passkey account address differs between visits**: the address is bound to `(passkey, RP ID, Origin)` —
   a different domain or port (localhost ↔ 127.0.0.1) yields a different account. The local record lives in `localStorage`.
 - **Passkey flow errors "relayer_disabled"**: set `RELAYER_PRIVATE_KEY` (or `MONAD_PRIVATE_KEY`) to enable the demo sponsor.

@@ -134,6 +134,27 @@ function xyFromRawPoint(point: Uint8Array): { x: Hex; y: Hex } {
   return { x: toHex(x), y: toHex(y) };
 }
 
+/**
+ * Extract the 65-byte uncompressed point (0x04‖X‖Y) from an SPKI
+ * (SubjectPublicKeyInfo, DER) blob.
+ *
+ * WebAuthn's `getPublicKey()` returns an **SPKI DER** value (91 bytes for P-256,
+ * starting with 0x30), not a raw point. Its trailing BIT STRING is
+ * `0x00 (unused bits) ‖ 0x04‖X‖Y`, so the last 65 bytes are the target point.
+ * Feeding it directly into `xyFromRawPoint` fails the `point[0] !== 0x04` check.
+ */
+function rawPointFromSpki(spki: Uint8Array): Uint8Array {
+  // Canonical path: SPKI ends with the BIT STRING; last 65 bytes are 0x04‖X‖Y.
+  if (spki.length >= 65 && spki[spki.length - 65] === 0x04) {
+    return spki.slice(spki.length - 65);
+  }
+  // Already a raw point (non-standard) or extra fields: scan for the first 0x04.
+  for (let i = 0; i + 65 <= spki.length; i++) {
+    if (spki[i] === 0x04) return spki.slice(i, i + 65);
+  }
+  throw new Error("passkey: could not locate an uncompressed P-256 point in the SPKI");
+}
+
 /** Parse COSE_Key (EC2, P-256) from authenticatorData → (x, y). */
 function xyFromAuthData(authData: Uint8Array): { x: Hex; y: Hex } {
   if (authData.length < 37) throw new Error("passkey: authenticatorData too short");
@@ -148,6 +169,25 @@ function xyFromAuthData(authData: Uint8Array): { x: Hex; y: Hex } {
   const y = value.get(-3) as Uint8Array | undefined;
   if (!x || !y) throw new Error("passkey: COSE_Key missing EC2 coordinates (-2/-3)");
   return { x: toHex(x), y: toHex(y) };
+}
+
+/**
+ * Return the authData bytes from an attestationObject (CBOR map: { fmt, attStmt, authData }).
+ *
+ * `resp.attestationObject` is a CBOR wrapper, **not** raw authData; passing it directly
+ * to `xyFromAuthData` misaligns the offsets and fails to parse.
+ */
+function authDataFromAttestationObject(attestationObject: Uint8Array): Uint8Array {
+  try {
+    const { value } = cborDecode(attestationObject);
+    if (value instanceof Map) {
+      const a = value.get("authData");
+      if (a instanceof Uint8Array) return a;
+    }
+  } catch {
+    /* fall through to compatibility branch */
+  }
+  return attestationObject; // tolerate implementations that pass authData directly
 }
 
 // ---------------------------------------------------------- WebAuthn create/get
@@ -188,12 +228,17 @@ export async function createPasskey(opts: {
   if (!cred) throw new Error("passkey: cancelled or creation failed");
 
   const resp = cred.response as AuthenticatorAttestationResponse;
-  let xy: { x: Hex; y: Hex };
+  let xy: { x: Hex; y: Hex } | null = null;
   const spki = (resp as AuthenticatorAttestationResponse & { getPublicKey?: () => ArrayBuffer | null }).getPublicKey?.();
   if (spki && spki.byteLength >= 65) {
-    xy = xyFromRawPoint(new Uint8Array(spki));
-  } else {
-    xy = xyFromAuthData(new Uint8Array(resp.attestationObject));
+    try {
+      xy = xyFromRawPoint(rawPointFromSpki(new Uint8Array(spki)));
+    } catch {
+      xy = null; // fall back to the COSE_Key inside attestationObject
+    }
+  }
+  if (!xy) {
+    xy = xyFromAuthData(authDataFromAttestationObject(new Uint8Array(resp.attestationObject)));
   }
 
   const credentialId = new Uint8Array(cred.rawId);

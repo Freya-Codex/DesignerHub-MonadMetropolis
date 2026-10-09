@@ -9,7 +9,7 @@
  *   3) relayer 代付 gas 部署账户；
  *   4) 用一次 passkey 签名执行链上动作（此处演示：在 ProvenanceRegistry 留下一条确权记录）。
  *
- * MetaMask 仍保留为「高级模式」（右上角连接钱包），供习惯 EOA 的开发者使用。
+ * MetaMask 保留为「备选」（页内下方可连接），供习惯 EOA 的开发者使用。
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -33,9 +33,10 @@ import {
   rpIdHashHex,
   signAssertion
 } from "@/lib/passkey";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { clearStoredPasskey, loadStoredPasskey, saveStoredPasskey } from "@/lib/passkeyAccount";
 
 const EXPLORER = "https://testnet.monadexplorer.com";
-const STORE_KEY = "dh.passkey.v1";
 
 interface StoredCred {
   credentialIdB64: string;
@@ -102,15 +103,10 @@ export default function PasskeyPage() {
   // 载入本机已保存的 passkey
   useEffect(() => {
     setSupported(typeof window !== "undefined" && Boolean(window.PublicKeyCredential));
-    try {
-      const raw = localStorage.getItem(STORE_KEY);
-      if (raw) {
-        const c = JSON.parse(raw) as StoredCred;
-        setCred(c);
-        computeAccount(c).catch(() => {});
-      }
-    } catch {
-      /* ignore */
+    const c = loadStoredPasskey();
+    if (c) {
+      setCred(c);
+      computeAccount(c).catch(() => {});
     }
   }, [computeAccount]);
 
@@ -119,7 +115,7 @@ export default function PasskeyPage() {
     try {
       const c = await createPasskey({ rpId, rpName: "Designer Hub" });
       const stored: StoredCred = { credentialIdB64: c.credentialIdB64, x: c.x, y: c.y };
-      localStorage.setItem(STORE_KEY, JSON.stringify(stored));
+      saveStoredPasskey(stored);
       setCred(stored);
       say(`passkey 已创建（凭证 ${c.credentialIdB64.slice(0, 12)}…）`);
       await computeAccount(stored);
@@ -227,7 +223,7 @@ export default function PasskeyPage() {
   }
 
   function onReset() {
-    localStorage.removeItem(STORE_KEY);
+    clearStoredPasskey();
     setCred(null);
     setAccount(null);
     setDeployed(false);
@@ -243,8 +239,8 @@ export default function PasskeyPage() {
           <h1 className="display mt-5 text-[34px] text-white sm:text-[52px]">用 Face ID 登录 web3</h1>
           <p className="mt-5 max-w-3xl text-sm leading-relaxed text-white/70 sm:text-[15px]">
             无需助记词、无需安装浏览器插件、<span className="text-white">无需持有 MON</span>。私钥在设备安全芯片内生成且永不导出；
-            relayer 代付 gas，你只需一次指纹 / 面容确认即可完成链上动作。习惯自托管 EOA 的开发者，可在右上角用
-            <span className="text-white"> MetaMask（高级模式）</span>。
+            relayer 代付 gas，你只需一次指纹 / 面容确认即可完成链上动作。
+            <span className="text-white"> Passkey 密钥不接触资金，支付密钥由用户自选</span>——涉及付款的操作，可在本页下方连接 MetaMask（备选）完成。
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/board" className="btn-outline-light">
@@ -260,7 +256,7 @@ export default function PasskeyPage() {
       {!supported && (
         <div className="sheet border-l-4 border-coral p-5 text-sm text-ink">
           当前浏览器不支持 WebAuthn（Passkey）。请用 Chrome / Edge / Safari（≥16）桌面版或手机浏览器打开；也可改用
-          MetaMask 高级模式。
+          MetaMask（备选）。
         </div>
       )}
 
@@ -330,6 +326,19 @@ export default function PasskeyPage() {
               {log.length === 0 ? <p>—</p> : log.map((l, i) => <p key={i}>{l}</p>)}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="sheet p-6">
+        <p className="eyebrow">备选 · 连接钱包（MetaMask）</p>
+        <div className="dim-line mt-4" />
+        <p className="mt-5 text-[13px] leading-relaxed text-muted">
+          习惯自托管 EOA 的开发者，也可在此连接 MetaMask 作为备选签名方式。
+          <span className="text-ink">Passkey 密钥不接触资金，支付密钥由用户自选</span>
+          ——「应用到我家」等付费操作需由钱包支付。
+        </p>
+        <div className="mt-5">
+          <ConnectButton chainStatus="icon" accountStatus="address" showBalance={false} />
         </div>
       </section>
 

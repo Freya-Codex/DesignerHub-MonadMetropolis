@@ -6,8 +6,17 @@ import { useParams } from "next/navigation";
 import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { encodeFunctionData, type Address } from "viem";
 import { dreamSchemeAddress, schemeMarketAddress, useSchemeDetail, useSchemes } from "@/lib/contracts";
 import { schemeMarketAbi } from "@/lib/abis";
+import {
+  ensurePasskeyAccount,
+  executeViaPasskey,
+  loadStoredPasskey,
+  onPasskeyChange,
+  passkeyAccountAddress,
+  type StoredPasskey
+} from "@/lib/passkeyAccount";
 import { demoSchemes } from "@/lib/demo";
 import LineageTree from "@/components/LineageTree";
 import PreviewImage from "@/components/PreviewImage";
@@ -30,6 +39,26 @@ export default function SchemeDetailPage() {
   const queryClient = useQueryClient();
   const { data: allSchemes } = useSchemes();
   const [txNote, setTxNote] = useState<string>("");
+
+  // passkey 签名者（免钱包）：用于 setPrice；付费购买仍走钱包
+  const [pk, setPk] = useState<StoredPasskey | null>(null);
+  const [passkeyAddr, setPasskeyAddr] = useState<Address | null>(null);
+  const [busySetPrice, setBusySetPrice] = useState(false);
+  useEffect(() => {
+    const load = () => {
+      const cred = loadStoredPasskey();
+      setPk(cred);
+      if (cred) {
+        passkeyAccountAddress(cred)
+          .then((a) => setPasskeyAddr(a ?? null))
+          .catch(() => setPasskeyAddr(null));
+      } else {
+        setPasskeyAddr(null);
+      }
+    };
+    load();
+    return onPasskeyChange(load);
+  }, []);
 
   const isDemo = !dreamSchemeAddress();
   const demo = useMemo(
@@ -109,6 +138,27 @@ export default function SchemeDetailPage() {
       setTxNote("未配置 SchemeMarket 合约地址");
       return;
     }
+    const cred = pk;
+    const passkeyMode = !isConnected && Boolean(cred);
+    if (passkeyMode && cred) {
+      setBusySetPrice(true);
+      try {
+        const data = encodeFunctionData({
+          abi: schemeMarketAbi,
+          functionName: "setPrice",
+          args: [tokenId ?? 0n, priceWei]
+        });
+        const account = await ensurePasskeyAccount(cred);
+        const hash = await executeViaPasskey({ account, cred, to: market, data });
+        setTxNote(`定价交易已提交：${hash}`);
+        await refreshDetail();
+      } catch (e) {
+        setTxNote(e instanceof Error ? e.message : "定价失败");
+      } finally {
+        setBusySetPrice(false);
+      }
+      return;
+    }
     if (switchChainAsync) {
       await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
     }
@@ -177,8 +227,10 @@ export default function SchemeDetailPage() {
       applyError={applyError ? String(applyError) : undefined}
       txNote={txNote}
       isConnected={isConnected}
+      passkeyAddr={passkeyAddr ?? undefined}
+      hasPasskey={Boolean(pk)}
       onSetPrice={onSetPrice}
-      isSetPricePending={isSetPricePending || isPriceConfirming}
+      isSetPricePending={isSetPricePending || isPriceConfirming || busySetPrice}
       setPriceError={setPriceError ? String(setPriceError) : undefined}
       onApplied={refreshDetail}
     />
@@ -197,6 +249,8 @@ interface DetailFrameProps {
   applyError?: string | null;
   txNote?: string;
   isConnected?: boolean;
+  passkeyAddr?: Address;
+  hasPasskey?: boolean;
   onSetPrice?: (priceWei: bigint) => void;
   isSetPricePending?: boolean;
   setPriceError?: string | null;
@@ -216,6 +270,8 @@ function DetailFrame(props: DetailFrameProps) {
     applyError,
     txNote,
     isConnected,
+    passkeyAddr,
+    hasPasskey,
     onSetPrice,
     isSetPricePending,
     setPriceError,
@@ -240,7 +296,8 @@ function DetailFrame(props: DetailFrameProps) {
   const versions: bigint[] = d.versionLine ?? [];
   const headId = versions.length > 0 ? versions[versions.length - 1] : (d.tokenId as bigint);
   const isCreator = Boolean(
-    account && d.creator && account.toLowerCase() === String(d.creator).toLowerCase()
+    (account && d.creator && account.toLowerCase() === String(d.creator).toLowerCase()) ||
+      (passkeyAddr && d.creator && passkeyAddr.toLowerCase() === String(d.creator).toLowerCase())
   );
   const isHead = headId === (d.tokenId as bigint);
   const canNewVersion = !isDemoMode && isCreator && isHead && versions.length >= 1;
@@ -353,7 +410,9 @@ function DetailFrame(props: DetailFrameProps) {
 
           {!isDemoMode && !isConnected && (
             <p className="mt-3 text-xs leading-relaxed text-muted">
-              连接 MetaMask 后即可应用或 Remix（需切换到 Monad 测试网）。
+              {hasPasskey
+                ? "「应用到我家」为付费操作，需连接钱包（MetaMask）；Passkey 可用于铸造 / Remix / 上架定价。"
+                : "连接 MetaMask 后即可应用或 Remix；也可在「Passkey」页创建通行密钥，免钱包铸造 / Remix。"}
             </p>
           )}
           {txNote && (

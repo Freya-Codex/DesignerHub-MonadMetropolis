@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import SchemeCard from "@/components/SchemeCard";
-import { dreamSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
+import { dreamSchemeAddress, useSchemes } from "@/lib/contracts";
 import { demoSchemes } from "@/lib/demo";
 
 export default function GalleryPage() {
@@ -24,7 +24,7 @@ export default function GalleryPage() {
         />
         <div className="relative">
           <p className="eyebrow eyebrow-dark">
-            Monad Testnet · Chain 10143 · Social / Attention / Culture
+            Monad Testnet · Chain 10143 · Track 04 — Trust, Identity & AI Infrastructure
           </p>
 
           <h1 className="display mt-5 text-[34px] text-white sm:text-[58px]">
@@ -45,12 +45,9 @@ export default function GalleryPage() {
           </div>
 
           <p className="mt-6 max-w-2xl text-sm leading-relaxed text-white/70 sm:text-[15px]">
-            手机扫描房间生成 3D 模型 → 在这里发布设计方案 → 任何人都能 Remix 衍生，
+            由AI生成装修方案 → 在这里发布设计方案 → 任何人都能 Remix 衍生，
             <span className="mono text-white/90"> parentId </span>
-            上链归因。他人「应用到我家」时，费用按创作者定价支付，原创
-            <span className="mono text-white/90"> 90% </span>
-            直达作者、衍生 <span className="mono text-white/90"> 85%+5%谱系 </span>
-            自动分账。就像家居设计界的 GitHub：谱系可追溯，收益自动分账。
+            上链归因。他人「应用到我家」时，费用按创作者定价支付。就像家居设计界的 GitHub：谱系可追溯，收益自动分账。
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -89,15 +86,6 @@ export default function GalleryPage() {
             <code className="mono text-ink">npm run seed</code>），画廊会自动切换为链上数据。
           </p>
         </div>
-      )}
-
-      {!isDemo && (
-        <p className="mono text-[11px] leading-relaxed text-muted">
-          DreamScheme <span className="text-ink">{dreamSchemeAddress()}</span>
-          <br />
-          SchemeMarket{" "}
-          <span className="text-ink">{schemeMarketAddress() ?? "未配置（仅画廊可读）"}</span>
-        </p>
       )}
 
       {/* ── 画廊 ─────────────────────────────────────── */}

@@ -5,9 +5,16 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { decodeEventLog, type Hex } from "viem";
+import { decodeEventLog, encodeFunctionData, type Hex } from "viem";
 import { dreamSchemeAbi, KIMI_AGENT_ID } from "@/lib/abis";
 import { dreamSchemeAddress, publicClientFor, useSchemeDetail } from "@/lib/contracts";
+import {
+  ensurePasskeyAccount,
+  executeViaPasskey,
+  loadStoredPasskey,
+  onPasskeyChange,
+  type StoredPasskey
+} from "@/lib/passkeyAccount";
 import { monadTestnet } from "@/lib/chains";
 import { fetchUriJson } from "@/lib/ipfs";
 import {
@@ -52,6 +59,17 @@ export default function RemixPage() {
     hash: mintHash,
     confirmations: 1
   });
+
+  // 签名者选择：连了 MetaMask 优先 MetaMask，否则用本机 passkey（免钱包）
+  const [pk, setPk] = useState<StoredPasskey | null>(null);
+  const [busyPasskey, setBusyPasskey] = useState(false);
+  useEffect(() => {
+    const load = () => setPk(loadStoredPasskey());
+    load();
+    return onPasskeyChange(load);
+  }, []);
+  const useMetaMask = isConnected;
+  const usePasskey = !useMetaMask && Boolean(pk);
 
   // ?newVersion=1：从详情页「发布新版本」进入，parentId 指向自己的上一版
   useEffect(() => {
@@ -139,8 +157,11 @@ export default function RemixPage() {
       setError("未配置合约地址，请先部署合约并写入 web/.env.local");
       return;
     }
-    if (!isConnected) {
-      setError("请先连接钱包");
+    const cred = loadStoredPasskey();
+    const walletMode = isConnected;
+    const passkeyMode = !walletMode && Boolean(cred);
+    if (!walletMode && !passkeyMode) {
+      setError("请先在「Passkey」页创建通行密钥，或在 /passkey 连接 MetaMask（备选）");
       return;
     }
     setStep("pin");
@@ -164,20 +185,34 @@ export default function RemixPage() {
       if (!res.ok) throw new Error(data?.error ?? "固定到 IPFS 失败");
 
       setStep("mint");
-      if (switchChainAsync) {
-        await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
+      if (passkeyMode && cred) {
+        setBusyPasskey(true);
+        const callData = encodeFunctionData({
+          abi: dreamSchemeAbi,
+          functionName: "remix",
+          args: [tokenId, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string]
+        });
+        const account = await ensurePasskeyAccount(cred);
+        const hash = await executeViaPasskey({ account, cred, to: addr, data: callData });
+        setMintHash(hash);
+      } else {
+        if (switchChainAsync) {
+          await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
+        }
+        const hash = await writeContractAsync({
+          address: addr,
+          abi: dreamSchemeAbi,
+          functionName: "remix",
+          args: [tokenId, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string]
+        });
+        setMintHash(hash);
       }
-      const hash = await writeContractAsync({
-        address: addr,
-        abi: dreamSchemeAbi,
-        functionName: "remix",
-        args: [tokenId, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string]
-      });
-      setMintHash(hash);
       setStep("idle");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Remix 铸造失败");
       setStep("idle");
+    } finally {
+      setBusyPasskey(false);
     }
   };
 
@@ -204,7 +239,7 @@ export default function RemixPage() {
     })();
   }, [isConfirmed, mintHash, tokenId, tokenIdOut]);
 
-  const busy = step !== "idle" || isWritePending || isConfirming;
+  const busy = step !== "idle" || isWritePending || isConfirming || busyPasskey;
 
   if (loadError) {
     return (
@@ -377,6 +412,11 @@ export default function RemixPage() {
               <Row label="CHAIN">
                 <span className="mono">Monad Testnet · 10143</span>
               </Row>
+              <Row label="SIGNER / 签名">
+                <span className="mono text-[12px]">
+                  {useMetaMask ? "MetaMask" : usePasskey ? "Passkey · 免 gas" : "—"}
+                </span>
+              </Row>
             </dl>
 
             <button onClick={() => void handleMintRemix()} disabled={busy} className="btn-primary mt-5 w-full">
@@ -413,9 +453,17 @@ export default function RemixPage() {
                 </Link>
               </div>
             )}
-            {!isConnected && (
+            {usePasskey ? (
+              <p className="mt-4 rounded-xl bg-violet/[0.06] p-3 text-xs leading-relaxed text-muted">
+                将用 <span className="text-ink">Passkey 智能账户</span>铸造，relayer 代付 gas（无需 MetaMask、无需 MON）。
+              </p>
+            ) : useMetaMask ? (
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
-                铸造前请先连接 MetaMask 并切换到 Monad 测试网。
+                将用 MetaMask 铸造，请确认已切换到 Monad 测试网。
+              </p>
+            ) : (
+              <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
+                铸造前请先在「Passkey」页创建通行密钥，或在 /passkey 连接 MetaMask（备选）。
               </p>
             )}
           </div>

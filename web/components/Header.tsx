@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import {
+  isAccountDeployed,
+  loadStoredPasskey,
+  onPasskeyChange,
+  passkeyAccountAddress
+} from "@/lib/passkeyAccount";
 
 const NAV = [
-  { href: "/passkey", label: "Passkey", en: "PASSKEY" },
   { href: "/demo", label: "画廊", en: "GALLERY" },
   { href: "/mint", label: "铸造", en: "MINT" },
   { href: "/trades", label: "交易", en: "TRADES" },
@@ -53,12 +58,71 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0 [&_button]:!px-2.5 [&_button]:!text-[12px] sm:[&_button]:!px-4 sm:[&_button]:!text-[13.5px]">
-          <span className="mono hidden text-[9px] tracking-[0.15em] text-white/40 sm:inline">高级模式</span>
-          <ConnectButton chainStatus="icon" accountStatus="address" showBalance={false} />
+        <div className="ml-auto shrink-0 sm:ml-0">
+          <PasskeyControl />
         </div>
       </div>
       <div className="h-px bg-gradient-to-r from-transparent via-violet/70 to-transparent" />
     </header>
   );
+}
+
+/**
+ * 右上角单一 Passkey 控件：替代原先的「连接钱包」。
+ * 未创建 → 引导创建；已创建 → 显示 passkey 账户短地址 + 部署状态，点击进入 /passkey（内含 MetaMask 备选）。
+ */
+function PasskeyControl() {
+  const [state, setState] = useState<{
+    loading: boolean;
+    has: boolean;
+    addr?: string;
+    deployed?: boolean;
+  }>({ loading: true, has: false });
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const cred = loadStoredPasskey();
+      if (!cred) {
+        if (!cancelled) setState({ loading: false, has: false });
+        return;
+      }
+      try {
+        const addr = await passkeyAccountAddress(cred);
+        const deployed = addr ? await isAccountDeployed(addr) : false;
+        if (!cancelled) setState({ loading: false, has: true, addr: addr ?? undefined, deployed });
+      } catch {
+        if (!cancelled) setState({ loading: false, has: true });
+      }
+    };
+    void load();
+    const off = onPasskeyChange(() => void load());
+    return () => {
+      cancelled = true;
+      off();
+    };
+  }, []);
+
+  const { loading, has, addr, deployed } = state;
+  const label = loading
+    ? "Passkey…"
+    : has
+      ? `Passkey · ${addr ? short(addr) : "已创建"}`
+      : "创建通行密钥";
+  const dot = has ? (deployed ? "bg-emerald-400" : "bg-amber-400") : "bg-white/40";
+
+  return (
+    <Link
+      href="/passkey"
+      title={has ? `Passkey 账户 ${addr ?? ""}` : "创建通行密钥（Passkey）"}
+      className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/[0.06] px-2.5 py-2 text-[12.5px] font-medium text-white/90 transition hover:border-white/40 hover:bg-white/10 sm:px-3"
+    >
+      <span aria-hidden className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+      <span className="whitespace-nowrap">{label}</span>
+    </Link>
+  );
+}
+
+function short(a: string): string {
+  return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
 }

@@ -1,21 +1,39 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { metaMaskWallet, walletConnectWallet } from "@rainbow-me/rainbowkit/wallets";
 import { http } from "viem";
 import { monadTestnet } from "./chains";
 
 /**
- * WalletConnect Cloud projectId。
- * 注意用 || 而不是 ??：.env.local 里写了 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=`（空字符串）时，
- * ?? 不会回退，会让 RainbowKit 直接抛 "No projectId found"。
- * 未配置时用占位值，MetaMask 注入模式依然可用（不启用 WalletConnect 连接器）。
+ * WalletConnect / Reown Cloud projectId（可选）。
+ *
+ * ⚠️ 关键：只有拿到**真实的** projectId 时才启用 WalletConnect 连接器。
+ * 之前的实现无论有没有配置，都塞了一个占位值 "000...0" 并走 RainbowKit 默认钱包列表
+ * （含 walletConnectWallet），导致连接钱包时浏览器去请求
+ *   - https://api.web3modal.org/appkit/v1/config?projectId=000...0  → 403
+ *   - wss://relay.walletconnect.org/...                            → 连接被重置
+ * 进而触发前端客户端异常（“Application error: a client-side exception has occurred”）。
+ *
+ * 现在：没有真实 projectId 时，钱包列表只保留浏览器注入的 MetaMask，
+ * 完全不会实例化 WalletConnect 连接器，也就不再发生上面这些网络请求。
+ * 想启用 WalletConnect（手机扫码/更多钱包），去 https://cloud.reown.com 申请一个
+ * projectId 填进 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID 即可自动开启。
  */
-const walletConnectProjectId =
-  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() || "00000000000000000000000000000000";
+const rawProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
+const hasRealProjectId = !!rawProjectId && !/^0+$/.test(rawProjectId);
 
 export const config = getDefaultConfig({
   appName: "Designer Hub · Monad",
-  projectId: walletConnectProjectId,
+  // getDefaultConfig 的类型要求 projectId 必填；没有真实值时给占位符，
+  // 但下面的 wallets 列表不会包含 walletConnectWallet，占位符不会被真正使用。
+  projectId: hasRealProjectId ? rawProjectId! : "00000000000000000000000000000000",
   chains: [monadTestnet],
+  wallets: [
+    {
+      groupName: hasRealProjectId ? "推荐" : "浏览器钱包",
+      wallets: hasRealProjectId ? [metaMaskWallet, walletConnectWallet] : [metaMaskWallet]
+    }
+  ],
   transports: {
     [monadTestnet.id]: http(monadTestnet.rpcUrls.default.http[0])
   },

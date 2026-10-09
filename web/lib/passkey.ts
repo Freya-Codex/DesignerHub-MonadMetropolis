@@ -159,11 +159,30 @@ function cborDecode(buf: Uint8Array, offset = 0): { value: unknown; offset: numb
 /** 从 65 字节非压缩点（0x04‖X‖Y）取坐标。 */
 function xyFromRawPoint(point: Uint8Array): { x: Hex; y: Hex } {
   if (point.length < 65 || point[0] !== 0x04) {
-    throw new Error("passkey: 公钥非非压缩 P-256 点");
+    throw new Error("passkey: 公钥非压缩 P-256 点");
   }
   const x = point.slice(point.length - 64, point.length - 32);
   const y = point.slice(point.length - 32);
   return { x: toHex(x), y: toHex(y) };
+}
+
+/**
+ * 从 SPKI（SubjectPublicKeyInfo，DER）中取出 65 字节非压缩点（0x04‖X‖Y）。
+ *
+ * 注意：WebAuthn 的 `getPublicKey()` 返回的是 **SPKI DER**（P-256 为 91 字节，首字节 0x30），
+ * 而不是原始点。其尾部 BIT STRING 为 `0x00（未用位数）‖ 0x04‖X‖Y`，因此最后 65 字节即目标点。
+ * 直接把它当原始点校验会在 `point[0] !== 0x04` 处误判失败。
+ */
+function rawPointFromSpki(spki: Uint8Array): Uint8Array {
+  // 规范路径：SPKI 末尾固定为 BIT STRING，最后 65 字节即 0x04‖X‖Y。
+  if (spki.length >= 65 && spki[spki.length - 65] === 0x04) {
+    return spki.slice(spki.length - 65);
+  }
+  // 已是原始点（非标准实现）或含额外字段：扫描首个 0x04 标记。
+  for (let i = 0; i + 65 <= spki.length; i++) {
+    if (spki[i] === 0x04) return spki.slice(i, i + 65);
+  }
+  throw new Error("passkey: 无法从 SPKI 中定位 P-256 非压缩点");
 }
 
 /** 从认证器数据中解析 COSE_Key（EC2, P-256）→ (x, y)。 */
@@ -181,6 +200,25 @@ function xyFromAuthData(authData: Uint8Array): { x: Hex; y: Hex } {
   const y = value.get(-3) as Uint8Array | undefined;
   if (!x || !y) throw new Error("passkey: COSE_Key 缺少 EC2 坐标 (-2/-3)");
   return { x: toHex(x), y: toHex(y) };
+}
+
+/**
+ * 从 attestationObject（CBOR map：{ fmt, attStmt, authData }）中取回 authData 字节。
+ *
+ * 注意：`resp.attestationObject` 是 CBOR 包装对象，**不是**裸 authData；
+ * 直接送入 `xyFromAuthData` 会因偏移错位而解析失败。
+ */
+function authDataFromAttestationObject(attestationObject: Uint8Array): Uint8Array {
+  try {
+    const { value } = cborDecode(attestationObject);
+    if (value instanceof Map) {
+      const a = value.get("authData");
+      if (a instanceof Uint8Array) return a;
+    }
+  } catch {
+    /* 落到下面的兼容分支 */
+  }
+  return attestationObject; // 兼容直接传 authData 的实现
 }
 
 // ------------------------------------------------------------------ //
@@ -224,12 +262,17 @@ export async function createPasskey(opts?: {
   if (!cred) throw new Error("passkey: 用户取消或创建失败");
 
   const resp = cred.response as AuthenticatorAttestationResponse;
-  let xy: { x: Hex; y: Hex };
+  let xy: { x: Hex; y: Hex } | null = null;
   const spki = (resp as AuthenticatorAttestationResponse & { getPublicKey?: () => ArrayBuffer | null }).getPublicKey?.();
   if (spki && spki.byteLength >= 65) {
-    xy = xyFromRawPoint(new Uint8Array(spki));
-  } else {
-    xy = xyFromAuthData(new Uint8Array(resp.attestationObject));
+    try {
+      xy = xyFromRawPoint(rawPointFromSpki(new Uint8Array(spki)));
+    } catch {
+      xy = null; // 回退到 attestationObject 中的 COSE_Key
+    }
+  }
+  if (!xy) {
+    xy = xyFromAuthData(authDataFromAttestationObject(new Uint8Array(resp.attestationObject)));
   }
 
   const credentialId = new Uint8Array(cred.rawId);

@@ -17,7 +17,7 @@ export default function BoardPage() {
   return (
     <div className="space-y-8">
       <header className="rise">
-        <p className="eyebrow">Leaderboard · Social / Attention / Culture</p>
+        <p className="eyebrow">Leaderboard · Track 04 — Trust, Identity & AI Infrastructure</p>
         <h1 className="display mt-3 text-[32px] text-ink sm:text-[46px]">创意排行榜</h1>
         <div className="dim-line mt-6 max-w-2xl" />
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">

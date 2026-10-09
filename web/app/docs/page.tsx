@@ -46,7 +46,7 @@ const MECHANISMS = [
   {
     tag: "07",
     title: "Passkey 无助记词账户",
-    body: "主流程：P256PasskeyAccount 用 WebAuthn Passkey（指纹 / Face ID）替代助记词——CREATE2 工厂预计算地址，relayer 代付 gas 执行交易，私钥永不出设备安全芯片；多设备可添加多把公钥。习惯自托管 EOA 的开发者仍可用 MetaMask（高级模式）。入口：/passkey。"
+    body: "主流程：P256PasskeyAccount 用 WebAuthn Passkey（指纹 / Face ID）替代助记词——CREATE2 工厂预计算地址，relayer 代付 gas 执行交易，私钥永不出设备安全芯片；多设备可添加多把公钥。铸造 / Remix / 上架定价均可用 Passkey 免钱包完成；连接钱包（MetaMask）作为备选。入口：/passkey。"
   },
   {
     tag: "06",
@@ -71,12 +71,16 @@ export default function DocsPage() {
           className="pointer-events-none absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-violet/25 blur-[90px]"
         />
         <div className="relative">
-          <p className="eyebrow eyebrow-dark">Monad Hackathon · Social / Attention / Culture</p>
+          <p className="eyebrow eyebrow-dark">Monad Hackathon · Track 04 — Trust, Identity & AI Infrastructure</p>
           <h1 className="display mt-5 text-[34px] text-white sm:text-[52px]">玩法与规则</h1>
           <p className="mt-5 max-w-3xl text-sm leading-relaxed text-white/70 sm:text-[15px]">
-            在「云筑家 VirtuHome」App 里完成「手机扫描房间 → 3D 虚拟装修」，导出的方案导入这里，变成
+            在「云筑家 VirtuHome」网站里完成「AI生成装修方案」，将方案导入这里，变成
             <span className="text-white">可 remix、可归因、可分账的创作资产</span>。
             创作者的每一次迭代、被引用、被应用，都会沉淀为链上注意力资产。
+          </p>
+          <p className="mt-3 max-w-3xl text-[13px] leading-relaxed text-white/60">
+            <span className="text-white">Passkey 密钥不接触资金，支付密钥由用户自选。</span>{" "}
+            Passkey 只用于身份与签名，不托管、不触碰你的资金；涉及付款时，用哪种支付方式与密钥由你自行选择。
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/passkey" className="btn-primary">
@@ -239,6 +243,26 @@ export default function DocsPage() {
               )}
             </Row>
           </dl>
+
+          <details className="group mt-5 rounded-xl border border-hairline bg-paper-2/50 p-4 list-none [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer select-none items-center gap-2 text-[12px] font-medium text-ink">
+              <span className="mono text-[10px] uppercase tracking-[0.12em] text-muted">
+                Contract addresses · 完整合约地址
+              </span>
+              <span className="ml-auto text-[11px] text-muted group-open:hidden">展开 ▾</span>
+              <span className="ml-auto hidden text-[11px] text-muted group-open:inline">收起 ▴</span>
+            </summary>
+            <div className="mt-3 space-y-1.5 border-t border-hairline pt-3">
+              <p className="mono text-[11px] leading-relaxed text-ink">
+                DreamScheme{" "}
+                <span className="break-all">{scheme ?? "未配置（演示数据模式）"}</span>
+              </p>
+              <p className="mono text-[11px] leading-relaxed text-ink">
+                SchemeMarket{" "}
+                <span className="break-all">{market ?? "未配置（仅画廊可读）"}</span>
+              </p>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -247,7 +271,7 @@ export default function DocsPage() {
         <div className="dim-line mt-4" />
         <ol className="mt-6 grid gap-5 sm:grid-cols-2">
           {[
-            <>在 MetaMask 添加 Monad 测试网（Chain ID 10143，RPC 见左表）</>,
+            <>在 MetaMask 添加 Monad 测试网（Chain ID 10143，RPC 见左表）（仅连接钱包时需）</>,
             <>
               去{" "}
               <a className="link" href="https://faucet.monad.xyz" target="_blank" rel="noreferrer">
@@ -257,7 +281,7 @@ export default function DocsPage() {
             </>,
             <>
               在 <Link className="link" href="/mint/create">创建页</Link>{" "}
-              拖拽/粘贴方案 JSON → 查看参数摘要 → 固定到 IPFS 并铸造
+              拖拽/粘贴方案 JSON，或粘贴 base64url 方案码（本站 DesignScheme 或 VirtuHome HomePlan） → 查看参数摘要 → 固定到 IPFS 并铸造
             </>,
             <>
               在 <Link className="link" href="/demo">画廊</Link>{" "}
@@ -290,11 +314,19 @@ export default function DocsPage() {
           {[
             {
               q: "铸造和 Remix 要花钱吗？",
-              a: "铸造只消耗测试网 gas（MON）；「应用到我家」按创作者 setPrice 定价支付，原创 90% 直达创作者。"
+              a: "用 Passkey 时铸造 / Remix / 上架定价完全免 gas（relayer 代付）；「应用到我家」按创作者 setPrice 定价支付，原创 90% 直达创作者。"
+            },
+            {
+              q: "Passkey 会碰我的资金吗？",
+              a: "不会。Passkey 密钥不接触资金，支付密钥由用户自选：Passkey 只用于身份与签名（铸造 / Remix / 上架定价），不托管、不触碰你的资金；涉及付款（应用到我家）时，用哪种支付方式与密钥由用户自行选择。"
             },
             {
               q: "评论为什么不用 gas？",
               a: "评论走链下存储 + 钱包签名验证：MetaMask 对文本签名，后端校验通过后按 tokenId 存到本地 JSON，接口为 POST/GET /api/comment。"
+            },
+            {
+              q: "方案码（base64url）是什么？",
+              a: "把方案压成一段 base64url 码，便于分享/搬运。创建页「方案码」页签可直接粘贴解析：既支持本站 DesignScheme，也支持云筑家 VirtuHome 的 HomePlan（自动转换）。也可在 JSON 模式下点「复制方案码」把当前方案导出为码。"
             },
             {
               q: "没配置 Pinata / Kimi 也能演示吗？",
