@@ -11,7 +11,7 @@
  *   2) VirtuHome 的 HomePlan —— 自动转换为 DesignScheme（best-effort）。
  */
 
-import { validateScheme, type DesignScheme, type FurnitureItem } from "@/lib/scheme";
+import { validateScheme, type DesignScheme, type FurnitureItem, type GeneratorInfo } from "@/lib/scheme";
 import { L, getLang } from "@/lib/langStore";
 
 const te = new TextEncoder();
@@ -216,6 +216,17 @@ export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
     description,
     room: { type: roomType, dimensions },
     style: { theme, palette: paletteOut, mood },
-    furniture
+    furniture,
+    ...(normalizeGenerator(plan.meta?.generator) ? { generator: normalizeGenerator(plan.meta?.generator)! } : {})
   };
+}
+
+/** HomePlan.meta.generator → DesignScheme.generator（只留 provider / model / at）。 */
+function normalizeGenerator(raw: any): GeneratorInfo | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const provider = typeof raw.provider === "string" && raw.provider.trim() ? raw.provider.trim() : undefined;
+  const model = typeof raw.model === "string" && raw.model.trim() ? raw.model.trim() : undefined;
+  const at = typeof raw.at === "string" && raw.at.trim() ? raw.at.trim() : undefined;
+  if (!provider && !model) return undefined;
+  return { ...(provider ? { provider } : {}), ...(model ? { model } : {}), ...(at ? { at } : {}) };
 }

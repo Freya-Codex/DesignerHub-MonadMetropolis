@@ -24,6 +24,14 @@ export const dreamSchemeAbi = parseAbi([
 ]);
 
 /**
+ * DreamScheme 内容唯一性守卫 —— 内容哈希 → 已铸造的 tokenId（0 = 尚未铸造）。
+ * 单独声明：并入 dreamSchemeAbi 会让条目数过多，导致 viem 泛型推断退化。
+ */
+export const dreamSchemeDupAbi = parseAbi([
+  "function hashToTokenId(bytes32 contentHash) external view returns (uint256)"
+]);
+
+/**
  * SchemeMarket —— 使用权交易市场（创作者自主定价 + 谱系自动分账）。
  * 旧版固定 applyPrice + withdraw 提现模式已移除：现在创作者 setPrice 上架，
  * 买家按定价支付，85/10/5（衍生）或 90/10（原创）实时分账到账。

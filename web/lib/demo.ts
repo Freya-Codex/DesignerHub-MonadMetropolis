@@ -33,7 +33,8 @@ export const demoSchemes: SchemeSummary[] = [
     roomType: "客厅",
     roomTypeEn: "Living Room",
     furnitureCount: 7,
-    createdAt: 1_752_000_000
+    createdAt: 1_752_000_000,
+    generator: { provider: "kimi", model: "moonshot-v1-8k" }
   },
   {
     tokenId: 2n,
@@ -57,7 +58,8 @@ export const demoSchemes: SchemeSummary[] = [
     roomType: "卧室",
     roomTypeEn: "Bedroom",
     furnitureCount: 8,
-    createdAt: 1_752_000_100
+    createdAt: 1_752_000_100,
+    generator: { provider: "kimi", model: "moonshot-v1-8k" }
   },
   {
     tokenId: 3n,
@@ -81,6 +83,7 @@ export const demoSchemes: SchemeSummary[] = [
     roomType: "书房",
     roomTypeEn: "Study",
     furnitureCount: 7,
-    createdAt: 1_752_000_200
+    createdAt: 1_752_000_200,
+    generator: { provider: "kimi", model: "moonshot-v1-8k" }
   }
 ];

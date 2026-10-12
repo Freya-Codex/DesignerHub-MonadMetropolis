@@ -23,7 +23,7 @@ import PreviewImage from "@/components/PreviewImage";
 import VersionTimeline from "@/components/VersionTimeline";
 import CommentsSection from "@/components/CommentsSection";
 import { monadTestnet } from "@/lib/chains";
-import { shortAddress } from "@/lib/scheme";
+import { generatorLabel, shortAddress } from "@/lib/scheme";
 import { useI18n } from "@/lib/i18n";
 
 export default function SchemeDetailPage() {
@@ -355,6 +355,9 @@ function DetailFrame(props: DetailFrameProps) {
   const splitNote = isRemix ? "85% creator · 10% treasury · 5% lineage" : "90% creator · 10% treasury";
   const agentId: bigint = d.agentId ?? 0n;
   const agentLabel = agentId === 1n ? "Kimi" : agentId > 0n ? `Agent #${agentId.toString()}` : "";
+  // 方案自带的 AI 生成器信息（provider · model）优先；无则回退到链上 agentId 标签
+  const genLabel = generatorLabel(d.generator);
+  const generatorLine = genLabel || agentLabel;
   const canAct = !isDemoMode && Boolean(isConnected && onApply) && (price > 0n || isDemoMode);
 
   const versions: bigint[] = d.versionLine ?? [];
@@ -431,9 +434,12 @@ function DetailFrame(props: DetailFrameProps) {
                 <span className="text-muted">{t("未上架", "Not listed")}</span>
               )}
             </Row>
-            {agentLabel && (
+            {generatorLine && (
               <Row label={t("AI / 生成器", "AI / Generator")}>
-                <span className="chip chip-violet !py-0.5 !text-[10px]">{agentLabel} · agentId {agentId.toString()}</span>
+                <span className="chip chip-violet !py-0.5 !text-[10px]">
+                  {generatorLine}
+                  {agentId > 0n ? ` · agentId ${agentId.toString()}` : ""}
+                </span>
               </Row>
             )}
             <Row label={t("ROOM / 房间", "ROOM")}>{pick(d.roomType, d.roomTypeEn)}</Row>

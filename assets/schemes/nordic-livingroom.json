@@ -26,5 +26,6 @@
     { "modelId": "plant_olive_tree_pot_01", "name": "橄榄树盆栽", "nameEn": "Olive Tree Planter", "position": { "x": 4.6, "y": 5.6, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1.1, "y": 1.1, "z": 1.1 } }
   ],
   "previewImage": "previews/nordic-livingroom.svg",
-  "license": "CC-BY 4.0"
+  "license": "CC-BY 4.0",
+  "generator": { "provider": "kimi", "model": "moonshot-v1-8k" }
 }

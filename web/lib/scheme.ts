@@ -1,3 +1,5 @@
+import { keccak256, toBytes, type Hex } from "viem";
+
 export interface Vec3 {
   x: number;
   y: number;
@@ -41,6 +43,16 @@ export interface DesignScheme {
   previewImage?: string;
   parentId?: number;
   license?: string;
+  /** 方案由哪个 AI 生成（随 JSON / 方案码导入）——provider + 模型名。 */
+  generator?: GeneratorInfo;
+}
+
+/** 方案的 AI 生成器信息（provider 为 providerId，不记录 baseUrl / apiKey）。 */
+export interface GeneratorInfo {
+  provider?: string;
+  model?: string;
+  /** 生成时间（ISO 字符串）。 */
+  at?: string;
 }
 
 export interface ThemePreset {
@@ -300,4 +312,41 @@ export function shortAddress(addr: string | undefined, size = 6): string {
 
 export function formatWeiToMon(wei: bigint): string {
   return (Number(wei) / 1e18).toFixed(2);
+}
+
+/**
+ * 方案内容哈希 = keccak256(JSON 字符串)，与 /api/pin 服务端算法完全一致。
+ * 用于铸造前检测「同一方案是否已被铸造」（仅原创路径去重；remix 允许重复）。
+ */
+export function contentHashOfScheme(scheme: DesignScheme): Hex {
+  return keccak256(toBytes(JSON.stringify(scheme)));
+}
+
+/** providerId → 展示名（与 VirtuHome 的 provider 预设保持一致）。 */
+const GENERATOR_PROVIDER_NAMES: Record<string, string> = {
+  kimi: "Kimi (Moonshot)",
+  moonshot: "Kimi (Moonshot)",
+  deepseek: "DeepSeek",
+  siliconflow: "SiliconFlow",
+  dashscope: "DashScope (Qwen)",
+  qwen: "DashScope (Qwen)",
+  zhipu: "Zhipu GLM",
+  glm: "Zhipu GLM",
+  ark: "Volcengine Ark",
+  openrouter: "OpenRouter",
+  agnes: "Agnes AI",
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  claude: "Anthropic",
+  gemini: "Google Gemini",
+  custom: "Custom"
+};
+
+/** 生成器展示名：优先 provider 展示名，后缀模型名。全空返回 ""。 */
+export function generatorLabel(gen: GeneratorInfo | undefined): string {
+  if (!gen) return "";
+  const provider = gen.provider ? GENERATOR_PROVIDER_NAMES[gen.provider.toLowerCase()] ?? gen.provider : "";
+  const model = gen.model?.trim() ?? "";
+  if (provider && model) return `${provider} · ${model}`;
+  return provider || model;
 }

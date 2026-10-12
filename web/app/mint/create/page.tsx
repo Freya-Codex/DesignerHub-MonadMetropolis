@@ -6,9 +6,9 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { decodeEventLog, encodeFunctionData, type Address, type Hex } from "viem";
 import { dreamSchemeAbi, KIMI_AGENT_ID } from "@/lib/abis";
-import { dreamSchemeAddress, publicClientFor } from "@/lib/contracts";
+import { dreamSchemeAddress, mintedTokenForContentHash, publicClientFor } from "@/lib/contracts";
 import { monadTestnet } from "@/lib/chains";
-import { schemeToPreviewSvg, svgToDataUri, validateScheme, type DesignScheme } from "@/lib/scheme";
+import { contentHashOfScheme, schemeToPreviewSvg, svgToDataUri, validateScheme, type DesignScheme } from "@/lib/scheme";
 import {
   deployPasskeyAccount,
   executeViaPasskey,
@@ -71,6 +71,7 @@ export default function CreatePage() {
   const [nameOverride, setName] = useState("");
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [dupId, setDupId] = useState<bigint | null>(null);
   const [pinInfo, setPinInfo] = useState<{ tokenUri: string; schemeUri: string; contentHash: string } | null>(null);
   const [tokenId, setTokenId] = useState<bigint | null>(null);
   const [txHash, setTxHash] = useState<Hex | null>(null);
@@ -222,6 +223,7 @@ export default function CreatePage() {
     setPinInfo(null);
     setTokenId(null);
     setTxHash(null);
+    setDupId(null);
     const addr = dreamSchemeAddress();
     if (!addr) {
       setError(
@@ -234,6 +236,14 @@ export default function CreatePage() {
     }
     if (!displayScheme) {
       setError(t("请先粘贴或上传有效的方案 JSON", "Please paste or upload a valid scheme JSON first"));
+      return;
+    }
+
+    // 内容唯一性守卫（仅原创路径 parentId = 0）：完全相同的方案 JSON / 方案码只能铸造一次。
+    // 先用本地哈希拦截，避免无谓的 IPFS 固定；remix 不受此限制。
+    const dup = await mintedTokenForContentHash(contentHashOfScheme(displayScheme));
+    if (dup > 0n) {
+      setDupId(dup);
       return;
     }
 
@@ -262,6 +272,14 @@ export default function CreatePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? t("固定到 IPFS 失败", "Failed to pin to IPFS"));
       setPinInfo(data);
+
+      // 二次校验：以服务端返回的 contentHash 为准（防止本地序列化差异）。
+      const serverDup = await mintedTokenForContentHash(data.contentHash as Hex);
+      if (serverDup > 0n) {
+        setDupId(serverDup);
+        setStep("idle");
+        return;
+      }
 
       const mintArgs = [0n, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string] as const;
 
@@ -461,6 +479,20 @@ export default function CreatePage() {
           {error && (
             <div className="rounded-xl border border-coral/40 bg-coral/10 p-3.5 text-xs leading-relaxed text-[#a53f52]">
               {error}
+            </div>
+          )}
+
+          {dupId !== null && (
+            <div className="rounded-xl border border-coral/40 bg-coral/10 p-3.5 text-xs leading-relaxed text-[#a53f52]">
+              <p>
+                {t(
+                  `该方案与已铸造的 #${dupId.toString()} 完全相同，不能重复铸造。请修改方案后再试。`,
+                  `This scheme is identical to the already-minted #${dupId.toString()} — duplicates can’t be minted. Please modify it and try again.`
+                )}
+              </p>
+              <Link href={`/scheme/${dupId.toString()}`} className="mt-2 inline-block underline">
+                {t("查看已有方案", "View the existing scheme")}
+              </Link>
             </div>
           )}
 

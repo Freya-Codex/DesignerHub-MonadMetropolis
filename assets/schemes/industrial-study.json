@@ -26,5 +26,6 @@
     { "modelId": "rug_dark_industrial_01", "name": "深灰几何地毯", "nameEn": "Dark Grey Geometric Rug", "position": { "x": 1.9, "y": 1.2, "z": 0.05 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 2, "y": 1.4, "z": 1 } }
   ],
   "previewImage": "previews/industrial-study.svg",
-  "license": "CC-BY 4.0"
+  "license": "CC-BY 4.0",
+  "generator": { "provider": "kimi", "model": "moonshot-v1-8k" }
 }

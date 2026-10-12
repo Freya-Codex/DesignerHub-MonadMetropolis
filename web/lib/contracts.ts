@@ -9,7 +9,7 @@ import {
   type PublicClient
 } from "viem";
 import { usePublicClient } from "wagmi";
-import { dreamSchemeAbi, schemeMarketAbi } from "./abis";
+import { dreamSchemeAbi, dreamSchemeDupAbi, schemeMarketAbi } from "./abis";
 import { monadTestnet } from "./chains";
 import { fetchUriJson } from "./ipfs";
 import { L } from "./langStore";
@@ -38,6 +38,28 @@ export function schemeMarketAddress(): Address | undefined {
 export const APPLY_PRICE: bigint = parseEther(
   process.env.NEXT_PUBLIC_APPLY_PRICE_ETH || "0.01"
 );
+
+/**
+ * 内容唯一性守卫：查询某内容哈希是否已被铸造。
+ * 返回首个铸造该内容的 tokenId（0n = 尚未铸造）。链上读取失败时容错返回 0n。
+ * 仅用于原创路径（parentId = 0）的去重；remix 允许内容重复。
+ */
+export async function mintedTokenForContentHash(contentHash: Hex): Promise<bigint> {
+  const addr = dreamSchemeAddress();
+  if (!addr) return 0n;
+  const client = publicClientFor();
+  if (!client) return 0n;
+  try {
+    return await client.readContract({
+      address: addr,
+      abi: dreamSchemeDupAbi,
+      functionName: "hashToTokenId",
+      args: [contentHash]
+    });
+  } catch {
+    return 0n;
+  }
+}
 
 /** AgentRegistry 地址（可选，用于 AI 署名展示）。 */
 export function agentRegistryAddress(): Address | undefined {
@@ -84,6 +106,8 @@ export interface SchemeSummary {
   roomType: string;
   furnitureCount: number;
   createdAt: number;
+  /** 方案的 AI 生成器（provider + 模型名），随方案 JSON 导入；旧数据可能为空。 */
+  generator?: { provider?: string; model?: string; at?: string };
   // 双语展示用（仅站点自带示例数据提供；链上/IPFS 内容仍以原语言为准）
   nameEn?: string;
   descriptionEn?: string;
@@ -216,7 +240,8 @@ async function attachMetadata(state: SchemeOnChain): Promise<SchemeSummary> {
     roomType:
       scheme?.room?.type || attrs.find((a) => a.trait_type === "房间")?.value || L("房间", "Room"),
     roomTypeEn: (scheme as any)?.room?.typeEn || undefined,
-    furnitureCount: Array.isArray(scheme?.furniture) ? scheme.furniture.length : Number(attrs.find((a) => a.trait_type === "家具数量")?.value ?? 0)
+    furnitureCount: Array.isArray(scheme?.furniture) ? scheme.furniture.length : Number(attrs.find((a) => a.trait_type === "家具数量")?.value ?? 0),
+    generator: (scheme as any)?.generator ?? (meta as any)?.properties?.generator ?? undefined
   };
 }
 
