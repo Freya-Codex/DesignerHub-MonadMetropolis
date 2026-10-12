@@ -30,7 +30,8 @@ export const config = getDefaultConfig({
   chains: [monadTestnet],
   wallets: [
     {
-      groupName: hasRealProjectId ? "推荐" : "浏览器钱包",
+      // RainbowKit 连接弹窗为英文，分组名与其保持一致（该配置在模块加载时固定，无法响应式切换）。
+      groupName: hasRealProjectId ? "Recommended" : "Browser Wallet",
       wallets: hasRealProjectId ? [metaMaskWallet, walletConnectWallet] : [metaMaskWallet]
     }
   ],

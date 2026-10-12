@@ -3,9 +3,11 @@
 import Link from "next/link";
 import type { SchemeSummary } from "@/lib/contracts";
 import { shortAddress } from "@/lib/scheme";
+import { useI18n } from "@/lib/i18n";
 import PreviewImage from "./PreviewImage";
 
 export default function SchemeCard({ scheme, rank }: { scheme: SchemeSummary; rank?: number }) {
+  const { pick, t } = useI18n();
   return (
     <Link
       href={`/scheme/${scheme.tokenId.toString()}`}
@@ -14,14 +16,14 @@ export default function SchemeCard({ scheme, rank }: { scheme: SchemeSummary; ra
       <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
         <PreviewImage
           uri={scheme.image}
-          alt={scheme.name}
+          alt={pick(scheme.name, scheme.nameEn)}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
         />
         <span className="mono absolute left-3 top-3 rounded-md bg-ink/85 px-2 py-1 text-[10px] tracking-wider text-white backdrop-blur">
           #{scheme.tokenId.toString()}
         </span>
         <span className="absolute right-3 top-3 rounded-md border border-white/25 bg-white/85 px-2 py-1 text-[10px] font-semibold text-ink backdrop-blur">
-          {scheme.theme}
+          {pick(scheme.theme, scheme.themeEn)}
         </span>
         {rank !== undefined && (
           <span className="mono absolute bottom-3 right-3 rounded-md bg-violet px-2 py-1 text-[10px] font-bold text-white">
@@ -31,8 +33,18 @@ export default function SchemeCard({ scheme, rank }: { scheme: SchemeSummary; ra
       </div>
 
       <div className="p-4">
-        <h3 className="display-sm line-clamp-1 text-[15px] text-ink">{scheme.name}</h3>
-        <p className="mt-1 line-clamp-1 text-xs text-muted">{scheme.description || scheme.roomType}</p>
+        <h3 className="display-sm line-clamp-1 text-[15px] text-ink">{pick(scheme.name, scheme.nameEn)}</h3>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className="chip !py-0.5 !text-[10.5px]">{pick(scheme.roomType, scheme.roomTypeEn)}</span>
+          <span className="chip !py-0.5 !text-[10.5px]">
+            {scheme.furnitureCount} {t("件家具", "items")}
+          </span>
+        </div>
+        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted">
+          {scheme.description
+            ? pick(scheme.description, scheme.descriptionEn)
+            : pick(scheme.roomType, scheme.roomTypeEn)}
+        </p>
 
         <div className="mt-3.5 flex items-end justify-between border-t border-hairline pt-3">
           <div>

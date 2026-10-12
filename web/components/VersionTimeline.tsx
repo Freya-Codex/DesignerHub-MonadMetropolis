@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 interface Props {
   line: bigint[];
@@ -10,6 +11,7 @@ interface Props {
 
 /** 版本时间线：同一作者链上的 v1 / v2 / v3…（顺序本身承载信息） */
 export default function VersionTimeline({ line, currentId, names }: Props) {
+  const { t } = useI18n();
   if (!line || line.length === 0) return null;
   const latest = line[line.length - 1];
   return (
@@ -35,7 +37,7 @@ export default function VersionTimeline({ line, currentId, names }: Props) {
               </span>
               <span className={`display-sm text-[12.5px] ${isCurrent ? "text-white" : "text-ink/85"}`}>
                 #{id.toString()}
-                {isCurrent ? " · 当前" : ""}
+                {isCurrent ? t(" · 当前", " · current") : ""}
               </span>
             </Link>
           </li>

@@ -8,11 +8,13 @@ import { demoActivity, useActivity } from "@/lib/events";
 import { demoSchemes } from "@/lib/demo";
 import { monadTestnet } from "@/lib/chains";
 import { shortAddress } from "@/lib/scheme";
+import { useI18n } from "@/lib/i18n";
 import PreviewImage from "@/components/PreviewImage";
 
 type SortKey = "recent" | "remix" | "applied";
 
 export default function MintPage() {
+  const { t, pick } = useI18n();
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
@@ -70,22 +72,31 @@ export default function MintPage() {
   return (
     <div className="space-y-10">
       <header className="rise">
-        <p className="eyebrow">Mint · 铸造中心</p>
-        <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">铸造中心</h1>
+        <p className="eyebrow">{t("Mint · 铸造中心", "Mint")}</p>
+        <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">{t("铸造中心", "Mint Center")}</h1>
         <div className="dim-line mt-6" />
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
-          这里汇总你的铸造入口：发布原创方案、在他人作品上 Remix 衍生、或把自己的作品迭代成新版本。
-          每次铸造都会在链上写入 <span className="mono text-ink">creator</span> 与{" "}
-          <span className="mono text-ink">parentId</span>，形成可追溯的创作谱系。
+          {t(
+            "这里汇总你的铸造入口：发布原创方案、在他人作品上 Remix 衍生、或把自己的作品迭代成新版本。每次铸造都会在链上写入 ",
+            "Your minting entry points live here: publish an original scheme, Remix on someone else’s work, or iterate your own into a new version. Every mint records "
+          )}
+          <span className="mono text-ink">creator</span>
+          {t(" 与 ", " and ")}
+          <span className="mono text-ink">parentId</span>
+          {t("，形成可追溯的创作谱系。", " on-chain, forming a traceable creative lineage.")}
         </p>
       </header>
 
       {isDemo && (
         <div className="sheet flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:gap-5">
-          <span className="chip chip-violet shrink-0 self-start">演示数据模式</span>
+          <span className="chip chip-violet shrink-0 self-start">{t("演示数据模式", "Demo data mode")}</span>
           <p className="text-[13px] leading-relaxed text-muted">
-            尚未配置合约地址，以下为示例数据。部署合约并写入 <code className="mono text-ink">web/.env.local</code>{" "}
-            后会自动切换为你的链上铸造记录。
+            {t(
+              "尚未配置合约地址，以下为示例数据。部署合约并写入 ",
+              "No contract address is configured yet; the data below is sample data. Deploy the contract and write "
+            )}
+            <code className="mono text-ink">web/.env.local</code>
+            {t(" 后会自动切换为你的链上铸造记录。", " to automatically switch to your on-chain mint history.")}
           </p>
         </div>
       )}
@@ -93,31 +104,37 @@ export default function MintPage() {
       {wrongNetwork && (
         <div className="sheet flex flex-col gap-3 border-coral/40 bg-coral/10 p-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] leading-relaxed text-[#a53f52]">
-            当前钱包不在 Monad 测试网（Chain ID 10143），铸造会失败。
+            {t(
+              "当前钱包不在 Monad 测试网（Chain ID 10143），铸造会失败。",
+              "Your wallet is not on the Monad Testnet (Chain ID 10143); minting will fail."
+            )}
           </p>
           <button
             className="btn-primary shrink-0"
             onClick={() => void switchChainAsync?.({ chainId: monadTestnet.id }).catch(() => undefined)}
           >
-            切换到 Monad 测试网
+            {t("切换到 Monad 测试网", "Switch to Monad Testnet")}
           </button>
         </div>
       )}
 
       {/* ── 统计 ───────────────────────────────────── */}
       <section className="sheet-dark grid-sheet-dark rise px-5 py-8 sm:px-9 sm:py-10">
-        <p className="eyebrow eyebrow-dark">My Mint · 我的铸造</p>
+        <p className="eyebrow eyebrow-dark">{t("My Mint · 我的铸造", "My Mint")}</p>
         {isConnected ? (
           <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-6 border-t border-white/10 pt-6 sm:grid-cols-4">
-            <Stat label="SCHEMES / 我的方案" value={mine.length} />
-            <Stat label="MINTS / 链上铸造" value={isDemo ? mine.length : mintTotal} />
-            <Stat label="REMIX RECEIVED / 被衍生" value={myRemixReceived} />
-            <Stat label="REMIX SENT / 我衍生他人" value={myRemixedParents.size} />
+            <Stat label={t("SCHEMES / 我的方案", "SCHEMES")} value={mine.length} />
+            <Stat label={t("MINTS / 链上铸造", "MINTS")} value={isDemo ? mine.length : mintTotal} />
+            <Stat label={t("REMIX RECEIVED / 被衍生", "REMIX RECEIVED")} value={myRemixReceived} />
+            <Stat label={t("REMIX SENT / 我衍生他人", "REMIX SENT")} value={myRemixedParents.size} />
           </dl>
         ) : (
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
             <p className="text-sm leading-relaxed text-white/70">
-              连接 MetaMask 后即可看到你的铸造记录、被衍生次数与 Remix 机会。
+              {t(
+                "连接 MetaMask 后即可看到你的铸造记录、被衍生次数与 Remix 机会。",
+                "Connect MetaMask to see your mint history, remix counts, and Remix opportunities."
+              )}
             </p>
             <div className="mono shrink-0 text-[11px] uppercase tracking-[0.14em] text-white/45">
               CONNECT WALLET ↑
@@ -129,25 +146,34 @@ export default function MintPage() {
       {/* ── 快捷铸造入口 ───────────────────────────── */}
       <section className="grid gap-5 sm:grid-cols-3">
         <ActionCard
-          eyebrow="Origin · 原创"
-          title="铸造原创方案"
-          body="上传或粘贴方案 JSON，固定到 IPFS 并铸造，parentId = 0，你是该谱系的原作者。"
+          eyebrow={t("Origin · 原创", "Origin")}
+          title={t("铸造原创方案", "Mint an original scheme")}
+          body={t(
+            "上传或粘贴方案 JSON，固定到 IPFS 并铸造，parentId = 0，你是该谱系的原作者。",
+            "Upload or paste a scheme JSON, pin it to IPFS and mint with parentId = 0; you are the origin author of that lineage."
+          )}
           href="/mint/create"
-          cta="去创建页"
+          cta={t("去创建页", "Go to create page")}
         />
         <ActionCard
-          eyebrow="Remix · 衍生"
-          title="从他人作品 Remix"
-          body="在他人方案上改风格、调配色、增减家具，铸造时 parentId 指向原作，归因自动上链。"
+          eyebrow={t("Remix · 衍生", "Remix")}
+          title={t("从他人作品 Remix", "Remix from others’ work")}
+          body={t(
+            "在他人方案上改风格、调配色、增减家具，铸造时 parentId 指向原作，归因自动上链。",
+            "Change the style, palette, or furniture on someone’s scheme; when minting, parentId points to the original and attribution is recorded on-chain automatically."
+          )}
           href="#opportunities"
-          cta="看 Remix 机会"
+          cta={t("看 Remix 机会", "See Remix opportunities")}
         />
         <ActionCard
-          eyebrow="Version · 迭代"
-          title="发布新版本"
-          body="在自己的最新版本上继续迭代，parentId 指向上一版，形成 v1 / v2 / v3 版本时间线。"
+          eyebrow={t("Version · 迭代", "Version")}
+          title={t("发布新版本", "Publish a new version")}
+          body={t(
+            "在自己的最新版本上继续迭代，parentId 指向上一版，形成 v1 / v2 / v3 版本时间线。",
+            "Keep iterating on your latest version; parentId points to the previous one, forming a v1 / v2 / v3 timeline."
+          )}
           href="#mine"
-          cta="看我的方案"
+          cta={t("看我的方案", "See my schemes")}
         />
       </section>
 
@@ -155,11 +181,13 @@ export default function MintPage() {
       <section id="opportunities" className="scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="eyebrow">Remix Opportunities · 可衍生机会</p>
-            <h2 className="display-sm mt-2 text-2xl text-ink">在别人的设计上继续创作</h2>
+            <p className="eyebrow">{t("Remix Opportunities · 可衍生机会", "Remix Opportunities")}</p>
+            <h2 className="display-sm mt-2 text-2xl text-ink">
+              {t("在别人的设计上继续创作", "Keep creating on someone else’s design")}
+            </h2>
           </div>
           <span className="mono text-[11px] text-muted">
-            按热度排序 · 已排除你衍生过的方案
+            {t("按热度排序 · 已排除你衍生过的方案", "Sorted by popularity · schemes you’ve remixed are excluded")}
           </span>
         </div>
         <div className="dim-line mt-5" />
@@ -167,10 +195,15 @@ export default function MintPage() {
         {opportunities.length === 0 ? (
           <div className="sheet mt-6 p-10 text-center">
             <p className="text-sm text-muted">
-              {isConnected ? "暂无可 Remix 的他人方案。" : "连接钱包后会显示为你筛选的 Remix 机会。"}
+              {isConnected
+                ? t("暂无可 Remix 的他人方案。", "No other schemes available to Remix right now.")
+                : t(
+                    "连接钱包后会显示为你筛选的 Remix 机会。",
+                    "Connect your wallet to see Remix opportunities curated for you."
+                  )}
             </p>
             <Link href="/demo" className="btn-secondary mt-4">
-              先去画廊看看
+              {t("先去画廊看看", "Check out the gallery first")}
             </Link>
           </div>
         ) : (
@@ -186,12 +219,15 @@ export default function MintPage() {
       <section id="mine" className="scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="eyebrow">My Schemes · 我的方案</p>
-            <h2 className="display-sm mt-2 text-2xl text-ink">我铸造的方案</h2>
+            <p className="eyebrow">{t("My Schemes · 我的方案", "My Schemes")}</p>
+            <h2 className="display-sm mt-2 text-2xl text-ink">{t("我铸造的方案", "Schemes I minted")}</h2>
           </div>
           {isConnected && mine.length > 1 && (
             <span className="mono text-[11px] text-muted">
-              共 {mine.length} 个 · 其中衍生 {myRemixedParents.size} 个
+              {t("共 {n} 个 · 其中衍生 {m} 个", "{n} total · {m} remixed", {
+                n: mine.length,
+                m: myRemixedParents.size
+              })}
             </span>
           )}
         </div>
@@ -201,13 +237,23 @@ export default function MintPage() {
           <div className="sheet mt-6 h-40 animate-pulse bg-paper-2" />
         ) : !isConnected ? (
           <div className="sheet mt-6 p-10 text-center">
-            <p className="text-sm text-muted">连接 MetaMask 后这里会列出你铸造的全部方案。</p>
+            <p className="text-sm text-muted">
+              {t(
+                "连接 MetaMask 后这里会列出你铸造的全部方案。",
+                "Connect MetaMask and all your minted schemes will be listed here."
+              )}
+            </p>
           </div>
         ) : mine.length === 0 ? (
           <div className="sheet mt-6 p-10 text-center">
-            <p className="text-sm text-muted">你还没有铸造过方案，从第一份原创设计开始吧。</p>
+            <p className="text-sm text-muted">
+              {t(
+                "你还没有铸造过方案，从第一份原创设计开始吧。",
+                "You haven’t minted any schemes yet — start with your first original design."
+              )}
+            </p>
             <Link href="/mint/create" className="btn-primary mt-4">
-              铸造第一份方案
+              {t("铸造第一份方案", "Mint your first scheme")}
             </Link>
           </div>
         ) : (
@@ -236,15 +282,15 @@ export default function MintPage() {
                             href={`/scheme/${s.tokenId.toString()}`}
                             className="font-semibold text-ink transition hover:text-violet-deep"
                           >
-                            {s.name}
+                            {pick(s.name, s.nameEn)}
                           </Link>
                           <div className="mono mt-1 text-[10.5px] text-muted">
-                            {s.theme} · {s.furnitureCount} 家具
+                            {pick(s.theme, s.themeEn)} · {s.furnitureCount} {t("家具", "furniture")}
                           </div>
                         </Td>
                         <Td center>
                           {s.parentId === 0n ? (
-                            <span className="chip">原创</span>
+                            <span className="chip">{t("原创", "Original")}</span>
                           ) : (
                             <Link href={`/scheme/${s.parentId.toString()}`} className="chip chip-violet">
                               ↳ #{s.parentId.toString()}
@@ -260,13 +306,13 @@ export default function MintPage() {
                         <Td right>
                           <div className="flex justify-end gap-2">
                             <Link href={`/scheme/${s.tokenId.toString()}`} className="btn-secondary !px-3 !py-1.5 !text-xs">
-                              查看
+                              {t("查看", "View")}
                             </Link>
                             <Link
                               href={`/remix/${s.tokenId.toString()}?newVersion=1`}
                               className="btn-primary !px-3 !py-1.5 !text-xs"
                             >
-                              新版本
+                              {t("新版本", "New version")}
                             </Link>
                           </div>
                         </Td>
@@ -281,8 +327,12 @@ export default function MintPage() {
       </section>
 
       <p className="mono text-[11px] leading-relaxed text-muted">
-        铸造只消耗测试网 gas（MON）；创作者地址在铸造时上链固化，NFT 转手不影响归因。
-        当前市场合约 {schemeMarketAddress() ? shortAddress(schemeMarketAddress(), 6) : "未配置"}。
+        {t(
+          "铸造只消耗测试网 gas（MON）；创作者地址在铸造时上链固化，NFT 转手不影响归因。当前市场合约 ",
+          "Minting only costs testnet gas (MON); the creator address is fixed on-chain at mint time, and transferring the NFT does not affect attribution. Current market contract "
+        )}
+        {schemeMarketAddress() ? shortAddress(schemeMarketAddress(), 6) : t("未配置", "not configured")}
+        {t("。", ".")}
       </p>
     </div>
   );
@@ -323,26 +373,29 @@ function ActionCard({
 }
 
 function OpportunityCard({ scheme, disabled }: { scheme: SchemeSummary; disabled: boolean }) {
+  const { t, pick } = useI18n();
   const href = disabled ? "#" : `/remix/${scheme.tokenId.toString()}`;
+  const name = pick(scheme.name, scheme.nameEn);
+  const theme = pick(scheme.theme, scheme.themeEn);
   return (
     <div className="sheet flex flex-col overflow-hidden">
       <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
         <PreviewImage
           uri={scheme.image}
-          alt={scheme.name}
+          alt={name}
           className="h-full w-full object-cover"
         />
         <span className="mono absolute left-3 top-3 rounded-md bg-ink/85 px-2 py-1 text-[10px] tracking-wider text-white">
           #{scheme.tokenId.toString()}
         </span>
         <span className="absolute right-3 top-3 rounded-md border border-white/25 bg-white/85 px-2 py-1 text-[10px] font-semibold text-ink">
-          {scheme.theme}
+          {theme}
         </span>
       </div>
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="display-sm line-clamp-1 text-[15px] text-ink">{scheme.name}</h3>
+        <h3 className="display-sm line-clamp-1 text-[15px] text-ink">{name}</h3>
         <p className="mono mt-1.5 text-[10.5px] text-muted">
-          {shortAddress(scheme.creator)} · {scheme.furnitureCount} 家具
+          {shortAddress(scheme.creator)} · {scheme.furnitureCount} {t("家具", "furniture")}
         </p>
         <div className="mt-3.5 flex items-center gap-4 border-t border-hairline pt-3">
           <span className="mono text-[11px] text-muted">
@@ -357,7 +410,7 @@ function OpportunityCard({ scheme, disabled }: { scheme: SchemeSummary; disabled
           aria-disabled={disabled}
           className={`mt-4 ${disabled ? "btn-secondary pointer-events-none opacity-45" : "btn-primary"}`}
         >
-          {disabled ? "连接钱包后可 Remix" : "去 Remix"}
+          {disabled ? t("连接钱包后可 Remix", "Connect wallet to Remix") : t("去 Remix", "Go to Remix")}
         </Link>
       </div>
     </div>

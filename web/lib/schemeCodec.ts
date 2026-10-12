@@ -12,6 +12,7 @@
  */
 
 import { validateScheme, type DesignScheme, type FurnitureItem } from "@/lib/scheme";
+import { L, getLang } from "@/lib/langStore";
 
 const te = new TextEncoder();
 const td = new TextDecoder();
@@ -58,13 +59,13 @@ export interface DecodedScheme {
 /** 方案码 → DesignScheme（自动识别本站方案 / VirtuHome HomePlan）。 */
 export async function decodeSchemeCode(code: string): Promise<DecodedScheme> {
   const cleaned = String(code || "").trim().replace(/\s+/g, "");
-  if (!cleaned) throw new Error("方案码为空");
+  if (!cleaned) throw new Error(L("方案码为空", "Scheme code is empty"));
 
   let bytes: Uint8Array;
   try {
     bytes = base64urlToBytes(cleaned);
   } catch {
-    throw new Error("方案码格式无效（不是合法的 base64url）");
+    throw new Error(L("方案码格式无效（不是合法的 base64url）", "Invalid scheme code (not valid base64url)"));
   }
 
   let json: string;
@@ -75,7 +76,7 @@ export async function decodeSchemeCode(code: string): Promise<DecodedScheme> {
     try {
       json = td.decode(bytes);
     } catch {
-      throw new Error("解码失败：内容已损坏或版本不兼容");
+      throw new Error(L("解码失败：内容已损坏或版本不兼容", "Decode failed: content is corrupted or version-incompatible"));
     }
   }
 
@@ -83,25 +84,40 @@ export async function decodeSchemeCode(code: string): Promise<DecodedScheme> {
   try {
     obj = JSON.parse(json);
   } catch {
-    throw new Error("解码失败：不是合法的方案 JSON");
+    throw new Error(L("解码失败：不是合法的方案 JSON", "Decode failed: not valid scheme JSON"));
   }
 
-  const asScheme = validateScheme(obj);
+  const asScheme = validateScheme(obj, getLang());
   if (!asScheme) {
-    return { scheme: obj as DesignScheme, source: "designscheme", note: "识别为本站方案（DesignScheme）" };
+    return {
+      scheme: obj as DesignScheme,
+      source: "designscheme",
+      note: L("识别为本站方案（DesignScheme）", "Detected a Designer Hub scheme (DesignScheme)")
+    };
   }
 
   if (looksLikeHomePlan(obj)) {
     const scheme = homePlanToScheme(obj as Record<string, any>);
-    const err2 = validateScheme(scheme);
+    const err2 = validateScheme(scheme, getLang());
     if (!err2) {
-      const title = (obj as any)?.meta?.title ?? "未命名";
-      return { scheme, source: "homeplan", note: `识别为 VirtuHome HomePlan「${title}」，已转换` };
+      const title = (obj as any)?.meta?.title ?? L("未命名", "Untitled");
+      return {
+        scheme,
+        source: "homeplan",
+        note: L(`识别为 VirtuHome HomePlan「${title}」，已转换`, `Detected a VirtuHome HomePlan "${title}", converted`)
+      };
     }
-    throw new Error(`方案码疑似 HomePlan，但转换后仍不合法：${err2}`);
+    throw new Error(
+      L(
+        `方案码疑似 HomePlan，但转换后仍不合法：${err2}`,
+        `Scheme code looks like a HomePlan, but the converted result is still invalid: ${err2}`
+      )
+    );
   }
 
-  throw new Error(`方案码解出的 JSON 不是有效方案：${asScheme}`);
+  throw new Error(
+    L(`方案码解出的 JSON 不是有效方案：${asScheme}`, `The decoded JSON is not a valid scheme: ${asScheme}`)
+  );
 }
 
 function looksLikeHomePlan(x: any): boolean {
@@ -132,8 +148,8 @@ export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
   const brief = plan.brief ?? {};
   const modA = plan.moduleA ?? {};
 
-  const name = (String(plan.meta?.title || brief.roomType || "导入方案").trim() || "导入方案").slice(0, 60);
-  const roomType = String(brief.roomType || "客厅").trim() || "客厅";
+  const name = (String(plan.meta?.title || brief.roomType || L("导入方案", "Imported scheme")).trim() || L("导入方案", "Imported scheme")).slice(0, 60);
+  const roomType = String(brief.roomType || L("客厅", "Living Room")).trim() || L("客厅", "Living Room");
 
   const size = Number(brief.size);
   const dimensions =
@@ -151,7 +167,7 @@ export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
     .filter((h: any) => typeof h === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h));
   const paletteOut = palette.length ? palette.slice(0, 5) : DEFAULT_PALETTE;
 
-  const theme = (String(brief.style || (Array.isArray(modA.keywords) && modA.keywords[0]) || "现代").trim() || "现代").slice(0, 24);
+  const theme = (String(brief.style || (Array.isArray(modA.keywords) && modA.keywords[0]) || L("现代", "Modern")).trim() || L("现代", "Modern")).slice(0, 24);
   const mood = String(modA.styleSummary || (Array.isArray(modA.keywords) ? modA.keywords.join(" · ") : "")).slice(0, 24);
 
   // 拍平 HomePlan 的房间家具清单，补上 DesignScheme 需要的几何占位（position/rotation/scale）
@@ -164,7 +180,12 @@ export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
     }
   }
   if (!flat.length) {
-    flat.push({ category: "沙发" }, { category: "茶几" }, { category: "电视柜" }, { category: "落地灯" });
+    flat.push(
+      { category: L("沙发", "Sofa") },
+      { category: L("茶几", "Coffee Table") },
+      { category: L("电视柜", "TV Stand") },
+      { category: L("落地灯", "Floor Lamp") }
+    );
   }
 
   const n = flat.length;
@@ -172,7 +193,7 @@ export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
   const furniture: FurnitureItem[] = flat.map((it, i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
-    const cat = String(it.category || it.name || "家具").trim() || "家具";
+    const cat = String(it.category || it.name || L("家具", "Furniture")).trim() || L("家具", "Furniture");
     return {
       modelId: slug(cat + (it.brand ? "-" + it.brand : "")),
       name: [cat, it.brand].filter(Boolean).join(" ").slice(0, 20),
@@ -183,8 +204,11 @@ export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
   });
 
   const description =
-    String(modA.styleSummary || (Array.isArray(brief.specialNeeds) ? brief.specialNeeds.join("；") : "") || "由 VirtuHome 方案码导入").slice(0, 200) ||
-    "由 VirtuHome 方案码导入";
+    String(
+      modA.styleSummary ||
+        (Array.isArray(brief.specialNeeds) ? brief.specialNeeds.join("；") : "") ||
+        L("由 VirtuHome 方案码导入", "Imported from a VirtuHome scheme code")
+    ).slice(0, 200) || L("由 VirtuHome 方案码导入", "Imported from a VirtuHome scheme code");
 
   return {
     version: "1.0",

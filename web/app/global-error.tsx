@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { storedLang, type Lang } from "@/lib/i18n";
 
 /**
  * 全局错误兜底：捕获**根 layout**（含 Providers / Header / 连接钱包按钮）抛出的异常。
@@ -8,7 +9,7 @@ import { useEffect } from "react";
  * “Application error: a client-side exception has occurred”，看不到任何原因。
  *
  * 注意：global-error 会替换整个 <html>/<body>，不会加载 layout 里的全局 CSS，
- * 所以这里用内联样式，保证在任何情况下都能显示。
+ * 也不会被 <I18nProvider> 包裹，所以这里用内联样式，并直接从 localStorage 读取语言。
  */
 export default function GlobalError({
   error,
@@ -17,12 +18,19 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [lang, setLang] = useState<Lang>("zh");
+  useEffect(() => {
+    setLang(storedLang());
+  }, []);
+
   useEffect(() => {
     console.error("[app/global-error] root exception:", error);
   }, [error]);
 
+  const en = lang === "en";
+
   return (
-    <html lang="zh-CN">
+    <html lang={en ? "en" : "zh-CN"}>
       <body
         style={{
           margin: 0,
@@ -44,13 +52,15 @@ export default function GlobalError({
               fontWeight: 700
             }}
           >
-            Client error · 前端异常
+            {en ? "Client error" : "Client error · 前端异常"}
           </p>
           <h1 style={{ margin: "12px 0 0", fontSize: 26, fontWeight: 700 }}>
-            Designer Hub 运行出错了
+            {en ? "Designer Hub failed to run" : "Designer Hub 运行出错了"}
           </h1>
           <p style={{ margin: "14px 0 0", fontSize: 14, color: "#5a5866", lineHeight: 1.6 }}>
-            已捕获到真实错误信息，请把下面这段文字（可截图）发给开发者，即可定位：
+            {en
+              ? "The real error was captured below — send this text (a screenshot works) to the developer to locate it:"
+              : "已捕获到真实错误信息，请把下面这段文字（可截图）发给开发者，即可定位："}
           </p>
           <pre
             style={{
@@ -84,7 +94,7 @@ export default function GlobalError({
                 cursor: "pointer"
               }}
             >
-              重试
+              {en ? "Retry" : "重试"}
             </button>
             <button
               onClick={() => window.location.reload()}
@@ -99,7 +109,7 @@ export default function GlobalError({
                 cursor: "pointer"
               }}
             >
-              刷新页面
+              {en ? "Reload page" : "刷新页面"}
             </button>
           </div>
         </div>

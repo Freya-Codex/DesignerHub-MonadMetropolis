@@ -3,7 +3,7 @@
 Designer Hub is not just a demo app — it is a small **on-chain primitive set** on Monad you can
 build on. This guide is for the developer who wants to use it **without** our UI.
 
-If you only read one thing: install [`@yunzhujia/sdk`](../sdk/README.md) and call `readScheme()` /
+If you only read one thing: install [`@designerhub/sdk`](../sdk/README.md) and call `readScheme()` /
 `createPasskey()` / `deriveSingleChallenge()`.
 
 ---
@@ -56,7 +56,7 @@ security-sensitive work; the SDK exposes all of it in a few typed calls.
 ### A. Read-only (no wallet, no keys) — 2 minutes
 
 ```ts
-import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@yunzhujia/sdk";
+import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@designerhub/sdk";
 
 const client = publicClient();
 const total = await readTotalSupply(client);
@@ -67,7 +67,7 @@ const split = await readSplitPreview(client, total, s.priceWei); // dry-run the 
 ### B. Standard wallet (EOA) — mint / set price / apply
 
 ```ts
-import { mintScheme, setSchemePrice, applyScheme } from "@yunzhujia/sdk";
+import { mintScheme, setSchemePrice, applyScheme } from "@designerhub/sdk";
 
 await mintScheme(wallet, { parentId: 0n, contentHash, agentId: 1n, metadataURI: "ipfs://…" });
 await setSchemePrice(wallet, tokenId, 10_000_000_000_000_000n); // 0.01 MON, your call
@@ -78,7 +78,7 @@ await applyScheme(wallet, tokenId, priceWei);                    // instant spli
 
 ```ts
 import { createPasskey, rpIdHashHex, originHashHex, passkeyFactoryAbi,
-         buildAttestData, deriveSingleChallenge, signAssertion, publicClient, monadTestnet } from "@yunzhujia/sdk";
+         buildAttestData, deriveSingleChallenge, signAssertion, publicClient, monadTestnet } from "@designerhub/sdk";
 
 const cred = await createPasskey({ rpId: "yourdomain.xyz" });
 const account = await publicClient().readContract({
@@ -116,7 +116,7 @@ hold a little MON. See `docs/SECURITY.md` for the trust model.
 
 Traction today is **self-served only** (no third-party integration yet — stated honestly). Concretely:
 
-1. **Ship the kit** (done): publish `@yunzhujia/sdk` + this guide + runnable examples.
+1. **Ship the kit** (done): publish `@designerhub/sdk` + this guide + runnable examples.
 2. **Land one integrator during the event**: 云筑家 App is the first-party integrator (already exports
    the scheme JSON); recruit **one external team** (a design tool, an asset library, or an AI-agent
    platform) to mint/attest through the SDK — even a read-only integration counts.

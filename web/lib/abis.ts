@@ -30,14 +30,17 @@ export const dreamSchemeAbi = parseAbi([
  */
 export const schemeMarketAbi = parseAbi([
   "function setPrice(uint256 tokenId, uint256 price) external",
+  "function setPayout(uint256 tokenId, address payout) external",
   "function applyScheme(uint256 tokenId) external payable returns (uint256 creatorCut, uint256 platformCut)",
   "function splitPreview(uint256 tokenId, uint256 amount) external view returns (uint256 creatorCut, uint256 platformCut, uint256 ancestorPool, address[] ancestors)",
   "function priceOf(uint256 tokenId) external view returns (uint256)",
+  "function payoutOf(uint256 tokenId) external view returns (address)",
   "function appliedCount(uint256 tokenId) external view returns (uint256)",
   "function totalApplied() external view returns (uint256)",
   "function platform() external view returns (address)",
   "function scheme() external view returns (address)",
   "event PriceSet(uint256 indexed tokenId, address indexed creator, uint256 price)",
+  "event PayoutSet(uint256 indexed tokenId, address indexed creator, address payout)",
   "event SchemeApplied(uint256 indexed tokenId, address indexed applier, address indexed creator, uint256 price, uint256 creatorCut, uint256 platformCut)",
   "event AncestorPaid(uint256 indexed tokenId, address indexed ancestor, uint256 amount)"
 ]);

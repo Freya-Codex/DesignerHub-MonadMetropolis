@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#20242e;font-family:"Helvetica Neue",sans-serif;color:#cfd3dc}
+  .row{display:flex;gap:24px;padding:24px;align-items:flex-start;flex-wrap:wrap}
+  .cell{background:#15181f;border:1px solid #2a2f3a;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+  .cap{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#7c8598}
+  .tile{width:190px;height:190px}
+  .cell.light{background:#F3EFE5;border-color:#ddd6c6}.cell.light .cap{color:#7a7263}
+  svg{display:block}
+</style>
+</head>
+<body>
+
+<div class="row">
+  <!-- F1 flat-top hex, 6 nodes -->
+  <div class="cell">
+    <div class="cap">F1 · hex + 6 nodes</div>
+    <svg class="tile" viewBox="0 0 512 512">
+      <defs>
+        <pattern id="g" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#6C8CFF" stroke-opacity=".10" stroke-width="1"/></pattern>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0E1730"/><stop offset="1" stop-color="#080D1A"/></linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+      <rect width="512" height="512" rx="116" fill="url(#g)"/>
+      <path d="M418 256 L337 116 L175 116 L94 256 L175 396 L337 396 Z" fill="none" stroke="#EDE7D9" stroke-width="15" stroke-linejoin="round"/>
+      <g stroke="#EDE7D9" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M160 302 L256 210 L352 302"/>
+        <path d="M180 296 L180 384 L332 384 L332 296"/>
+      </g>
+      <rect x="236" y="344" width="40" height="40" fill="#EDE7D9"/>
+      <g fill="#FF8A34">
+        <circle cx="418" cy="256" r="15"/><circle cx="337" cy="116" r="15"/><circle cx="175" cy="116" r="15"/>
+        <circle cx="94" cy="256" r="15"/><circle cx="175" cy="396" r="15"/><circle cx="337" cy="396" r="15"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- F2 flat-top hex, 2 nodes -->
+  <div class="cell">
+    <div class="cap">F2 · hex + 2 nodes</div>
+    <svg class="tile" viewBox="0 0 512 512">
+      <defs>
+        <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0E1730"/><stop offset="1" stop-color="#080D1A"/></linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="116" fill="url(#bg2)"/>
+      <rect width="512" height="512" rx="116" fill="url(#g)"/>
+      <path d="M418 256 L337 116 L175 116 L94 256 L175 396 L337 396 Z" fill="none" stroke="#EDE7D9" stroke-width="15" stroke-linejoin="round"/>
+      <g stroke="#EDE7D9" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M160 302 L256 210 L352 302"/>
+        <path d="M180 296 L180 384 L332 384 L332 296"/>
+      </g>
+      <rect x="236" y="344" width="40" height="40" fill="#EDE7D9"/>
+      <circle cx="418" cy="256" r="16" fill="#FF8A34"/>
+      <circle cx="94" cy="256" r="16" fill="#FF8A34"/>
+      <circle cx="256" cy="210" r="16" fill="#FF8A34"/>
+    </svg>
+  </div>
+
+  <!-- F3 cream hexagon fill + dark house -->
+  <div class="cell">
+    <div class="cap">F3 · filled hex (seal+hubs)</div>
+    <svg class="tile" viewBox="0 0 512 512">
+      <defs>
+        <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0E1730"/><stop offset="1" stop-color="#080D1A"/></linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="116" fill="url(#bg3)"/>
+      <path d="M414 256 L335 119 L177 119 L98 256 L177 393 L335 393 Z" fill="#EDE7D9"/>
+      <g stroke="#0B1220" stroke-width="19" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M164 298 L256 208 L348 298"/>
+        <path d="M184 292 L184 380 L328 380 L328 292"/>
+      </g>
+      <rect x="236" y="340" width="40" height="40" fill="#0B1220"/>
+      <g fill="#FF8A34">
+        <circle cx="414" cy="256" r="15"/><circle cx="335" cy="119" r="15"/><circle cx="177" cy="119" r="15"/>
+        <circle cx="98" cy="256" r="15"/><circle cx="177" cy="393" r="15"/><circle cx="335" cy="393" r="15"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- F4 pointy-top hex house-apex -->
+  <div class="cell">
+    <div class="cap">F4 · roof = hex apex</div>
+    <svg class="tile" viewBox="0 0 512 512">
+      <defs>
+        <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0E1730"/><stop offset="1" stop-color="#080D1A"/></linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="116" fill="url(#bg4)"/>
+      <rect width="512" height="512" rx="116" fill="url(#g)"/>
+      <path d="M256 92 L398 174 L398 338 L256 420 L114 338 L114 174 Z" fill="none" stroke="#EDE7D9" stroke-width="15" stroke-linejoin="round"/>
+      <g stroke="#EDE7D9" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M176 300 L256 232 L336 300"/>
+        <path d="M192 296 L192 384 L320 384 L320 296"/>
+      </g>
+      <rect x="238" y="346" width="36" height="38" fill="#EDE7D9"/>
+      <circle cx="256" cy="92" r="16" fill="#FF8A34"/>
+      <circle cx="114" cy="338" r="16" fill="#FF8A34"/>
+      <circle cx="398" cy="338" r="16" fill="#FF8A34"/>
+    </svg>
+  </div>
+</div>
+
+<!-- Wordmark -->
+<div class="row">
+  <div class="cell" style="width:600px">
+    <div class="cap">Wordmark A · Futura on ink</div>
+    <div style="display:flex;align-items:center;gap:24px;padding:8px 4px">
+      <svg width="88" height="88" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="116" fill="url(#bg2)"/>
+        <path d="M418 256 L337 116 L175 116 L94 256 L175 396 L337 396 Z" fill="none" stroke="#EDE7D9" stroke-width="16" stroke-linejoin="round"/>
+        <g stroke="#EDE7D9" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M160 302 L256 210 L352 302"/><path d="M180 296 L180 384 L332 384 L332 296"/></g>
+        <g fill="#FF8A34"><circle cx="418" cy="256" r="17"/><circle cx="94" cy="256" r="17"/></g>
+      </svg>
+      <div style="font-family:'Futura','Avenir Next';color:#EDE7D9;font-weight:500;font-size:52px;letter-spacing:-.005em;line-height:1;padding-bottom:6px">Designer&nbsp;Hub</div>
+    </div>
+  </div>
+
+  <div class="cell light" style="width:600px">
+    <div class="cap">Wordmark B · Futura on paper</div>
+    <div style="display:flex;align-items:center;gap:24px;padding:8px 4px">
+      <svg width="88" height="88" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="116" fill="#0B1220"/>
+        <path d="M418 256 L337 116 L175 116 L94 256 L175 396 L337 396 Z" fill="none" stroke="#EDE7D9" stroke-width="16" stroke-linejoin="round"/>
+        <g stroke="#EDE7D9" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M160 302 L256 210 L352 302"/><path d="M180 296 L180 384 L332 384 L332 296"/></g>
+        <g fill="#FF8A34"><circle cx="418" cy="256" r="17"/><circle cx="94" cy="256" r="17"/></g>
+      </svg>
+      <div style="font-family:'Futura','Avenir Next';color:#0B1220;font-weight:500;font-size:52px;letter-spacing:-.005em;line-height:1;padding-bottom:6px">Designer&nbsp;Hub</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

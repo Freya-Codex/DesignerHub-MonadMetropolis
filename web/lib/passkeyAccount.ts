@@ -21,6 +21,7 @@ import {
   rpIdHashHex,
   signAssertion
 } from "@/lib/passkey";
+import { L, getLang } from "@/lib/langStore";
 
 /** 本机 passkey 记录的 localStorage key（与 /passkey 页一致）。 */
 export const PASSKEY_STORE_KEY = "dh.passkey.v1";
@@ -102,7 +103,8 @@ export async function deployPasskeyAccount(
       x: cred.x,
       y: cred.y,
       rpIdHash: rpIdHashHex(),
-      originHash: originHashHex()
+      originHash: originHashHex(),
+      lang: getLang()
     })
   });
   const data = await res.json();
@@ -121,7 +123,7 @@ export async function executeViaPasskey(opts: {
   data: Hex;
 }): Promise<Hex> {
   const client = publicClientFor();
-  if (!client) throw new Error("缺少只读客户端");
+  if (!client) throw new Error(L("缺少只读客户端", "Missing read-only client"));
 
   const nonce = (await client.readContract({
     address: opts.account,
@@ -153,6 +155,7 @@ export async function executeViaPasskey(opts: {
       to: opts.to,
       value: "0",
       data: opts.data,
+      lang: getLang(),
       assertion: {
         authenticatorData: assertion.authenticatorData,
         clientDataJSON: assertion.clientDataJSON,
@@ -174,7 +177,8 @@ export async function executeViaPasskey(opts: {
  */
 export async function ensurePasskeyAccount(cred: StoredPasskey): Promise<Address> {
   const addr = await passkeyAccountAddress(cred);
-  if (!addr) throw new Error("无法推导 passkey 账户地址（缺少合约地址或只读客户端）");
+  if (!addr)
+    throw new Error(L("无法推导 passkey 账户地址（缺少合约地址或只读客户端）", "Could not derive the passkey account address (missing contract address or read-only client)"));
   if (!(await isAccountDeployed(addr))) {
     await deployPasskeyAccount(cred);
   }

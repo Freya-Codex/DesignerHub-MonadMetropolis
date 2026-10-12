@@ -19,6 +19,7 @@ import {
 } from "@/lib/passkeyAccount";
 import { decodeSchemeCode, encodeSchemeCode } from "@/lib/schemeCodec";
 import SchemePreview from "@/components/SchemePreview";
+import { useI18n } from "@/lib/i18n";
 
 type Step = "idle" | "pin" | "mint" | "done";
 
@@ -39,6 +40,7 @@ const SAMPLE_JSON = `{
 }`;
 
 export default function CreatePage() {
+  const { t, lang } = useI18n();
   const { isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync, data: mintHash, error: writeError, isPending: isWritePending } = useWriteContract();
@@ -70,20 +72,20 @@ export default function CreatePage() {
     if (!raw.trim()) return null;
     try {
       const obj = JSON.parse(raw) as unknown;
-      return validateScheme(obj) === null ? (obj as DesignScheme) : null;
+      return validateScheme(obj, lang) === null ? (obj as DesignScheme) : null;
     } catch {
       return null;
     }
-  }, [raw]);
+  }, [raw, lang]);
 
   const validationError = useMemo(() => {
     if (!raw.trim()) return null;
     try {
-      return validateScheme(JSON.parse(raw) as unknown);
+      return validateScheme(JSON.parse(raw) as unknown, lang);
     } catch {
-      return "JSON 解析失败，请检查格式";
+      return t("JSON 解析失败，请检查格式", "JSON parse failed, please check the format");
     }
-  }, [raw]);
+  }, [raw, lang, t]);
 
   const displayScheme = useMemo(() => {
     if (!scheme) return null;
@@ -143,7 +145,7 @@ export default function CreatePage() {
       setRaw(text);
       setFileName(file.name);
     } catch {
-      setError("文件读取失败");
+      setError(t("文件读取失败", "Failed to read file"));
     }
   };
 
@@ -157,13 +159,13 @@ export default function CreatePage() {
   const loadSample = async (id: number) => {
     setError(null);
     try {
-      const res = await fetch(`/api/demo/${id}`);
-      if (!res.ok) throw new Error("示例加载失败");
+      const res = await fetch(`/api/demo/${id}?lang=${lang}`);
+      if (!res.ok) throw new Error(t("示例加载失败", "Failed to load sample"));
       const data = await res.json();
       setRaw(JSON.stringify(data, null, 2));
-      setFileName(`示例方案 ${id}`);
+      setFileName(t("示例方案 {id}", "Sample scheme {id}", { id }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "示例加载失败");
+      setError(e instanceof Error ? e.message : t("示例加载失败", "Failed to load sample"));
     }
   };
 
@@ -175,11 +177,11 @@ export default function CreatePage() {
     try {
       const { scheme, source, note } = await decodeSchemeCode(codeText);
       setRaw(JSON.stringify(scheme, null, 2));
-      setFileName(source === "homeplan" ? "方案码 · VirtuHome" : "方案码");
+      setFileName(source === "homeplan" ? t("方案码 · VirtuHome", "Scheme code · VirtuHome") : t("方案码", "Scheme code"));
       setCodeNote(`✓ ${note}`);
       setInputMode("json");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "方案码解析失败");
+      setError(e instanceof Error ? e.message : t("方案码解析失败", "Failed to parse scheme code"));
     } finally {
       setDecoding(false);
     }
@@ -195,7 +197,7 @@ export default function CreatePage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      setError("复制方案码失败（浏览器可能未授权剪贴板）");
+      setError(t("复制方案码失败（浏览器可能未授权剪贴板）", "Failed to copy scheme code (the browser may not have granted clipboard access)"));
     }
   };
 
@@ -206,25 +208,30 @@ export default function CreatePage() {
     setTxHash(null);
     const addr = dreamSchemeAddress();
     if (!addr) {
-      setError("未配置 DreamScheme 合约地址。请先部署合约，并把地址写入 web/.env.local 后重启 dev 服务。");
+      setError(
+        t(
+          "未配置 DreamScheme 合约地址。请先部署合约，并把地址写入 web/.env.local 后重启 dev 服务。",
+          "DreamScheme contract address is not configured. Please deploy the contract first, write the address into web/.env.local, and restart the dev server."
+        )
+      );
       return;
     }
     if (!displayScheme) {
-      setError("请先粘贴或上传有效的方案 JSON");
+      setError(t("请先粘贴或上传有效的方案 JSON", "Please paste or upload a valid scheme JSON first"));
       return;
     }
 
     const useMetaMask = isConnected;
     const usePasskey = !useMetaMask && Boolean(pk);
     if (!useMetaMask && !usePasskey) {
-      setError("请先在「Passkey」页创建通行密钥，或在 /passkey 连接 MetaMask（备选）。");
+      setError(t("请先在「Passkey」页创建通行密钥，或在 /passkey 连接 MetaMask（备选）。", "Please create a passkey on the \"Passkey\" page first, or connect MetaMask (fallback) at /passkey."));
       return;
     }
 
     setStep("pin");
     try {
       // 1) 固定到 IPFS（两条路径共用）
-      const previewDataUri = svgToDataUri(schemeToPreviewSvg(displayScheme));
+      const previewDataUri = svgToDataUri(schemeToPreviewSvg(displayScheme, lang));
       const res = await fetch("/api/pin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -232,11 +239,12 @@ export default function CreatePage() {
           scheme: displayScheme,
           previewImage: previewDataUri,
           name: displayScheme.name,
-          description: displayScheme.description
+          description: displayScheme.description,
+          lang
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "固定到 IPFS 失败");
+      if (!res.ok) throw new Error(data?.error ?? t("固定到 IPFS 失败", "Failed to pin to IPFS"));
       setPinInfo(data);
 
       const mintArgs = [0n, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string] as const;
@@ -252,10 +260,10 @@ export default function CreatePage() {
       }
 
       // 2b) Passkey 智能账户 + relayer 代付（无需 MetaMask、无需持有 MON）
-      if (!pk) throw new Error("缺少本机 passkey 记录");
+      if (!pk) throw new Error(t("缺少本机 passkey 记录", "Missing local passkey record"));
       setStep("mint");
       let account: Address | null = pkAccount ?? (await passkeyAccountAddress(pk)) ?? null;
-      if (!account) throw new Error("无法推导 Passkey 账户地址");
+      if (!account) throw new Error(t("无法推导 Passkey 账户地址", "Unable to derive the Passkey account address"));
       setPkAccount(account);
       if (!(await isAccountDeployed(account))) {
         const dep = await deployPasskeyAccount(pk);
@@ -270,7 +278,7 @@ export default function CreatePage() {
       setTokenId(id);
       setStep("done");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "铸造失败");
+      setError(e instanceof Error ? e.message : t("铸造失败", "Minting failed"));
       setStep("idle");
     }
   };
@@ -280,20 +288,21 @@ export default function CreatePage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <header className="rise">
-        <p className="eyebrow">Create · 铸造原创方案</p>
-        <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">创建原创方案</h1>
+        <p className="eyebrow">{t("Create · 铸造原创方案", "Create · Mint original scheme")}</p>
+        <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">{t("创建原创方案", "Create original scheme")}</h1>
         <div className="dim-line mt-6" />
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
-          上传 JSON / 粘贴方案码 → 自动生成蓝图预览 → 固定到 IPFS → 铸造为 Monad 链上 NFT（
-          <span className="mono text-ink">parentId = 0</span>）。创作者地址在铸造时上链固化。
+          {t("上传 JSON / 粘贴方案码 → 自动生成蓝图预览 → 固定到 IPFS → 铸造为 Monad 链上 NFT（", "Upload JSON / paste a scheme code → auto-generate a blueprint preview → pin to IPFS → mint as an NFT on Monad (")}
+          <span className="mono text-ink">parentId = 0</span>
+          {t("）。创作者地址在铸造时上链固化。", "). The creator address is committed on-chain at mint time.")}
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="space-y-5">
           <div className="sheet p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="field-label !mb-0">Scheme · 方案来源</label>
+              <label className="field-label !mb-0">{t("Scheme · 方案来源", "Scheme · Source")}</label>
               <div className="inline-flex rounded-lg border border-hairline p-0.5 text-xs">
                 <button
                   type="button"
@@ -302,7 +311,7 @@ export default function CreatePage() {
                     inputMode === "json" ? "bg-violet text-white" : "text-muted hover:text-ink"
                   }`}
                 >
-                  JSON 文件
+                  {t("JSON 文件", "JSON file")}
                 </button>
                 <button
                   type="button"
@@ -311,7 +320,7 @@ export default function CreatePage() {
                     inputMode === "code" ? "bg-violet text-white" : "text-muted hover:text-ink"
                   }`}
                 >
-                  方案码
+                  {t("方案码", "Scheme code")}
                 </button>
               </div>
             </div>
@@ -345,7 +354,7 @@ export default function CreatePage() {
                       ⤓
                     </span>
                     <p className="mt-2 font-medium text-ink">
-                      {dragOver ? "松开即可载入" : "拖拽方案 JSON 到此处，或点击选择文件"}
+                      {dragOver ? t("松开即可载入", "Drop to load") : t("拖拽方案 JSON 到此处，或点击选择文件", "Drag a scheme JSON here, or click to choose a file")}
                     </p>
                     <p className="mono mt-1.5 text-[10.5px] uppercase tracking-[0.12em] text-muted">
                       .json / application/json
@@ -361,16 +370,16 @@ export default function CreatePage() {
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button className="btn-secondary !py-1.5 !text-xs" onClick={() => void loadSample(1)}>
-                    载入示例（北欧客厅）
+                    {t("载入示例（北欧客厅）", "Load sample (Nordic living room)")}
                   </button>
                   <button
                     className="btn-secondary !py-1.5 !text-xs"
                     onClick={() => void handleCopyCode()}
                     disabled={!displayScheme}
                   >
-                    {copied ? "已复制 ✓" : "复制方案码"}
+                    {copied ? t("已复制 ✓", "Copied ✓") : t("复制方案码", "Copy scheme code")}
                   </button>
-                  {fileName && <span className="mono text-[11px] text-muted">已加载 · {fileName}</span>}
+                  {fileName && <span className="mono text-[11px] text-muted">{t("已加载 · {name}", "Loaded · {name}", { name: fileName })}</span>}
                 </div>
                 <textarea
                   value={raw}
@@ -387,14 +396,16 @@ export default function CreatePage() {
             ) : (
               <>
                 <p className="mt-3 text-xs leading-relaxed text-muted">
-                  粘贴 <span className="mono">base64url</span> 方案码（本站 DesignScheme 或 VirtuHome HomePlan），自动解码为方案 JSON 后走同一套预览 / 铸造流程。
+                  {t("粘贴 ", "Paste a ")}
+                  <span className="mono">base64url</span>
+                  {t(" 方案码（本站 DesignScheme 或 VirtuHome HomePlan），自动解码为方案 JSON 后走同一套预览 / 铸造流程。", " scheme code (this site's DesignScheme or VirtuHome HomePlan); it will be auto-decoded to scheme JSON and go through the same preview / mint flow.")}
                 </p>
                 <textarea
                   value={codeText}
                   onChange={(e) => setCodeText(e.target.value)}
                   rows={6}
                   spellCheck={false}
-                  placeholder="粘贴方案码，例如：3sY9x…"
+                  placeholder={t("粘贴方案码，例如：3sY9x…", "Paste a scheme code, e.g. 3sY9x…")}
                   className="input mono mt-3 text-xs leading-relaxed"
                 />
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -403,7 +414,7 @@ export default function CreatePage() {
                     onClick={() => void handleDecode()}
                     disabled={decoding || !codeText.trim()}
                   >
-                    {decoding ? "解码中…" : "解析方案码"}
+                    {decoding ? t("解码中…", "Decoding…") : t("解析方案码", "Parse scheme code")}
                   </button>
                   {codeNote && <span className="mono text-[11px] text-violet-deep">{codeNote}</span>}
                 </div>
@@ -412,23 +423,23 @@ export default function CreatePage() {
           </div>
 
           <div className="sheet p-5">
-            <label className="field-label">Display Name · 方案名称（可选）</label>
+            <label className="field-label">{t("Display Name · 方案名称（可选）", "Display Name · Scheme name (optional)")}</label>
             <input
               value={nameOverride}
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如：我家客厅 v2"
+              placeholder={t("例如：我家客厅 v2", "e.g. My living room v2")}
               className="input"
             />
           </div>
 
           <button onClick={() => void handleMint()} disabled={busy || !displayScheme} className="btn-primary w-full">
             {step === "pin"
-              ? "固定到 IPFS…"
+              ? t("固定到 IPFS…", "Pinning to IPFS…")
               : step === "mint" || isWritePending
-                ? "铸造 NFT…"
+                ? t("铸造 NFT…", "Minting NFT…")
                 : isConfirming
-                  ? "等待链上确认…"
-                  : "固定 + 铸造"}
+                  ? t("等待链上确认…", "Waiting for on-chain confirmation…")
+                  : t("固定 + 铸造", "Pin + mint")}
           </button>
 
           {error && (
@@ -439,7 +450,7 @@ export default function CreatePage() {
 
           {pinInfo && (
             <div className="sheet space-y-2 p-5 text-xs">
-              <p className="mono text-[10px] uppercase tracking-[0.14em] text-violet">Pinned · 已固定到 IPFS</p>
+              <p className="mono text-[10px] uppercase tracking-[0.14em] text-violet">{t("Pinned · 已固定到 IPFS", "Pinned · Stored on IPFS")}</p>
               <p className="break-all text-muted">
                 contentHash <code className="mono text-ink">{pinInfo.contentHash}</code>
               </p>
@@ -452,11 +463,12 @@ export default function CreatePage() {
           {tokenId !== null && (
             <div className="sheet border-violet/40 bg-violet/[0.06] p-5 text-sm">
               <p className="text-ink">
-                铸造成功！你的原创方案是 <span className="mono font-semibold text-violet-deep">#{tokenId.toString()}</span>
+                {t("铸造成功！你的原创方案是 ", "Minted! Your original scheme is ")}
+                <span className="mono font-semibold text-violet-deep">#{tokenId.toString()}</span>
               </p>
               {txHash && <p className="mono mt-2 break-all text-[11px] text-muted">tx: {txHash}</p>}
               <Link href={`/scheme/${tokenId.toString()}`} className="btn-primary mt-3">
-                查看方案详情
+                {t("查看方案详情", "View scheme details")}
               </Link>
             </div>
           )}
@@ -468,12 +480,16 @@ export default function CreatePage() {
           )}
 
           <p className="text-xs leading-relaxed text-muted">
-            格式要求：<span className="mono text-ink">name</span>、
-            <span className="mono text-ink"> room.type</span>、
-            <span className="mono text-ink"> room.dimensions</span>(width/length/height)、
+            {t("格式要求：", "Format requirements: ")}
+            <span className="mono text-ink">name</span>
+            {t("、", ", ")}
+            <span className="mono text-ink"> room.type</span>
+            {t("、", ", ")}
+            <span className="mono text-ink"> room.dimensions</span>(width/length/height)
+            {t("、", ", ")}
             <span className="mono text-ink"> style.theme</span> +{" "}
-            <span className="mono text-ink">style.palette</span>，furniture 数组含 modelId 与
-            position/rotation/scale。
+            <span className="mono text-ink">style.palette</span>
+            {t("，furniture 数组含 modelId 与 position/rotation/scale。", ", and a furniture array containing modelId and position/rotation/scale.")}
           </p>
         </div>
 
@@ -481,14 +497,14 @@ export default function CreatePage() {
           <div className="sheet grid-sheet overflow-hidden">
             <div className="border-b border-hairline px-5 py-3">
               <p className="mono text-[10px] uppercase tracking-[0.14em] text-muted">
-                Preview · 自动生成蓝图预览
+                {t("Preview · 自动生成蓝图预览", "Preview · Auto-generated blueprint")}
               </p>
             </div>
             {displayScheme ? (
               <SchemePreview scheme={displayScheme} />
             ) : (
               <div className="grid aspect-[16/10] place-items-center text-sm text-muted">
-                填写左侧 JSON 后自动生成预览
+                {t("填写左侧 JSON 后自动生成预览", "Fill in the JSON on the left to auto-generate a preview")}
               </div>
             )}
           </div>
@@ -496,20 +512,20 @@ export default function CreatePage() {
           {scheme && (
             <div className="sheet p-5">
               <div className="flex items-center justify-between">
-                <p className="eyebrow">Summary · 参数摘要</p>
-                <span className="chip chip-violet">校验通过</span>
+                <p className="eyebrow">{t("Summary · 参数摘要", "Summary · Parameters")}</p>
+                <span className="chip chip-violet">{t("校验通过", "Validated")}</span>
               </div>
               <dl className="mt-4 divide-y divide-hairline border-y border-hairline text-[13px]">
-                <SummaryRow label="ROOM / 房间">{scheme.room.type}</SummaryRow>
-                <SummaryRow label="SIZE / 尺寸">
+                <SummaryRow label={t("ROOM / 房间", "ROOM")}>{scheme.room.type}</SummaryRow>
+                <SummaryRow label={t("SIZE / 尺寸", "SIZE")}>
                   <span className="mono">
                     {scheme.room.dimensions.width} × {scheme.room.dimensions.length} ×{" "}
                     {scheme.room.dimensions.height} m
                   </span>
                 </SummaryRow>
-                <SummaryRow label="THEME / 风格">{scheme.style.theme}</SummaryRow>
-                <SummaryRow label="FURNITURE / 家具">
-                  <span className="mono">{scheme.furniture.length}</span> 件
+                <SummaryRow label={t("THEME / 风格", "THEME")}>{scheme.style.theme}</SummaryRow>
+                <SummaryRow label={t("FURNITURE / 家具", "FURNITURE")}>
+                  <span className="mono">{scheme.furniture.length}</span>{t(" 件", " items")}
                 </SummaryRow>
               </dl>
               <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -524,19 +540,19 @@ export default function CreatePage() {
                 <span className="mono ml-1 text-[11px] text-muted">{scheme.style.mood ?? ""}</span>
               </div>
               <p className="mt-4 text-xs leading-relaxed text-muted">
-                确认无误后点击左侧「固定 + 铸造」上链；名称可在上方覆盖 JSON 中的 name。
+                {t("确认无误后点击左侧「固定 + 铸造」上链；名称可在上方覆盖 JSON 中的 name。", "Once everything looks right, click \"Pin + mint\" on the left to go on-chain; the name can be overridden above the JSON's name.")}
               </p>
             </div>
           )}
 
           <div className="sheet p-5">
-            <p className="eyebrow">Mint · 铸造信息</p>
+            <p className="eyebrow">{t("Mint · 铸造信息", "Mint · Info")}</p>
             <dl className="mt-4 divide-y divide-hairline border-y border-hairline text-[13px]">
               <SummaryRow label="CONTRACT">
-                <span className="mono text-[11px]">{dreamSchemeAddress() ?? "未配置"}</span>
+                <span className="mono break-all text-[11px]">{dreamSchemeAddress() ?? t("未配置", "Not configured")}</span>
               </SummaryRow>
               <SummaryRow label="PARENT">
-                <span className="mono">0 · 原创</span>
+                <span className="mono">{t("0 · 原创", "0 · original")}</span>
               </SummaryRow>
               <SummaryRow label="ROYALTY">
                 <span className="mono">ERC-2981 · 5%</span>
@@ -546,7 +562,7 @@ export default function CreatePage() {
               </SummaryRow>
               {isConnected ? (
                 <SummaryRow label="SIGNER">
-                  <span className="mono">MetaMask · 备选</span>
+                  <span className="mono">{t("MetaMask · 备选", "MetaMask · fallback")}</span>
                 </SummaryRow>
               ) : pkAccount ? (
                 <SummaryRow label="SIGNER">
@@ -556,17 +572,18 @@ export default function CreatePage() {
             </dl>
             {isConnected ? (
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
-                将用 MetaMask 铸造，请确认已切换到 Monad 测试网。
+                {t("将用 MetaMask 铸造，请确认已切换到 Monad 测试网。", "You'll mint with MetaMask — please make sure you've switched to Monad Testnet.")}
               </p>
             ) : pk ? (
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
-                将用 Passkey 智能账户铸造，relayer 代付 gas（无需 MetaMask、无需持有 MON）。
-                {pkAccount && (pkDeployed ? " 账户已部署。" : " 首次铸造会自动部署账户。")}
+                {t("将用 Passkey 智能账户铸造，relayer 代付 gas（无需 MetaMask、无需持有 MON）。", "You'll mint with a Passkey smart account; the relayer covers gas (no MetaMask, no MON needed).")}
+                {pkAccount && (pkDeployed ? t(" 账户已部署。", " The account is already deployed.") : t(" 首次铸造会自动部署账户。", " The account will be deployed automatically on first mint."))}
               </p>
             ) : (
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
-                铸造前请先在 <Link href="/passkey" className="text-violet-deep underline">Passkey 页</Link>{" "}
-                创建通行密钥，或到 /passkey 连接 MetaMask（备选）。
+                {t("铸造前请先在 ", "Before minting, ")}
+                <Link href="/passkey" className="text-violet-deep underline">{t("Passkey 页", "Passkey page")}</Link>
+                {t(" 创建通行密钥，或到 /passkey 连接 MetaMask（备选）。", " create a passkey, or connect MetaMask (fallback) at /passkey.")}
               </p>
             )}
           </div>
@@ -579,8 +596,8 @@ export default function CreatePage() {
 function SummaryRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3">
-      <dt className="mono text-[10px] uppercase tracking-[0.12em] text-muted">{label}</dt>
-      <dd className="text-right text-ink">{children}</dd>
+      <dt className="mono shrink-0 text-[10px] uppercase tracking-[0.12em] text-muted">{label}</dt>
+      <dd className="min-w-0 break-all text-right text-ink">{children}</dd>
     </div>
   );
 }

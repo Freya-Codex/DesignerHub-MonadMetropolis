@@ -1,5 +1,5 @@
 {
-  "name": "@yunzhujia/sdk",
+  "name": "@designerhub/sdk",
   "version": "0.1.0",
   "description": "Typed client for the Designer Hub on-chain primitive on Monad: passkey (WebAuthn/P-256) smart accounts, provenance attestation, and remixable design-scheme assets with lineage revenue-splitting.",
   "license": "MIT",

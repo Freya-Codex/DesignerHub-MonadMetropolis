@@ -1,24 +1,29 @@
 {
   "version": "1.0",
   "name": "北欧风客厅 · 晨光白桦",
+  "nameEn": "Nordic Living Room · Morning Birch",
   "description": "大落地窗引入自然光，浅色木地板搭配燕麦色布艺沙发，留白与绿植让客厅呼吸感十足，适合 4-6 人家庭日常起居。",
+  "descriptionEn": "Floor-to-ceiling windows draw in natural light; pale wood floors pair with an oatmeal fabric sofa, while open space and greenery give the living room room to breathe — ideal for a family of 4–6.",
   "room": {
     "type": "客厅",
+    "typeEn": "Living Room",
     "dimensions": { "width": 4.8, "length": 6.2, "height": 2.8, "unit": "m" }
   },
   "style": {
     "theme": "北欧风",
+    "themeEn": "Nordic",
     "palette": ["#F5F1E8", "#BEC9B3", "#D9C7A7", "#4A4A44", "#FFFFFF"],
-    "mood": "明亮通透 · 自然木色"
+    "mood": "明亮通透 · 自然木色",
+    "moodEn": "Bright & airy · natural wood tones"
   },
   "furniture": [
-    { "modelId": "sofa_3seater_fabric_01", "name": "燕麦色三人布艺沙发", "position": { "x": 1.2, "y": 0.6, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
-    { "modelId": "coffee_table_round_white_01", "name": "白色圆角茶几", "position": { "x": 2.2, "y": 1.6, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.8, "y": 0.8, "z": 0.8 } },
-    { "modelId": "tv_console_oak_01", "name": "白橡木电视柜", "position": { "x": 4.9, "y": 3.4, "z": 0.1 }, "rotation": { "x": 0, "y": 90, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
-    { "modelId": "floor_lamp_arc_01", "name": "落地阅读灯", "position": { "x": 0.8, "y": 4.2, "z": 0.1 }, "rotation": { "x": 0, "y": -15, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
-    { "modelId": "armchair_single_natural_01", "name": "单人藤编扶手椅", "position": { "x": 0.6, "y": 2.6, "z": 0.1 }, "rotation": { "x": 0, "y": 25, "z": 0 }, "scale": { "x": 0.9, "y": 0.9, "z": 0.9 } },
-    { "modelId": "rug_wool_beige_01", "name": "米色羊毛地毯", "position": { "x": 2.4, "y": 1.8, "z": 0.05 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 2.2, "y": 1.6, "z": 1 } },
-    { "modelId": "plant_olive_tree_pot_01", "name": "橄榄树盆栽", "position": { "x": 4.6, "y": 5.6, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1.1, "y": 1.1, "z": 1.1 } }
+    { "modelId": "sofa_3seater_fabric_01", "name": "燕麦色三人布艺沙发", "nameEn": "Oatmeal 3-Seater Fabric Sofa", "position": { "x": 1.2, "y": 0.6, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "coffee_table_round_white_01", "name": "白色圆角茶几", "nameEn": "White Rounded Coffee Table", "position": { "x": 2.2, "y": 1.6, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.8, "y": 0.8, "z": 0.8 } },
+    { "modelId": "tv_console_oak_01", "name": "白橡木电视柜", "nameEn": "White Oak TV Console", "position": { "x": 4.9, "y": 3.4, "z": 0.1 }, "rotation": { "x": 0, "y": 90, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "floor_lamp_arc_01", "name": "落地阅读灯", "nameEn": "Arc Floor Reading Lamp", "position": { "x": 0.8, "y": 4.2, "z": 0.1 }, "rotation": { "x": 0, "y": -15, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "armchair_single_natural_01", "name": "单人藤编扶手椅", "nameEn": "Rattan Armchair", "position": { "x": 0.6, "y": 2.6, "z": 0.1 }, "rotation": { "x": 0, "y": 25, "z": 0 }, "scale": { "x": 0.9, "y": 0.9, "z": 0.9 } },
+    { "modelId": "rug_wool_beige_01", "name": "米色羊毛地毯", "nameEn": "Beige Wool Rug", "position": { "x": 2.4, "y": 1.8, "z": 0.05 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 2.2, "y": 1.6, "z": 1 } },
+    { "modelId": "plant_olive_tree_pot_01", "name": "橄榄树盆栽", "nameEn": "Olive Tree Planter", "position": { "x": 4.6, "y": 5.6, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1.1, "y": 1.1, "z": 1.1 } }
   ],
   "previewImage": "previews/nordic-livingroom.svg",
   "license": "CC-BY 4.0"

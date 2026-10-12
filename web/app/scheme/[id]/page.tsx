@@ -24,8 +24,10 @@ import VersionTimeline from "@/components/VersionTimeline";
 import CommentsSection from "@/components/CommentsSection";
 import { monadTestnet } from "@/lib/chains";
 import { shortAddress } from "@/lib/scheme";
+import { useI18n } from "@/lib/i18n";
 
 export default function SchemeDetailPage() {
+  const { t, pick } = useI18n();
   const params = useParams<{ id: string }>();
   const tokenId = useMemo(() => {
     const n = Number(params?.id);
@@ -44,6 +46,7 @@ export default function SchemeDetailPage() {
   const [pk, setPk] = useState<StoredPasskey | null>(null);
   const [passkeyAddr, setPasskeyAddr] = useState<Address | null>(null);
   const [busySetPrice, setBusySetPrice] = useState(false);
+  const [busyPayout, setBusyPayout] = useState(false);
   useEffect(() => {
     const load = () => {
       const cred = loadStoredPasskey();
@@ -106,7 +109,7 @@ export default function SchemeDetailPage() {
     setTxNote("");
     const market = schemeMarketAddress();
     if (!market) {
-      setTxNote("未配置 SchemeMarket 合约地址");
+      setTxNote(t("未配置 SchemeMarket 合约地址", "SchemeMarket contract address not configured"));
       return;
     }
     if (switchChainAsync) {
@@ -114,7 +117,7 @@ export default function SchemeDetailPage() {
     }
     const price = (detail?.price ?? 0n) as bigint;
     if (price <= 0n) {
-      setTxNote("创作者尚未上架该方案（价格未设置）");
+      setTxNote(t("创作者尚未上架该方案（价格未设置）", "The creator has not listed this scheme yet (no price set)"));
       return;
     }
     try {
@@ -125,9 +128,9 @@ export default function SchemeDetailPage() {
         args: [tokenId ?? 0n],
         value: price
       });
-      setTxNote(`交易已提交：${hash}`);
+      setTxNote(t("交易已提交：{hash}", "Transaction submitted: {hash}", { hash }));
     } catch (e) {
-      setTxNote(e instanceof Error ? e.message : "交易失败");
+      setTxNote(e instanceof Error ? e.message : t("交易失败", "Transaction failed"));
     }
   };
 
@@ -135,7 +138,7 @@ export default function SchemeDetailPage() {
     setTxNote("");
     const market = schemeMarketAddress();
     if (!market) {
-      setTxNote("未配置 SchemeMarket 合约地址");
+      setTxNote(t("未配置 SchemeMarket 合约地址", "SchemeMarket contract address not configured"));
       return;
     }
     const cred = pk;
@@ -150,10 +153,10 @@ export default function SchemeDetailPage() {
         });
         const account = await ensurePasskeyAccount(cred);
         const hash = await executeViaPasskey({ account, cred, to: market, data });
-        setTxNote(`定价交易已提交：${hash}`);
+        setTxNote(t("定价交易已提交：{hash}", "Price transaction submitted: {hash}", { hash }));
         await refreshDetail();
       } catch (e) {
-        setTxNote(e instanceof Error ? e.message : "定价失败");
+        setTxNote(e instanceof Error ? e.message : t("定价失败", "Pricing failed"));
       } finally {
         setBusySetPrice(false);
       }
@@ -169,27 +172,77 @@ export default function SchemeDetailPage() {
         functionName: "setPrice",
         args: [tokenId ?? 0n, priceWei]
       });
-      setTxNote(`定价交易已提交：${hash}`);
+      setTxNote(t("定价交易已提交：{hash}", "Price transaction submitted: {hash}", { hash }));
     } catch (e) {
-      setTxNote(e instanceof Error ? e.message : "定价失败");
+      setTxNote(e instanceof Error ? e.message : t("定价失败", "Pricing failed"));
+    }
+  };
+
+  // 设置收款地址（passkey 免钱包 / MetaMask 均可）。0x0 = 恢复默认（付给创作者地址）。
+  const onSetPayout = async (payoutAddr: Address) => {
+    setTxNote("");
+    const market = schemeMarketAddress();
+    if (!market) {
+      setTxNote(t("未配置 SchemeMarket 合约地址", "SchemeMarket contract address not configured"));
+      return;
+    }
+    const cred = pk;
+    const passkeyMode = !isConnected && Boolean(cred);
+    if (passkeyMode && cred) {
+      setBusyPayout(true);
+      try {
+        const data = encodeFunctionData({
+          abi: schemeMarketAbi,
+          functionName: "setPayout",
+          args: [tokenId ?? 0n, payoutAddr]
+        });
+        const account = await ensurePasskeyAccount(cred);
+        const hash = await executeViaPasskey({ account, cred, to: market, data });
+        setTxNote(t("收款地址已更新：{hash}", "Payout address updated: {hash}", { hash }));
+        await refreshDetail();
+      } catch (e) {
+        setTxNote(e instanceof Error ? e.message : t("设置收款地址失败", "Failed to set payout address"));
+      } finally {
+        setBusyPayout(false);
+      }
+      return;
+    }
+    if (switchChainAsync) {
+      await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
+    }
+    try {
+      const hash = await setPriceAsync({
+        address: market,
+        abi: schemeMarketAbi,
+        functionName: "setPayout",
+        args: [tokenId ?? 0n, payoutAddr]
+      });
+      setTxNote(t("收款地址已更新：{hash}", "Payout address updated: {hash}", { hash }));
+      await refreshDetail();
+    } catch (e) {
+      setTxNote(e instanceof Error ? e.message : t("设置收款地址失败", "Failed to set payout address"));
     }
   };
 
   if (!tokenId) {
-    return <div className="sheet p-8 text-sm text-muted">无效的方案 ID。</div>;
+    return <div className="sheet p-8 text-sm text-muted">{t("无效的方案 ID。", "Invalid scheme ID.")}</div>;
   }
 
   if (isDemo) {
     if (!demo) {
       return (
         <div className="sheet p-8 text-sm text-muted">
-          演示模式没有 #{tokenId.toString()} 这个方案（可用 1-3）。部署合约后可查看链上数据。
+          {t(
+            "演示模式没有 #{id} 这个方案（可用 1-3）。部署合约后可查看链上数据。",
+            "Demo mode has no scheme #{id} (available: 1-3). Deploy the contract to view on-chain data.",
+            { id: tokenId.toString() }
+          )}
         </div>
       );
     }
     return (
       <DetailFrame
-        title={demo.name}
+        title={pick(demo.name, demo.nameEn)}
         detail={{ ...demo, lineage: [demo.tokenId], versionLine: [demo.tokenId], children: [] as bigint[] }}
         allSchemes={allSchemes ?? demoSchemes}
       />
@@ -208,15 +261,19 @@ export default function SchemeDetailPage() {
   if (error || !detail) {
     return (
       <div className="sheet border-coral/40 bg-coral/10 p-8 text-sm text-[#a53f52]">
-        读取失败：{error instanceof Error ? error.message : "无数据"}。请确认已部署合约并配置
-        web/.env.local。
+        {t("读取失败：", "Failed to load: ")}
+        {error instanceof Error ? error.message : t("无数据", "no data")}
+        {t(
+          "。请确认已部署合约并配置 web/.env.local。",
+          ". Please make sure the contract is deployed and web/.env.local is configured."
+        )}
       </div>
     );
   }
 
   return (
     <DetailFrame
-      title={detail.name}
+      title={pick(detail.name, detail.nameEn)}
       detail={detail}
       allSchemes={allSchemes ?? []}
       account={account}
@@ -231,6 +288,8 @@ export default function SchemeDetailPage() {
       hasPasskey={Boolean(pk)}
       onSetPrice={onSetPrice}
       isSetPricePending={isSetPricePending || isPriceConfirming || busySetPrice}
+      onSetPayout={onSetPayout}
+      isSetPayoutPending={busyPayout}
       setPriceError={setPriceError ? String(setPriceError) : undefined}
       onApplied={refreshDetail}
     />
@@ -253,11 +312,14 @@ interface DetailFrameProps {
   hasPasskey?: boolean;
   onSetPrice?: (priceWei: bigint) => void;
   isSetPricePending?: boolean;
+  onSetPayout?: (payout: Address) => void;
+  isSetPayoutPending?: boolean;
   setPriceError?: string | null;
   onApplied?: () => void;
 }
 
 function DetailFrame(props: DetailFrameProps) {
+  const { t, pick } = useI18n();
   const {
     title,
     detail: d,
@@ -274,6 +336,8 @@ function DetailFrame(props: DetailFrameProps) {
     hasPasskey,
     onSetPrice,
     isSetPricePending,
+    onSetPayout,
+    isSetPayoutPending,
     setPriceError,
     onApplied
   } = props;
@@ -306,10 +370,10 @@ function DetailFrame(props: DetailFrameProps) {
     <div className="space-y-8">
       <nav className="eyebrow flex items-center gap-2">
         <Link href="/demo" className="transition hover:text-violet-deep">
-          画廊
+          {t("画廊", "Gallery")}
         </Link>
         <span className="text-hairline">/</span>
-        <span className="text-ink">方案 #{d.tokenId.toString()}</span>
+        <span className="text-ink">{t("方案 #{id}", "Scheme #{id}", { id: d.tokenId.toString() })}</span>
       </nav>
 
       <div className="grid gap-6 lg:grid-cols-5">
@@ -325,7 +389,7 @@ function DetailFrame(props: DetailFrameProps) {
           />
           <PreviewImage uri={d.image} alt={title} className="aspect-[4/3] w-full object-cover" lazy={false} />
           <figcaption className="mono flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-hairline bg-paper px-4 py-2.5 text-[10px] uppercase tracking-[0.16em] text-muted">
-            <span>Floor Plan · #{d.tokenId.toString()} · Scale 1:50</span>
+            <span>{t("效果图", "Interior Render")} · #{d.tokenId.toString()}</span>
             <span className="text-violet-deep">ERC-721 · ERC-2981</span>
           </figcaption>
         </figure>
@@ -334,46 +398,48 @@ function DetailFrame(props: DetailFrameProps) {
         <div className="sheet flex flex-col p-6 lg:col-span-2">
           <div className="flex flex-wrap items-center gap-2">
             {d.parentId === 0n ? (
-              <span className="chip">ORIGIN · 原创</span>
+              <span className="chip">{t("ORIGIN · 原创", "ORIGIN")}</span>
             ) : (
               <Link href={`/scheme/${d.parentId.toString()}`} className="chip chip-violet">
-                REMIX 自 #{d.parentId.toString()}
+                {t("REMIX 自 #{id}", "REMIX of #{id}", { id: d.parentId.toString() })}
               </Link>
             )}
             {versions.length > 1 && <span className="chip">v{versions.length}</span>}
           </div>
 
           <h1 className="display mt-4 text-[26px] text-ink sm:text-[30px]">{title}</h1>
-          <p className="mt-3 text-[13px] leading-relaxed text-muted">{d.description}</p>
+          <p className="mt-3 text-[13px] leading-relaxed text-muted">
+            {pick(d.description, d.descriptionEn)}
+          </p>
 
           <dl className="mt-6 divide-y divide-hairline border-y border-hairline">
-            <Row label="CREATOR / 创作者">
+            <Row label={t("CREATOR / 创作者", "CREATOR")}>
               <a
                 className="mono transition hover:text-violet-deep"
                 href={`${explorerBase}/address/${creator}`}
                 target="_blank"
                 rel="noreferrer"
-                title="在浏览器中查看"
+                title={t("在浏览器中查看", "View in explorer")}
               >
                 {shortAddress(creator, 8)}
               </a>
             </Row>
-            <Row label="PRICE / 使用权">
+            <Row label={t("PRICE / 使用权", "PRICE")}>
               {price > 0n ? (
                 <span className="mono">{fmtMon(price)} MON</span>
               ) : (
-                <span className="text-muted">未上架</span>
+                <span className="text-muted">{t("未上架", "Not listed")}</span>
               )}
             </Row>
             {agentLabel && (
-              <Row label="AI / 生成器">
+              <Row label={t("AI / 生成器", "AI / Generator")}>
                 <span className="chip chip-violet !py-0.5 !text-[10px]">{agentLabel} · agentId {agentId.toString()}</span>
               </Row>
             )}
-            <Row label="ROOM / 房间">{d.roomType}</Row>
-            <Row label="STYLE / 风格">{d.theme}</Row>
-            <Row label="FURNITURE / 家具">
-              <span className="mono">{d.furnitureCount}</span> 件
+            <Row label={t("ROOM / 房间", "ROOM")}>{pick(d.roomType, d.roomTypeEn)}</Row>
+            <Row label={t("STYLE / 风格", "STYLE")}>{pick(d.theme, d.themeEn)}</Row>
+            <Row label={t("FURNITURE / 家具", "FURNITURE")}>
+              <span className="mono">{d.furnitureCount}</span> {t("件", "items")}
             </Row>
             <Row label="REMIX / APPLIED">
               <span className="mono">{d.remixCount}</span>
@@ -388,19 +454,28 @@ function DetailFrame(props: DetailFrameProps) {
           </dl>
 
           {!isDemoMode && isCreator && onSetPrice && (
-            <CreatorPricePanel price={price} pending={Boolean(isSetPricePending)} onSubmit={onSetPrice} />
+            <CreatorPricePanel
+              price={price}
+              pending={Boolean(isSetPricePending)}
+              onSubmit={onSetPrice}
+              payout={(d.payout as string) ?? ""}
+              onSetPayout={onSetPayout}
+              payoutPending={Boolean(isSetPayoutPending)}
+            />
           )}
 
           {!isDemoMode && (
             <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
               <button onClick={onApply} disabled={!canAct || isApplyPending} className="btn-primary flex-1">
                 {isApplyPending
-                  ? "交易确认中…"
+                  ? t("交易确认中…", "Confirming…")
                   : isApplied
-                    ? "已应用到我家 ✓"
+                    ? t("已应用到我家 ✓", "Applied to My Home ✓")
                     : price > 0n
-                      ? `应用到我家 · ${fmtMon(price)} MON`
-                      : "未上架（创作者未定价）"}
+                      ? t("应用到我家 · {price} MON", "Apply to My Home · {price} MON", {
+                          price: fmtMon(price)
+                        })
+                      : t("未上架（创作者未定价）", "Not listed (no price set)")}
               </button>
               <Link href={`/remix/${d.tokenId.toString()}`} className="btn-secondary flex-1">
                 Remix
@@ -411,8 +486,14 @@ function DetailFrame(props: DetailFrameProps) {
           {!isDemoMode && !isConnected && (
             <p className="mt-3 text-xs leading-relaxed text-muted">
               {hasPasskey
-                ? "「应用到我家」为付费操作，需连接钱包（MetaMask）；Passkey 可用于铸造 / Remix / 上架定价。"
-                : "连接 MetaMask 后即可应用或 Remix；也可在「Passkey」页创建通行密钥，免钱包铸造 / Remix。"}
+                ? t(
+                    "「应用到我家」为付费操作，需连接钱包（MetaMask）；Passkey 可用于铸造 / Remix / 上架定价。",
+                    "\"Apply to My Home\" is a paid action and requires a connected wallet (MetaMask); Passkey can be used for minting / Remix / listing & pricing."
+                  )
+                : t(
+                    "连接 MetaMask 后即可应用或 Remix；也可在「Passkey」页创建通行密钥，免钱包铸造 / Remix。",
+                    "Connect MetaMask to apply or Remix; you can also create a passkey on the \"Passkey\" page for wallet-free minting / Remix."
+                  )}
             </p>
           )}
           {txNote && (
@@ -435,7 +516,7 @@ function DetailFrame(props: DetailFrameProps) {
               rel="noreferrer"
               className="mono mt-3 break-all text-[11px] text-violet-deep hover:underline"
             >
-              查看交易 ↗ {applyTxHash.slice(0, 20)}…
+              {t("查看交易 ↗", "View transaction ↗")} {applyTxHash.slice(0, 20)}…
             </a>
           )}
 
@@ -445,34 +526,40 @@ function DetailFrame(props: DetailFrameProps) {
         </div>
       </div>
 
-      <Panel eyebrow="Lineage · 可归因创作链" title="谱系树">
-        <LineageTree lineage={d.lineage ?? []} currentId={d.tokenId} names={namesFrom(allSchemes)} />
+      <Panel eyebrow={t("Lineage · 可归因创作链", "Lineage · Attributable Creation Chain")} title={t("谱系树", "Lineage Tree")}>
+        <LineageTree lineage={d.lineage ?? []} currentId={d.tokenId} names={namesFrom(allSchemes, pick)} />
         {d.children && d.children.length > 0 && (
           <p className="mono mt-4 text-[11px] text-muted">
-            直接衍生 · {d.children.map((id: bigint) => `#${id.toString()}`).join("  ")}
+            {t("直接衍生 · ", "Direct derivatives · ")}
+            {d.children.map((id: bigint) => `#${id.toString()}`).join("  ")}
           </p>
         )}
       </Panel>
 
       <Panel
-        eyebrow="Versions · 同一作者链"
-        title="版本时间线"
+        eyebrow={t("Versions · 同一作者链", "Versions · Same-Author Chain")}
+        title={t("版本时间线", "Version Timeline")}
         action={
           canNewVersion ? (
             <Link href={`/remix/${d.tokenId.toString()}?newVersion=1`} className="btn-primary !px-3.5 !py-1.5 !text-xs">
-              发布新版本 v{versions.length + 1}
+              {t("发布新版本 v{n}", "Publish New Version v{n}", { n: versions.length + 1 })}
             </Link>
           ) : undefined
         }
       >
-        <VersionTimeline line={versions} currentId={d.tokenId} names={namesFrom(allSchemes)} />
+        <VersionTimeline line={versions} currentId={d.tokenId} names={namesFrom(allSchemes, pick)} />
         {isCreator && !isHead && versions.length > 1 && (
           <p className="mt-4 text-xs leading-relaxed text-muted">
-            你的最新版本是 v{versions.length}（
+            {t("你的最新版本是 v", "Your latest version is v")}
+            {versions.length}
+            {t("（", " (")}
             <Link className="link" href={`/scheme/${headId.toString()}`}>
               #{headId.toString()}
             </Link>
-            ），在那里发布新版本可保持版本链连续。
+            {t(
+              "），在那里发布新版本可保持版本链连续。",
+              "); publish a new version there to keep the version chain continuous."
+            )}
           </p>
         )}
       </Panel>
@@ -480,16 +567,23 @@ function DetailFrame(props: DetailFrameProps) {
       <CommentsSection tokenId={d.tokenId} />
 
       <div className="sheet p-6">
-        <p className="eyebrow">Asset · 资产说明</p>
-        <div className="mt-4 space-y-2.5 text-xs leading-relaxed text-muted">
+        <p className="eyebrow">{t("Asset · 资产说明", "Asset · Details")}</p>
+        <div className="mt-4 space-y-2.5 break-words text-xs leading-relaxed text-muted">
           <p>
-            <span className="mono text-ink">ERC-721 + ERC-2981</span>（版税 5%）；创作者在铸造时上链归因，
-            NFT 转手不影响分账对象。
+            <span className="mono text-ink">ERC-721 + ERC-2981</span>
+            {t(
+              "（版税 5%）；创作者在铸造时上链归因，NFT 转手不影响分账对象。",
+              " (5% royalty); attribution is recorded on-chain at mint time, and resale does not change the split recipients."
+            )}
           </p>
           <p>
-            「应用到我家」按创作者 <code className="mono text-ink">setPrice</code> 自主定价支付，
-            收入即时分账：{splitNote}。市场合约{" "}
-            <code className="mono text-ink">{schemeMarketAddress() ?? "未配置"}</code>，款项直达，无需提取。
+            {t("「应用到我家」按创作者", "\"Apply to My Home\" is paid at the creator's")}{" "}
+            <code className="mono text-ink">setPrice</code>
+            {t(" 自主定价支付，收入即时分账：", " price, with revenue split instantly: ")}
+            {splitNote}
+            {t("。市场合约", ". Market contract ")}{" "}
+            <code className="mono break-all text-ink">{schemeMarketAddress() ?? t("未配置", "Not configured")}</code>
+            {t("，款项直达，无需提取。", " — funds are paid out directly, no withdrawal needed.")}
           </p>
         </div>
       </div>
@@ -537,23 +631,39 @@ function Panel({
   );
 }
 
-function namesFrom(allSchemes: any[]): Record<string, string> {
+function namesFrom(
+  allSchemes: any[],
+  pick: <T>(zh: T, en: T | undefined) => T
+): Record<string, string> {
   const map: Record<string, string> = {};
-  for (const s of allSchemes) map[s.tokenId.toString()] = s.name;
+  for (const s of allSchemes) map[s.tokenId.toString()] = pick(s.name, s.nameEn);
   return map;
 }
 
-/** 创作者定价面板：setPrice 上架 / 改价 / 下架（0 = 下架）。 */
+/** 创作者定价面板：setPrice 上架 / 改价 / 下架（0 = 下架）；setPayout 指定收益去向。 */
 function CreatorPricePanel({
   price,
   pending,
-  onSubmit
+  onSubmit,
+  payout,
+  onSetPayout,
+  payoutPending
 }: {
   price: bigint;
   pending: boolean;
   onSubmit: (priceWei: bigint) => void;
+  payout?: string;
+  onSetPayout?: (payout: Address) => void;
+  payoutPending?: boolean;
 }) {
+  const { t } = useI18n();
   const [input, setInput] = useState<string>(price > 0n ? fmtMon(price) : "");
+  const ZERO = "0x0000000000000000000000000000000000000000";
+  const hasPayout = Boolean(payout) && String(payout).toLowerCase() !== ZERO;
+  const [payoutInput, setPayoutInput] = useState<string>(hasPayout ? String(payout) : "");
+  const trimmed = payoutInput.trim();
+  const payoutValid = trimmed === "" || /^0x[0-9a-fA-F]{40}$/.test(trimmed);
+  const payoutChanged = trimmed === "" ? hasPayout : trimmed.toLowerCase() !== String(payout ?? "").toLowerCase();
 
   const parseMon = (v: string): bigint | null => {
     const n = Number(v);
@@ -565,7 +675,7 @@ function CreatorPricePanel({
 
   return (
     <div className="mt-6 rounded-xl border border-violet/30 bg-violet/5 p-3.5">
-      <p className="eyebrow mb-2 text-violet-deep">SELLER / 创作者定价</p>
+      <p className="eyebrow mb-2 text-violet-deep">{t("SELLER / 创作者定价", "SELLER")}</p>
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={input}
@@ -581,7 +691,7 @@ function CreatorPricePanel({
           disabled={pending || !changed || wei === null}
           className="btn-primary !py-1.5 !text-[12px]"
         >
-          {pending ? "确认中…" : price > 0n ? "更新定价" : "上架"}
+          {pending ? t("确认中…", "Confirming…") : price > 0n ? t("更新定价", "Update Price") : t("上架", "List")}
         </button>
         {price > 0n && (
           <button
@@ -589,14 +699,59 @@ function CreatorPricePanel({
             disabled={pending}
             className="btn-secondary !py-1.5 !text-[12px]"
           >
-            下架
+            {t("下架", "Unlist")}
           </button>
         )}
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-muted">
-        定价后他人「应用到我家」按此价格支付，分账即时到账（原创 90/10，衍生 85/10/5）。
-        {price > 0n ? " 设为 0 或点「下架」可暂停售卖。" : " 上架前该方案显示为「未上架」。"}
+        {t(
+          "定价后他人「应用到我家」按此价格支付，分账即时到账（原创 90/10，衍生 85/10/5）。",
+          "Once priced, others pay this amount to \"apply to their home\", with splits paid out instantly (origin 90/10, derivative 85/10/5)."
+        )}
+        {price > 0n
+          ? t(" 设为 0 或点「下架」可暂停售卖。", " Set to 0 or click \"Unlist\" to pause sales.")
+          : t(" 上架前该方案显示为「未上架」。", " Until listed, the scheme shows as \"Not listed\".")}
       </p>
+
+      {onSetPayout && (
+        <div className="mt-3 border-t border-violet/20 pt-3">
+          <p className="mb-2 text-[11px] text-muted">
+            {t(
+              "收款地址（收益去向；留空并保存 = 收给创作者地址）",
+              "Payout address (where earnings go; leave blank and save = pay the creator address)"
+            )}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={payoutInput}
+              onChange={(e) => setPayoutInput(e.target.value)}
+              placeholder={ZERO}
+              disabled={payoutPending}
+              data-testid="creator-payout-input"
+              className="mono w-full min-w-0 flex-1 rounded-lg border border-hairline bg-white px-2.5 py-1.5 text-[12px] outline-none focus:border-violet sm:w-64"
+            />
+            <button
+              onClick={() => {
+                if (trimmed === "") onSetPayout(ZERO as Address);
+                else if (/^0x[0-9a-fA-F]{40}$/.test(trimmed)) onSetPayout(trimmed as Address);
+              }}
+              disabled={payoutPending || !payoutValid || !payoutChanged}
+              data-testid="creator-payout-save"
+              className="btn-secondary !py-1.5 !text-[12px]"
+            >
+              {payoutPending ? t("确认中…", "Confirming…") : t("保存收款地址", "Save Payout Address")}
+            </button>
+          </div>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+            {t("当前收款：", "Current payout: ")}
+            <span className="mono">{hasPayout ? String(payout) : t("创作者地址（默认）", "creator address (default)")}</span>
+            {t(
+              "。Passkey 创作者可填自己的钱包地址，让收益直达钱包、不留在智能账户。",
+              ". Passkey creators can enter their own wallet address so earnings go directly to the wallet instead of staying in the smart account."
+            )}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --ink:#0B1220;
+    --ink2:#111A2E;
+    --bone:#EDE7D9;
+    --amber:#FF8A34;
+    --cy:#6C8CFF;
+    --paper:#F3EFE5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#20242e;font-family:"Helvetica Neue",sans-serif;color:#cfd3dc}
+  .row{display:flex;gap:28px;padding:34px;align-items:flex-start;flex-wrap:wrap}
+  .cell{background:#15181f;border:1px solid #2a2f3a;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;align-items:center}
+  .cap{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#7c8598}
+  .tile{width:220px;height:220px}
+  .lock{background:#15181f;border:1px solid #2a2f3a;border-radius:14px;padding:18px 26px}
+  .lock.on-light{background:var(--paper)}
+  svg{display:block}
+  .wm{font-family:"Avenir Next","Futura",sans-serif}
+</style>
+</head>
+<body>
+
+<div class="row">
+
+  <!-- ============ Variant A : Lineage Roofline ============ -->
+  <div class="cell">
+    <div class="cap">A · Lineage Roofline</div>
+    <svg class="tile" viewBox="0 0 512 512">
+      <defs>
+        <pattern id="gridA" width="32" height="32" patternUnits="userSpaceOnUse">
+          <path d="M32 0H0V32" fill="none" stroke="#6C8CFF" stroke-opacity="0.10" stroke-width="1"/>
+        </pattern>
+        <linearGradient id="bgA" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#0E1730"/><stop offset="1" stop-color="#080D1A"/>
+        </linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="118" fill="url(#bgA)"/>
+      <rect width="512" height="512" rx="118" fill="url(#gridA)"/>
+      <g stroke="#EDE7D9" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M256 176 L186 250"/>
+        <path d="M256 176 L326 250"/>
+        <path d="M186 250 L114 330"/>
+        <path d="M326 250 L398 330"/>
+        <path d="M186 250 L256 330"/>
+        <path d="M326 250 L256 330"/>
+        <!-- walls -->
+        <path d="M114 330 L114 406"/>
+        <path d="M398 330 L398 406"/>
+        <path d="M114 406 L398 406"/>
+      </g>
+      <!-- door -->
+      <path d="M232 406 L232 352 Q256 338 280 352 L280 406" fill="#EDE7D9" fill-opacity="0.92"/>
+      <g fill="#EDE7D9">
+        <circle cx="186" cy="250" r="15"/>
+        <circle cx="326" cy="250" r="15"/>
+        <circle cx="114" cy="330" r="15"/>
+        <circle cx="398" cy="330" r="15"/>
+        <circle cx="256" cy="330" r="15"/>
+      </g>
+      <circle cx="256" cy="176" r="24" fill="#FF8A34"/>
+      <circle cx="256" cy="176" r="24" fill="none" stroke="#FF8A34" stroke-opacity=".35" stroke-width="10"/>
+    </svg>
+  </div>
+
+  <!-- ============ Variant B : Hex Hub Home ============ -->
+  <div class="cell">
+    <div class="cap">B · Hex Hub Home</div>
+    <svg class="tile" viewBox="0 0 512 512">
+      <defs>
+        <pattern id="gridB" width="32" height="32" patternUnits="userSpaceOnUse">
+          <path d="M32 0H0V32" fill="none" stroke="#6C8CFF" stroke-opacity="0.10" stroke-width="1"/>
+        </pattern>
+        <linearGradient id="bgB" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#0E1730"/><stop offset="1" stop-color="#080D1A"/>
+        </linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="118" fill="url(#bgB)"/>
+      <rect width="512" height="512" rx="118" fill="url(#gridB)"/>
+      <path d="M256 78 L410 167 L410 345 L256 434 L102 345 L102 167 Z"
+            fill="none" stroke="#EDE7D9" stroke-width="14" stroke-linejoin="round"/>
+      <g stroke="#EDE7D9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M172 268 L256 200 L340 268"/>
+        <path d="M188 260 L188 348 L324 348 L324 260"/>
+      </g>
+      <rect x="238" y="300" width="36" height="48" fill="#FF8A34"/>
+      <circle cx="256" cy="78"  r="17" fill="#FF8A34"/>
+      <circle cx="410" cy="345" r="17" fill="#FF8A34"/>
+      <circle cx="102" cy="345" r="17" fill="#FF8A34"/>
+    </svg>
+  </div>
+
+  <!-- ============ Variant C : Seal ============ -->
+  <div class="cell">
+    <div class="cap">C · Seal</div>
+    <svg class="tile" viewBox="0 0 512 512">
+      <defs>
+        <linearGradient id="bgC" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#0E1730"/><stop offset="1" stop-color="#080D1A"/>
+        </linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="118" fill="url(#bgC)"/>
+      <circle cx="256" cy="246" r="158" fill="#EDE7D9"/>
+      <g stroke="#0B1220" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M150 250 L256 164 L362 250"/>
+        <path d="M182 240 L182 340 L330 340 L330 240"/>
+      </g>
+      <rect x="234" y="286" width="44" height="54" rx="4" fill="#0B1220"/>
+      <g fill="#FF8A34">
+        <circle cx="150" cy="250" r="16"/>
+        <circle cx="256" cy="164" r="20"/>
+        <circle cx="362" cy="250" r="16"/>
+      </g>
+    </svg>
+  </div>
+
+</div>
+
+
+
+</body>
+</html>

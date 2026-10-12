@@ -47,11 +47,11 @@ This repo is not only an app — it is a small **on-chain primitive set** you ca
 Use the typed SDK and skip the cryptography:
 
 ```bash
-npm i @yunzhujia/sdk viem
+npm i @designerhub/sdk viem
 ```
 
 ```ts
-import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@yunzhujia/sdk";
+import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@designerhub/sdk";
 
 const client = publicClient();                 // Monad Testnet
 const s = await readScheme(client, await readTotalSupply(client));
@@ -145,7 +145,7 @@ share accrues to `platformAddress`; the ancestor pool is distributed across a de
 | Contract | Address |
 | --- | --- |
 | `DreamScheme` | `0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB` |
-| `SchemeMarket` | `0xD89a267605B7c3Ee9B172aB58b735686b3b0DC64` |
+| `SchemeMarket` | `0x51DBCb43D2279e7d108753490794f97AA43877a9` |
 | `AgentRegistry` | `0x9EB3d5C336c66823577F4FBB1E31dbABcf7c268D` |
 | `ProvenanceRegistry` | `0xCe41D2fa11fC3944662b783ac895D3380B8B09ED` |
 | `PasskeyAccountFactory` | `0x41E72cc140b30891b34Da45f3ed55a525c758C76` |
@@ -211,13 +211,13 @@ monad/
 │   ├── script/Deploy.s.sol        deploy script (writes deployments/*.json)
 │   └── deployments/               deployment records
 ├── web/                       Next.js 14 front end + API
-│   ├── app/                   pages: /demo · /passkey · /mint · /mint/create · /trades ·
-│   │                          /board · /docs · /scheme/[id] · /remix/[id]  ( / → /demo )
+│   ├── app/                   pages: / (home) · /demo (gallery) · /passkey · /mint · /mint/create · /trades ·
+│   │                          /board · /docs · /scheme/[id] · /remix/[id]
 │   ├── app/api/               /relay · /pin · /kimi · /comment · /activity · /cid/[cid] · /demo/[id]
 │   ├── lib/                   wagmi / contracts / passkey / scheme / IPFS / Pinata / Kimi
 │   └── scripts/seed.ts        mint initial schemes from sample data
 ├── assets/schemes/            3 sample scheme JSONs + SVG previews
-├── sdk/                       @yunzhujia/sdk — typed client (passkey account, provenance, schemes)
+├── sdk/                       @designerhub/sdk — typed client (passkey account, provenance, schemes)
 ├── docs/                      INTEGRATING.md · SECURITY.md · JUDGING-ALIGNMENT.md · screenshots/
 └── README.md
 ```

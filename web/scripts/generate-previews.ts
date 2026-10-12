@@ -1,5 +1,6 @@
 /**
  * 用蓝图风格重新生成 assets/schemes/previews/*.svg 与 web/public/previews/*.svg
+ * 生成中英双份：<name>.svg（中文）与 <name>.en.svg（英文）。
  * 用法（web/ 目录下）：npm run previews
  */
 import fs from "node:fs";
@@ -19,13 +20,19 @@ for (const file of files) {
   const err = validateScheme(design);
   if (err) throw new Error(`${file} 校验失败：${err}`);
 
-  const svg = schemeToPreviewSvg(design);
-  const name = file.replace(/\.json$/, ".svg");
-  const targets = [path.join(schemesDir, "previews", name), path.join(publicDir, name)];
-  for (const t of targets) {
-    fs.mkdirSync(path.dirname(t), { recursive: true });
-    fs.writeFileSync(t, svg, "utf8");
+  const stem = file.replace(/\.json$/, "");
+  const variants: Array<[string, string]> = [
+    [`${stem}.svg`, schemeToPreviewSvg(design, "zh")],
+    [`${stem}.en.svg`, schemeToPreviewSvg(design, "en")]
+  ];
+
+  for (const [name, svg] of variants) {
+    const targets = [path.join(schemesDir, "previews", name), path.join(publicDir, name)];
+    for (const t of targets) {
+      fs.mkdirSync(path.dirname(t), { recursive: true });
+      fs.writeFileSync(t, svg, "utf8");
+    }
+    console.log(`✅ ${name}（${Math.round(svg.length / 1024)} KB）`);
   }
-  console.log(`✅ ${name}（${Math.round(svg.length / 1024)} KB）`);
 }
-console.log("预览图已生成。");
+console.log("预览图已生成（中英双份）。");

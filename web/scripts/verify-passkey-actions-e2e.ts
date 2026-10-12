@@ -183,6 +183,21 @@ async function main() {
       check(priced, "Passkey setPrice（免 gas）", priceNote || "无回执文本");
     }
 
+    // 3.5) 创作者用 Passkey 设置收款地址（setPayout）
+    if (sellerPanel) {
+      const payoutAddr = "0x1111111111111111111111111111111111111111";
+      const setOk = await setInput('[data-testid="creator-payout-input"]', payoutAddr);
+      check(setOk === "OK", "填写收款地址输入框");
+      await sleep(200);
+      const saved = await clickWhenReady("/保存收款地址/");
+      check(saved === "OK", "点击「保存收款地址」");
+      const payoutDone = await waitFor(`/收款地址已更新/.test(document.body.innerText)`, 120);
+      const payoutNote = await ev(`(()=>{const m=document.body.innerText.match(/收款地址已更新：0x[0-9a-f]+/i);return m?m[0]:null;})()`);
+      check(payoutDone, "Passkey setPayout（免 gas）", payoutNote || "无回执文本");
+      const shown = await ev(`document.querySelector('[data-testid="creator-payout-input"]')?.value || ''`);
+      check(String(shown).toLowerCase() === payoutAddr, "面板回显创作者收款地址", String(shown));
+    }
+
     // 4) 用 Passkey 做 Remix 衍生铸造
     await goto(`/remix/${tokenA}`);
     const signerRow = await waitFor(`/SIGNER \\/ 签名/.test(document.body.innerText)`, 80);

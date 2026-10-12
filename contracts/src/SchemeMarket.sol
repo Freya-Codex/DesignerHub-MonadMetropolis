@@ -30,6 +30,10 @@ contract SchemeMarket is ReentrancyGuard {
     /// @notice 每个方案的使用权价格（wei）；0 = 未上架。
     mapping(uint256 tokenId => uint256 price) public priceOf;
 
+    /// @notice 每个方案可选的**收款地址**（0 = 默认，直接付给 creatorOf）。
+    ///         让 passkey 智能账户保持「身份」，收益可选地直达外部钱包。
+    mapping(uint256 tokenId => address payout) public payoutOf;
+
     /// @notice 累计成功应用次数（全局）。
     uint256 public totalApplied;
     /// @notice 每个方案被应用的次数（排行榜）。
@@ -46,6 +50,8 @@ contract SchemeMarket is ReentrancyGuard {
     );
     /// @notice 衍生方案被应用时，按谱系付给祖先创作者的份额。
     event AncestorPaid(uint256 indexed tokenId, address indexed ancestor, uint256 amount);
+    /// @notice 创作者更新某方案的收款地址。
+    event PayoutSet(uint256 indexed tokenId, address indexed creator, address payout);
 
     error SchemeNotMinted(uint256 tokenId);
     error NotListed(uint256 tokenId);
@@ -69,6 +75,17 @@ contract SchemeMarket is ReentrancyGuard {
         if (msg.sender != creator) revert NotCreator(msg.sender, tokenId);
         priceOf[tokenId] = price;
         emit PriceSet(tokenId, creator, price);
+    }
+
+    /// @notice 创作者设定某方案的收款地址（0 = 恢复默认，直接收给创作者地址）。
+    /// @dev 收款地址只影响「钱去哪」，不影响身份 / 所有权 / 谱系归因；
+    ///      passkey 创作者可把它指向自己的外部钱包，从而不把资金留在智能账户。
+    function setPayout(uint256 tokenId, address payout) external {
+        address creator = scheme.creatorOf(tokenId);
+        if (creator == address(0)) revert SchemeNotMinted(tokenId);
+        if (msg.sender != creator) revert NotCreator(msg.sender, tokenId);
+        payoutOf[tokenId] = payout;
+        emit PayoutSet(tokenId, creator, payout);
     }
 
     // ------------------------------------------------------------------ //
@@ -97,31 +114,32 @@ contract SchemeMarket is ReentrancyGuard {
             // —— 原创方案：90 / 10 ——
             creatorCut = (price * CREATOR_BPS_ORIGINAL) / MAX_BPS;
             platformCut = price - creatorCut;
-            _pay(creator, creatorCut);
+            _pay(_payee(tokenId), creatorCut);
         } else {
             // —— 衍生方案：85（二创作者）/ 10（平台）/ 5（原作谱系，均分） ——
             creatorCut = (price * CREATOR_BPS_REMIX) / MAX_BPS;
             platformCut = (price * PLATFORM_BPS) / MAX_BPS;
             ancestorPool = price - creatorCut - platformCut; // ≈5%，吸收取整误差
 
-            address[] memory ancestors = _uniqueAncestorCreators(tokenId);
-            if (ancestors.length == 0) {
+            address creatorPayee = _payee(tokenId);
+            address[] memory payees = _uniqueAncestorPayees(tokenId);
+            if (payees.length == 0) {
                 // 谱系回溯为空（理论不可达）：并入平台，避免悬浮资金
                 platformCut += ancestorPool;
             } else {
-                uint256 each = ancestorPool / ancestors.length;
-                platformCut += ancestorPool - each * ancestors.length; // 取整余数归平台
+                uint256 each = ancestorPool / payees.length;
+                platformCut += ancestorPool - each * payees.length; // 取整余数归平台
                 uint256 extraToCreator = 0;
-                for (uint256 i = 0; i < ancestors.length; i++) {
-                    if (ancestors[i] == creator) {
-                        // 祖先即二创作者本人：并入其主体份额
+                for (uint256 i = 0; i < payees.length; i++) {
+                    if (payees[i] == creatorPayee) {
+                        // 祖先收款地址即二创作者本人：并入其主体份额
                         extraToCreator += each;
                     } else {
-                        _pay(ancestors[i], each);
-                        emit AncestorPaid(tokenId, ancestors[i], each);
+                        _pay(payees[i], each);
+                        emit AncestorPaid(tokenId, payees[i], each);
                     }
                 }
-                _pay(creator, creatorCut + extraToCreator);
+                _pay(creatorPayee, creatorCut + extraToCreator);
                 creatorCut += extraToCreator;
             }
         }
@@ -140,6 +158,7 @@ contract SchemeMarket is ReentrancyGuard {
     // ------------------------------------------------------------------ //
 
     /// @notice 预览某价格下的分账（原创 90/10 或按谱系 85/10/5）。
+    /// @dev 第三个返回值为「祖先收款地址」（去重后）；未设 payout 时即祖先创作者地址。
     function splitPreview(uint256 tokenId, uint256 amount)
         external
         view
@@ -153,7 +172,7 @@ contract SchemeMarket is ReentrancyGuard {
         creatorCut = (amount * CREATOR_BPS_REMIX) / MAX_BPS;
         platformCut = (amount * PLATFORM_BPS) / MAX_BPS;
         ancestorPool = amount - creatorCut - platformCut;
-        ancestors = _uniqueAncestorCreators(tokenId);
+        ancestors = _uniqueAncestorPayees(tokenId);
         return (creatorCut, platformCut, ancestorPool, ancestors);
     }
 
@@ -161,31 +180,36 @@ contract SchemeMarket is ReentrancyGuard {
     //                            内部                                     //
     // ------------------------------------------------------------------ //
 
-    /// @dev 沿 parentId 收集去重后的祖先创作者（≤16 层）。
-    function _uniqueAncestorCreators(uint256 tokenId) private view returns (address[] memory ancestors) {
+    /// @dev 方案的收款地址：payoutOf 非零则用之，否则回退到创作者地址。
+    function _payee(uint256 tokenId) private view returns (address) {
+        address p = payoutOf[tokenId];
+        return p == address(0) ? scheme.creatorOf(tokenId) : p;
+    }
+
+    /// @dev 沿 parentId 收集去重后的祖先**收款地址**（≤16 层）。未设 payout 时即祖先创作者。
+    function _uniqueAncestorPayees(uint256 tokenId) private view returns (address[] memory payees) {
         uint256 depth = 0;
         uint256 cursor = scheme.parentOf(tokenId);
+        uint256[] memory ids = new uint256[](MAX_LINEAGE_DEPTH);
         while (cursor != 0 && depth < MAX_LINEAGE_DEPTH) {
+            ids[depth++] = cursor;
             cursor = scheme.parentOf(cursor);
-            depth++;
         }
-        ancestors = new address[](depth);
+        address[] memory tmp = new address[](depth);
         uint256 n = 0;
-        cursor = scheme.parentOf(tokenId);
-        while (cursor != 0 && n < depth) {
-            address c = scheme.creatorOf(cursor);
+        for (uint256 i = 0; i < depth; i++) {
+            address p = _payee(ids[i]);
             bool dup = false;
             for (uint256 j = 0; j < n && !dup; j++) {
-                if (ancestors[j] == c) dup = true;
+                if (tmp[j] == p) dup = true;
             }
             if (!dup) {
-                ancestors[n++] = c;
+                tmp[n++] = p;
             }
-            cursor = scheme.parentOf(cursor);
         }
-        // 裁剪到实际数量
-        assembly {
-            mstore(ancestors, n)
+        payees = new address[](n);
+        for (uint256 i = 0; i < n; i++) {
+            payees[i] = tmp[i];
         }
     }
 

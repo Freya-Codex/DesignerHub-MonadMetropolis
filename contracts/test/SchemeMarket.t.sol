@@ -263,4 +263,96 @@ contract SchemeMarketTest is Test {
         assertEq(alice.balance, 0.018 ether);
         assertEq(platform.balance, 0.002 ether);
     }
+
+    // ------------------------------ 收款地址 ------------------------------ //
+
+    function test_SetPayout_OnlyCreator() public {
+        _mintOriginal(alice);
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.NotCreator.selector, bob, 1));
+        market.setPayout(1, makeAddr("wallet"));
+    }
+
+    function test_SetPayout_UnmintedRejected() public {
+        vm.expectRevert(abi.encodeWithSelector(SchemeMarket.SchemeNotMinted.selector, 99));
+        market.setPayout(99, makeAddr("wallet"));
+    }
+
+    function test_Apply_Original_PaysPayoutAddress() public {
+        _mintOriginal(alice);
+        address wallet = makeAddr("aliceWallet");
+        vm.startPrank(alice);
+        market.setPayout(1, wallet);
+        market.setPrice(1, 1 ether);
+        vm.stopPrank();
+
+        vm.prank(carol);
+        market.applyScheme{value: 1 ether}(1);
+
+        assertEq(wallet.balance, 0.9 ether, unicode"90% 直达收款地址");
+        assertEq(alice.balance, 0, unicode"创作者地址不再收款");
+        assertEq(platform.balance, 0.1 ether);
+    }
+
+    function test_SetPayout_ResetToDefault() public {
+        _mintOriginal(alice);
+        address wallet = makeAddr("aliceWallet");
+        vm.startPrank(alice);
+        market.setPayout(1, wallet);
+        market.setPayout(1, address(0)); // 重置为默认
+        market.setPrice(1, 1 ether);
+        vm.stopPrank();
+
+        vm.prank(carol);
+        market.applyScheme{value: 1 ether}(1);
+
+        assertEq(alice.balance, 0.9 ether, unicode"重置后回到创作者地址");
+        assertEq(wallet.balance, 0);
+    }
+
+    function test_Apply_Remix_AncestorPayoutRouted() public {
+        _mintOriginal(alice); // 1
+        address aliceWallet = makeAddr("aliceWallet");
+        vm.prank(alice);
+        market.setPayout(1, aliceWallet); // 原作收益改走钱包
+        _remix(bob, 1); // 2
+        vm.prank(bob);
+        market.setPrice(2, 0.1 ether);
+
+        vm.prank(carol);
+        market.applyScheme{value: 0.1 ether}(2);
+
+        assertEq(bob.balance, 0.085 ether, unicode"二创作者 85%");
+        assertEq(aliceWallet.balance, 0.005 ether, unicode"谱系 5% 走原作收款地址");
+        assertEq(alice.balance, 0, unicode"原作创作者地址不收款");
+        assertEq(platform.balance, 0.01 ether);
+    }
+
+    function test_Apply_SelfRemix_MergesByPayoutAddress() public {
+        _mintOriginal(alice); // 1
+        address wallet = makeAddr("aliceWallet");
+        vm.prank(alice);
+        market.setPayout(1, wallet); // 祖先 #1 收款地址
+        uint256 id2 = _remix(alice, 1); // 2
+        vm.prank(alice);
+        market.setPayout(id2, wallet); // 二创作者 #2 同一收款地址
+        vm.prank(alice);
+        market.setPrice(id2, 0.1 ether);
+
+        vm.prank(carol);
+        market.applyScheme{value: 0.1 ether}(id2);
+
+        // 85% + 5% 合并到同一收款地址
+        assertEq(wallet.balance, 0.09 ether);
+        assertEq(platform.balance, 0.01 ether);
+    }
+
+    function test_PayoutSet_EmitsEvent() public {
+        _mintOriginal(alice);
+        address wallet = makeAddr("aliceWallet");
+        vm.expectEmit(true, true, false, true);
+        emit SchemeMarket.PayoutSet(1, alice, wallet);
+        vm.prank(alice);
+        market.setPayout(1, wallet);
+    }
 }

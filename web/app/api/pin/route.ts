@@ -3,6 +3,7 @@ import { keccak256, toBytes } from "viem";
 import { pinFile, pinJson, splitDataUri } from "@/lib/pinata";
 import { buildTokenMetadata } from "@/lib/metadata";
 import { validateScheme, type DesignScheme } from "@/lib/scheme";
+import { L, pickLang } from "@/lib/apiLang";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,6 +16,7 @@ export const maxDuration = 60;
  *   FormData:  scheme=<JSON string>, preview=<File>, name?, description?
  */
 export async function POST(req: NextRequest) {
+  let lang: "zh" | "en" = pickLang(req);
   try {
     let scheme: unknown;
     let previewImage: string | null = null;
@@ -24,9 +26,14 @@ export async function POST(req: NextRequest) {
     const contentType = req.headers.get("content-type") ?? "";
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();
+      const langField = form.get("lang");
+      if (langField === "en") lang = "en";
       const schemeStr = form.get("scheme");
       if (typeof schemeStr !== "string") {
-        return NextResponse.json({ error: "缺少 scheme 字段（JSON 字符串）" }, { status: 400 });
+        return NextResponse.json(
+          { error: L(lang, "缺少 scheme 字段（JSON 字符串）", "Missing scheme field (JSON string)") },
+          { status: 400 }
+        );
       }
       scheme = JSON.parse(schemeStr);
       const preview = form.get("preview");
@@ -43,15 +50,19 @@ export async function POST(req: NextRequest) {
       if (typeof d === "string") description = d;
     } else {
       const body = await req.json();
+      lang = pickLang(req, body);
       scheme = body.scheme ?? body;
       previewImage = body.previewImage ?? body.preview ?? null;
       name = body.name;
       description = body.description;
     }
 
-    const err = validateScheme(scheme);
+    const err = validateScheme(scheme, lang);
     if (err) {
-      return NextResponse.json({ error: `方案校验失败：${err}` }, { status: 400 });
+      return NextResponse.json(
+        { error: L(lang, `方案校验失败：${err}`, `Scheme validation failed: ${err}`) },
+        { status: 400 }
+      );
     }
     const design = scheme as DesignScheme;
 
@@ -97,7 +108,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error("[/api/pin] error:", e);
-    const message = e instanceof Error ? e.message : "未知错误";
-    return NextResponse.json({ error: `固定到 IPFS 失败：${message}` }, { status: 500 });
+    const message = e instanceof Error ? e.message : L(lang, "未知错误", "Unknown error");
+    return NextResponse.json(
+      { error: L(lang, `固定到 IPFS 失败：${message}`, `Failed to pin to IPFS: ${message}`) },
+      { status: 500 }
+    );
   }
 }

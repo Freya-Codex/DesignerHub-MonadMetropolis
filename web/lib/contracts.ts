@@ -12,6 +12,7 @@ import { usePublicClient } from "wagmi";
 import { dreamSchemeAbi, schemeMarketAbi } from "./abis";
 import { monadTestnet } from "./chains";
 import { fetchUriJson } from "./ipfs";
+import { L } from "./langStore";
 
 export function dreamSchemeAddress(): Address | undefined {
   const raw = process.env.NEXT_PUBLIC_DREAM_SCHEME_ADDRESS;
@@ -73,6 +74,7 @@ export interface SchemeSummary {
   remixCount: number;
   appliedCount: number;
   price: bigint;
+  payout: Address;
   tokenUri: string;
   schemeUri: string;
   name: string;
@@ -82,6 +84,11 @@ export interface SchemeSummary {
   roomType: string;
   furnitureCount: number;
   createdAt: number;
+  // 双语展示用（仅站点自带示例数据提供；链上/IPFS 内容仍以原语言为准）
+  nameEn?: string;
+  descriptionEn?: string;
+  themeEn?: string;
+  roomTypeEn?: string;
 }
 
 interface SchemeOnChain {
@@ -93,6 +100,7 @@ interface SchemeOnChain {
   remixCount: number;
   appliedCount: number;
   price: bigint; // 0 = 未上架（创作者尚未 setPrice）
+  payout: Address; // 0x0 = 默认（收益付给 creator）
   tokenUri: string;
   createdAt: number;
 }
@@ -141,21 +149,24 @@ async function readSchemeOnChain(
     contentHash.error ||
     agentId.error
   ) {
-    throw new Error(`链上读取失败：tokenId=${tokenId.toString()}`);
+    throw new Error(L(`链上读取失败：tokenId=${tokenId.toString()}`, `On-chain read failed: tokenId=${tokenId.toString()}`));
   }
 
   let appliedCount = 0;
   let price = 0n;
+  let payout: Address = "0x0000000000000000000000000000000000000000";
   if (marketAddr) {
     try {
-      const [count, p] = await client.multicall({
+      const [count, p, po] = await client.multicall({
         contracts: [
           { address: marketAddr, abi: schemeMarketAbi, functionName: "appliedCount", args: [tokenId] },
-          { address: marketAddr, abi: schemeMarketAbi, functionName: "priceOf", args: [tokenId] }
+          { address: marketAddr, abi: schemeMarketAbi, functionName: "priceOf", args: [tokenId] },
+          { address: marketAddr, abi: schemeMarketAbi, functionName: "payoutOf", args: [tokenId] }
         ]
       });
       appliedCount = Number(count.result ?? 0);
       price = (p.result as bigint) ?? 0n;
+      payout = (po.result as Address) ?? payout;
     } catch {
       appliedCount = 0;
       price = 0n;
@@ -171,6 +182,7 @@ async function readSchemeOnChain(
     remixCount: Number(remixCount.result ?? 0),
     appliedCount,
     price,
+    payout,
     tokenUri: uri.result as string,
     createdAt: Number(createdAt.result ?? 0)
   };
@@ -190,15 +202,20 @@ async function attachMetadata(state: SchemeOnChain): Promise<SchemeSummary> {
 
   return {
     ...state,
-    name: meta?.name || `方案 #${state.tokenId}`,
+    name: meta?.name || L(`方案 #${state.tokenId}`, `Scheme #${state.tokenId}`),
+    nameEn: (meta as any)?.nameEn || (scheme as any)?.nameEn || undefined,
     description: meta?.description || "",
+    descriptionEn: (meta as any)?.descriptionEn || (scheme as any)?.descriptionEn || undefined,
     image: meta?.image || "",
     schemeUri: meta?.properties?.schemeUri || "",
     theme:
       scheme?.style?.theme ||
       attrs.find((a) => a.trait_type === "主题")?.value ||
-      "未知风格",
-    roomType: scheme?.room?.type || attrs.find((a) => a.trait_type === "房间")?.value || "房间",
+      L("未知风格", "Unknown style"),
+    themeEn: (scheme as any)?.style?.themeEn || undefined,
+    roomType:
+      scheme?.room?.type || attrs.find((a) => a.trait_type === "房间")?.value || L("房间", "Room"),
+    roomTypeEn: (scheme as any)?.room?.typeEn || undefined,
     furnitureCount: Array.isArray(scheme?.furniture) ? scheme.furniture.length : Number(attrs.find((a) => a.trait_type === "家具数量")?.value ?? 0)
   };
 }
@@ -260,7 +277,7 @@ export interface SchemeDetail extends SchemeSummary {
 
 export async function fetchSchemeDetail(client: PublicClient, tokenId: bigint): Promise<SchemeDetail> {
   const addr = dreamSchemeAddress();
-  if (!addr) throw new Error("未配置 DreamScheme 合约地址");
+  if (!addr) throw new Error(L("未配置 DreamScheme 合约地址", "DreamScheme contract address is not configured"));
   const marketAddr = schemeMarketAddress();
 
   const base = await readSchemeOnChain(client, addr, marketAddr, tokenId);

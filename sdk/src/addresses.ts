@@ -28,7 +28,7 @@ export interface ContractAddresses {
 /** Current deployment on Monad Testnet. */
 export const monadTestnet: ContractAddresses = {
   dreamScheme: "0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB",
-  schemeMarket: "0xD89a267605B7c3Ee9B172aB58b735686b3b0DC64",
+  schemeMarket: "0x51DBCb43D2279e7d108753490794f97AA43877a9",
   agentRegistry: "0x9EB3d5C336c66823577F4FBB1E31dbABcf7c268D",
   provenanceRegistry: "0xCe41D2fa11fC3944662b783ac895D3380B8B09ED",
   passkeyAccountFactory: "0x41E72cc140b30891b34Da45f3ed55a525c758C76",

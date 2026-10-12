@@ -8,12 +8,14 @@ import { demoActivity, useActivity, type TradeRecord } from "@/lib/events";
 import { demoSchemes } from "@/lib/demo";
 import { monadTestnet } from "@/lib/chains";
 import { shortAddress } from "@/lib/scheme";
+import { useI18n } from "@/lib/i18n";
 
 const EXPLORER = "https://testnet.monadexplorer.com";
 
 type Filter = "all" | "bought" | "sold";
 
 export default function TradesPage() {
+  const { t, pick } = useI18n();
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
@@ -30,9 +32,10 @@ export default function TradesPage() {
 
   const nameOf = useMemo(() => {
     const map: Record<string, string> = {};
-    for (const s of schemes) map[s.tokenId.toString()] = s.name;
+    for (const s of schemes) map[s.tokenId.toString()] = pick(s.name, s.nameEn);
     return map;
-  }, [schemes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schemes, pick]);
 
   const totals = useMemo(() => {
     let volume = 0n;
@@ -62,33 +65,52 @@ export default function TradesPage() {
   return (
     <div className="space-y-10">
       <header className="rise">
-        <p className="eyebrow">Trades · 链上交易账本</p>
-        <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">交易记录</h1>
+        <p className="eyebrow">{t("Trades · 链上交易账本", "Trades · On-chain Ledger")}</p>
+        <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">{t("交易记录", "Trade History")}</h1>
         <div className="dim-line mt-6" />
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
-          每一次「应用到我家」都会触发 <span className="mono text-ink">SchemeApplied</span> 事件：
-          按创作者自主定价支付，原创 <span className="mono text-ink">90/10</span>、
-          衍生 <span className="mono text-ink">85/10/5</span>（创作者/平台/祖先谱系）即时分账到账，
-          无需提取。这里是完整、不可篡改的流水。
+          {t("每一次「应用到我家」都会触发 ", "Every “Apply to my home” triggers a ")}
+          <span className="mono text-ink">SchemeApplied</span>
+          {t(
+            " 事件：按创作者自主定价支付，原创 ",
+            " event: paid at the creator’s own pricing, originals "
+          )}
+          <span className="mono text-ink">90/10</span>
+          {t("、衍生 ", ", derivatives ")}
+          <span className="mono text-ink">85/10/5</span>
+          {t(
+            "（创作者/平台/祖先谱系）即时分账到账，无需提取。这里是完整、不可篡改的流水。",
+            " (creator/platform/ancestry) split and settle instantly — no claim needed. This is the complete, tamper-proof ledger."
+          )}
         </p>
       </header>
 
       {isDemo && (
         <div className="sheet flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:gap-5">
-          <span className="chip chip-violet shrink-0 self-start">演示数据模式</span>
+          <span className="chip chip-violet shrink-0 self-start">{t("演示数据模式", "Demo data mode")}</span>
           <p className="text-[13px] leading-relaxed text-muted">
-            尚未配置市场合约地址，以下为示例流水。部署并在 <code className="mono text-ink">web/.env.local</code>{" "}
-            填入 <code className="mono text-ink">NEXT_PUBLIC_SCHEME_MARKET_ADDRESS</code> 后会切换为链上真实事件。
+            {t(
+              "尚未配置市场合约地址，以下为示例流水。部署并在 ",
+              "No market contract address is configured yet; the flow below is sample data. Deploy and, in "
+            )}
+            <code className="mono text-ink">web/.env.local</code>
+            {t(" 填入 ", " fill in ")}
+            <code className="mono text-ink">NEXT_PUBLIC_SCHEME_MARKET_ADDRESS</code>
+            {t(" 后会切换为链上真实事件。", " to switch to real on-chain events.")}
           </p>
         </div>
       )}
 
       {!isDemo && activityData && !activityData.indexed && (
         <div className="sheet flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:gap-5">
-          <span className="chip shrink-0 self-start">索引待生成</span>
+          <span className="chip shrink-0 self-start">{t("索引待生成", "Index pending")}</span>
           <p className="text-[13px] leading-relaxed text-muted">
-            尚未生成链上活动索引，当前仅显示最近若干区块的实时扫描结果。运行{" "}
-            <code className="mono text-ink">npm run index</code> 可补齐完整历史流水。
+            {t(
+              "尚未生成链上活动索引，当前仅显示最近若干区块的实时扫描结果。运行 ",
+              "The on-chain activity index hasn’t been generated yet; only a live scan of the most recent blocks is shown. Run "
+            )}
+            <code className="mono text-ink">npm run index</code>
+            {t(" 可补齐完整历史流水。", " to backfill the full history.")}
           </p>
         </div>
       )}
@@ -96,25 +118,28 @@ export default function TradesPage() {
       {wrongNetwork && (
         <div className="sheet flex flex-col gap-3 border-coral/40 bg-coral/10 p-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] leading-relaxed text-[#a53f52]">
-            当前钱包不在 Monad 测试网（Chain ID 10143）。
+            {t(
+              "当前钱包不在 Monad 测试网（Chain ID 10143）。",
+              "Your wallet is not on the Monad Testnet (Chain ID 10143)."
+            )}
           </p>
           <button
             className="btn-primary shrink-0"
             onClick={() => void switchChainAsync?.({ chainId: monadTestnet.id }).catch(() => undefined)}
           >
-            切换网络
+            {t("切换网络", "Switch network")}
           </button>
         </div>
       )}
 
       {/* ── 总览 ───────────────────────────────────── */}
       <section className="sheet-dark grid-sheet-dark rise px-5 py-8 sm:px-9 sm:py-10">
-        <p className="eyebrow eyebrow-dark">Ledger Overview · 账本总览</p>
+        <p className="eyebrow eyebrow-dark">{t("Ledger Overview · 账本总览", "Ledger Overview")}</p>
         <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-6 border-t border-white/10 pt-6 sm:grid-cols-4">
-          <Stat label="APPLIES / 累计应用" value={String(totals.count)} />
-          <Stat label="VOLUME / 累计成交" value={`${fmtMon(totals.volume)} MON`} />
-          <Stat label="TO CREATORS / 创作者所得" value={`${fmtMon(totals.creatorPaid)} MON`} accent />
-          <Stat label="TO TREASURY / 平台所得" value={`${fmtMon(totals.platformPaid)} MON`} />
+          <Stat label={t("APPLIES / 累计应用", "APPLIES")} value={String(totals.count)} />
+          <Stat label={t("VOLUME / 累计成交", "VOLUME")} value={`${fmtMon(totals.volume)} MON`} />
+          <Stat label={t("TO CREATORS / 创作者所得", "TO CREATORS")} value={`${fmtMon(totals.creatorPaid)} MON`} accent />
+          <Stat label={t("TO TREASURY / 平台所得", "TO TREASURY")} value={`${fmtMon(totals.platformPaid)} MON`} />
         </dl>
       </section>
 
@@ -123,21 +148,21 @@ export default function TradesPage() {
         <section className="sheet p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="eyebrow">My Earnings · 我的分账</p>
-              <h2 className="display-sm mt-2 text-xl text-ink">我的支出与收入</h2>
+              <p className="eyebrow">{t("My Earnings · 我的分账", "My Earnings")}</p>
+              <h2 className="display-sm mt-2 text-xl text-ink">{t("我的支出与收入", "My Spending & Income")}</h2>
             </div>
             <span className="mono text-[11px] text-muted">{shortAddress(address, 6)}</span>
           </div>
           <div className="dim-line mt-4" />
           <dl className="mt-5 divide-y divide-hairline border-y border-hairline text-[13px]">
-            <Row label="SPENT / 我支付的费用">
+            <Row label={t("SPENT / 我支付的费用", "SPENT")}>
               <span className="mono font-semibold text-ink">{fmtMon(totals.spent)} MON</span>
             </Row>
-            <Row label="EARNED / 我作为创作者收到">
+            <Row label={t("EARNED / 我作为创作者收到", "EARNED")}>
               <span className="mono font-semibold text-violet-deep">{fmtMon(totals.earned)} MON</span>
             </Row>
-            <Row label="SETTLEMENT / 结算方式">
-              <span className="mono text-muted">即时分账，无需提取</span>
+            <Row label={t("SETTLEMENT / 结算方式", "SETTLEMENT")}>
+              <span className="mono text-muted">{t("即时分账，无需提取", "settled instantly, no claim needed")}</span>
             </Row>
           </dl>
 
@@ -148,7 +173,7 @@ export default function TradesPage() {
               target="_blank"
               rel="noreferrer"
             >
-              在浏览器中查看 SchemeMarket ↗
+              {t("在浏览器中查看 SchemeMarket ↗", "View SchemeMarket on explorer ↗")}
             </a>
           )}
         </section>
@@ -158,15 +183,15 @@ export default function TradesPage() {
       <section>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="eyebrow">Flow · 交易流水</p>
-            <h2 className="display-sm mt-2 text-2xl text-ink">全部应用记录</h2>
+            <p className="eyebrow">{t("Flow · 交易流水", "Flow")}</p>
+            <h2 className="display-sm mt-2 text-2xl text-ink">{t("全部应用记录", "All applications")}</h2>
           </div>
           <div className="flex items-center gap-1 rounded-xl border border-hairline bg-white p-1">
             {(
               [
-                ["all", "全部"],
-                ["bought", "我买到的"],
-                ["sold", "我卖出的"]
+                ["all", t("全部", "All")],
+                ["bought", t("我买到的", "Mine bought")],
+                ["sold", t("我卖出的", "Mine sold")]
               ] as Array<[Filter, string]>
             ).map(([key, label]) => (
               <button
@@ -185,8 +210,88 @@ export default function TradesPage() {
         <div className="dim-line mt-5" />
 
         <div className="sheet mt-6 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+          {/* 手机端：卡片列表，避免横向滚动条（≥md 用表格） */}
+          <div className="divide-y divide-hairline md:hidden">
+            {isLoading && !isDemo &&
+              [0, 1, 2].map((i) => (
+                <div key={i} className="px-4 py-4">
+                  <div className="h-14 animate-pulse rounded bg-paper-2" />
+                </div>
+              ))}
+            {!isLoading && rows.length === 0 && (
+              <div className="px-5 py-14 text-center text-sm text-muted">
+                {filter === "all"
+                  ? t(
+                      "还没有任何交易 —— 去画廊挑一套方案应用到我家吧。",
+                      "No trades yet — head to the gallery and apply a scheme to your home."
+                    )
+                  : t("这个筛选下暂无记录。", "No records under this filter.")}
+                {filter === "all" && (
+                  <div className="mt-4">
+                    <Link href="/demo" className="btn-secondary">
+                      {t("去画廊", "Go to gallery")}
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+            {rows.map((tr) => {
+              const nm = nameOf[tr.tokenId.toString()];
+              const isMine = (addr: string) => Boolean(me && addr.toLowerCase() === me);
+              return (
+                <div key={`${tr.txHash}-${tr.logIndex}`} className="px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/scheme/${tr.tokenId.toString()}`}
+                        className="font-semibold text-ink transition hover:text-violet-deep"
+                      >
+                        {nm ?? t("方案 #{id}", "Scheme #{id}", { id: tr.tokenId.toString() })}
+                      </Link>
+                      <div className="mono mt-1 text-[10.5px] text-muted">
+                        TOKEN #{tr.tokenId.toString()}
+                        {isMine(tr.creator) && (
+                          <span className="ml-2 text-violet-deep">{t("· 你是创作者", "· you are the creator")}</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="mono shrink-0 text-[11px] text-muted">#{tr.blockNumber.toString()}</span>
+                  </div>
+                  <dl className="mt-2.5 grid grid-cols-3 gap-2">
+                    <div>
+                      <dt className="mono text-[9px] uppercase tracking-[0.12em] text-muted">Value</dt>
+                      <dd className="mono mt-0.5 text-[12px] text-ink">{fmtMon(tr.price)}</dd>
+                    </div>
+                    <div>
+                      <dt className="mono text-[9px] uppercase tracking-[0.12em] text-muted">Creator</dt>
+                      <dd className="mono mt-0.5 text-[12px] font-semibold text-violet-deep">{fmtMon(tr.creatorCut)}</dd>
+                    </div>
+                    <div>
+                      <dt className="mono text-[9px] uppercase tracking-[0.12em] text-muted">Platform</dt>
+                      <dd className="mono mt-0.5 text-[12px] text-muted">{fmtMon(tr.platformCut)}</dd>
+                    </div>
+                  </dl>
+                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                    <span className="mono text-[11px] text-ink">
+                      {shortAddress(tr.applier)}
+                      {isMine(tr.applier) && <span className="mono ml-2 text-[10px] text-violet-deep">{t("你", "you")}</span>}
+                    </span>
+                    <a
+                      href={`${EXPLORER}/tx/${tr.txHash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="link mono text-[11px]"
+                    >
+                      {tr.txHash.slice(0, 10)}… ↗
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[560px] text-left text-sm md:min-w-0">
               <thead>
                 <tr className="border-b border-hairline">
                   <Th>Block</Th>
@@ -202,7 +307,7 @@ export default function TradesPage() {
                 {isLoading && !isDemo &&
                   [0, 1, 2].map((i) => (
                     <tr key={i} className="border-b border-hairline">
-                      <td className="px-5 py-4" colSpan={7}>
+                      <td className="px-2.5 py-3.5 sm:px-5 sm:py-4" colSpan={7}>
                         <div className="h-5 animate-pulse rounded bg-paper-2" />
                       </td>
                     </tr>
@@ -210,14 +315,17 @@ export default function TradesPage() {
 
                 {!isLoading && rows.length === 0 && (
                   <tr>
-                    <td className="px-5 py-14 text-center text-sm text-muted" colSpan={7}>
+                    <td className="px-4 py-14 text-center text-sm text-muted" colSpan={7}>
                       {filter === "all"
-                        ? "还没有任何交易 —— 去画廊挑一套方案应用到我家吧。"
-                        : "这个筛选下暂无记录。"}
+                        ? t(
+                            "还没有任何交易 —— 去画廊挑一套方案应用到我家吧。",
+                            "No trades yet — head to the gallery and apply a scheme to your home."
+                          )
+                        : t("这个筛选下暂无记录。", "No records under this filter.")}
                       {filter === "all" && (
                         <div className="mt-4">
                           <Link href="/demo" className="btn-secondary">
-                            去画廊
+                            {t("去画廊", "Go to gallery")}
                           </Link>
                         </div>
                       )}
@@ -239,8 +347,12 @@ export default function TradesPage() {
         </div>
 
         <p className="mono mt-5 text-[11px] leading-relaxed text-muted">
-          数据来源 · SchemeApplied 链上事件（离线索引 + 最近若干区块实时增量）。市场合约{" "}
-          {market ? shortAddress(market, 6) : "未配置"}，收入在购买交易中即时分账。
+          {t(
+            "数据来源 · SchemeApplied 链上事件（离线索引 + 最近若干区块实时增量）。市场合约 ",
+            "Source · SchemeApplied on-chain events (offline index + live increments from recent blocks). Market contract "
+          )}
+          {market ? shortAddress(market, 6) : t("未配置", "not configured")}
+          {t("，收入在购买交易中即时分账。", "; revenue is split instantly within the purchase transaction.")}
         </p>
       </section>
     </div>
@@ -256,6 +368,7 @@ function TradeRow({
   name?: string;
   me?: string;
 }) {
+  const { t } = useI18n();
   const isMine = (addr: string) => Boolean(me && addr.toLowerCase() === me);
   return (
     <tr className="border-b border-hairline last:border-0 hover:bg-paper-2/60">
@@ -267,16 +380,18 @@ function TradeRow({
           href={`/scheme/${trade.tokenId.toString()}`}
           className="font-semibold text-ink transition hover:text-violet-deep"
         >
-          {name ?? `方案 #${trade.tokenId.toString()}`}
+          {name ?? t("方案 #{id}", "Scheme #{id}", { id: trade.tokenId.toString() })}
         </Link>
         <div className="mono mt-1 text-[10.5px] text-muted">
           TOKEN #{trade.tokenId.toString()}
-          {isMine(trade.creator) && <span className="ml-2 text-violet-deep">· 你是创作者</span>}
+          {isMine(trade.creator) && (
+            <span className="ml-2 text-violet-deep">{t("· 你是创作者", "· you are the creator")}</span>
+          )}
         </div>
       </Td>
       <Td>
         <span className="mono text-[11.5px] text-ink">{shortAddress(trade.applier)}</span>
-        {isMine(trade.applier) && <span className="mono ml-2 text-[10px] text-violet-deep">你</span>}
+        {isMine(trade.applier) && <span className="mono ml-2 text-[10px] text-violet-deep">{t("你", "you")}</span>}
       </Td>
       <Td right>
         <span className="mono text-[12.5px]">{fmtMon(trade.price)}</span>
@@ -327,7 +442,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return (
     <th
-      className={`mono px-5 py-3.5 text-[10px] font-medium uppercase tracking-[0.14em] text-muted ${
+      className={`mono px-2.5 py-3 sm:px-5 sm:py-3.5 text-[10px] font-medium uppercase tracking-[0.14em] text-muted ${
         right ? "text-right" : ""
       }`}
     >
@@ -337,5 +452,5 @@ function Th({ children, right }: { children: React.ReactNode; right?: boolean })
 }
 
 function Td({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return <td className={`px-5 py-4 ${right ? "text-right" : ""}`}>{children}</td>;
+  return <td className={`px-2.5 py-3.5 sm:px-5 sm:py-4 ${right ? "text-right" : ""}`}>{children}</td>;
 }

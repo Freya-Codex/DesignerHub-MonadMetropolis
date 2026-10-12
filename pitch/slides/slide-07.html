@@ -1,0 +1,45 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html{background:#0A0912;}
+body{width:720pt;height:405pt;font-family:Arial,Helvetica,sans-serif;color:#C7C3D9;background:#0A0912;background-image:url('file:///Users/freya/Desktop/VirtuHome/monad/pitch/assets/bg-stat.png');background-size:cover;display:flex;overflow:hidden;}
+.wrap{width:100%;height:100%;padding:30pt 46pt 16pt 46pt;display:flex;flex-direction:column;}
+.eyebrow{font-family:'Courier New',monospace;font-size:9.5pt;letter-spacing:2.2px;color:#8B7CFF;text-transform:uppercase;margin-bottom:8pt;}
+h1{font-size:31pt;line-height:1.06;font-weight:bold;color:#FFFFFF;letter-spacing:-0.4pt;margin-bottom:16pt;}
+h2{font-size:13pt;font-weight:bold;color:#FFFFFF;margin-bottom:3pt;line-height:1.2;}
+p{font-size:12.5pt;line-height:1.45;color:#C7C3D9;}
+ul{margin:0;padding-left:13pt;}
+li{font-size:12.5pt;line-height:1.42;color:#C7C3D9;margin-bottom:6pt;}
+.mono{font-family:'Courier New',monospace;font-size:9pt;letter-spacing:0.6px;color:#8E89A8;}
+.card{background:#141220;border:1px solid #2A2740;border-radius:10pt;padding:13pt 15pt;}
+.card h2{font-size:12.5pt;margin-bottom:4pt;}
+.card p{font-size:12pt;line-height:1.42;color:#B9B5CC;}
+.pl{border-left:3pt solid #8B7CFF;}
+.chip{width:34pt;height:34pt;border-radius:8pt;background:#1C1930;border:1px solid #3A3560;display:flex;align-items:center;justify-content:center;margin-bottom:9pt;}
+.chip img{width:19pt;height:19pt;}
+.num{font-family:'Courier New',monospace;font-size:9pt;letter-spacing:1.4px;color:#8B7CFF;margin-bottom:6pt;}
+.big{font-size:42pt;font-weight:bold;color:#FFFFFF;line-height:0.98;letter-spacing:-1.2pt;}
+.kpi{font-family:'Courier New',monospace;font-size:8.5pt;letter-spacing:1.4px;color:#8E89A8;margin-top:6pt;}
+.foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #2A2740;padding-top:6pt;margin-top:auto;}
+.foot p{font-family:'Courier New',monospace;font-size:8pt;letter-spacing:0.8px;color:#6C6884;}
+.row{display:flex;}
+.grow{flex:1;}
+.growrow{flex:1;display:flex;align-items:center;}
+.mid{display:flex;flex-direction:column;justify-content:center;}
+.dim{display:block;width:150pt;height:6pt;margin:-6pt 0 14pt 0;}
+.shot{border:1px solid #3A3560;border-radius:8pt;background:#141220;padding:4pt;}
+.shot img{width:100%;display:block;border-radius:6pt;}
+</style></head><body><div class="wrap">
+<p class="eyebrow">Rubric 01 · Technical Execution — 20%</p>
+<h1>Real WebAuthn, verified on-chain.</h1>
+<div class="growrow">
+  <div style="width:60%;padding-right:16pt;">
+    <ul><li>The chain verifies a real WebAuthn assertion; the challenge binds the calldata, so a relayer pays gas but <b style="color:#fff;">cannot tamper</b>.</li><li>CREATE2 address from <b style="color:#fff;">(x, y, rpIdHash, originHash)</b>; up to 4 keys for recovery.</li><li>Pure-Solidity P-256 fallback → runs without the RIP-7212 precompile.</li><li>No secrets in the repo; threat model in docs/SECURITY.md.</li></ul>
+  </div>
+  <div style="width:40%;padding-left:10pt;display:flex;flex-direction:column;justify-content:center;">
+    <div class="card" style="margin-bottom:10pt;padding:14pt 16pt;"><p class="big">96</p><p class="kpi">FOUNDRY TESTS PASSING</p></div>
+    <div class="card" style="margin-bottom:10pt;padding:14pt 16pt;"><p class="big">5</p><p class="kpi">CONTRACTS LIVE ON MONAD</p></div>
+    <div class="card" style="padding:14pt 16pt;"><p class="big">0</p><p class="kpi">PRIVATE KEYS LEAKED</p></div>
+  </div>
+</div>
+<div class="foot"><p>DESIGNER HUB</p><p>07 / 13</p></div>
+</div></body></html>

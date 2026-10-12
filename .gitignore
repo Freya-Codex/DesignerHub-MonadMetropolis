@@ -32,3 +32,18 @@ web/.env.*.local
 # SDK (@yunzhujia/sdk)
 sdk/node_modules/
 sdk/dist/
+
+# ClawHive Agent 本地文件（非项目文件，不入库）
+/.openclaw/
+/AGENTS.md
+/SOUL.md
+/TOOLS.md
+/IDENTITY.md
+/USER.md
+/HEARTBEAT.md
+/MEMORY.md
+/BOOTSTRAP.md
+
+# 子项目依赖
+/brand/node_modules/
+/pitch/node_modules/

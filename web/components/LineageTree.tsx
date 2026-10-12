@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 interface Props {
   lineage: bigint[];
@@ -10,8 +11,9 @@ interface Props {
 
 /** 谱系树：以「图纸节点 + 虚线脊线」呈现从原创到当前的创作链。 */
 export default function LineageTree({ lineage, currentId, names }: Props) {
+  const { t } = useI18n();
   if (lineage.length === 0) {
-    return <p className="text-sm text-muted">暂无谱系数据。</p>;
+    return <p className="text-sm text-muted">{t("暂无谱系数据。", "No lineage data yet.")}</p>;
   }
   return (
     <div className="flex flex-wrap items-center gap-y-3">
@@ -35,7 +37,7 @@ export default function LineageTree({ lineage, currentId, names }: Props) {
                 {isRoot ? "ORIGIN" : `#${id.toString()}`}
               </span>
               <span className="display-sm max-w-[9rem] truncate text-[12.5px]">
-                {names?.[id.toString()] ?? (isCurrent ? "当前方案" : "方案")}
+                {names?.[id.toString()] ?? (isCurrent ? t("当前方案", "Current scheme") : t("方案", "Scheme"))}
               </span>
             </Link>
           </div>

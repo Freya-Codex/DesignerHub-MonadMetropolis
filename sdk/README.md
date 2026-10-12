@@ -1,4 +1,4 @@
-# @yunzhujia/sdk
+# @designerhub/sdk
 
 Typed client for the **Designer Hub** on-chain primitive on Monad Testnet.
 
@@ -19,7 +19,7 @@ re-declare the ABIs:
 ## Install
 
 ```bash
-npm i @yunzhujia/sdk viem
+npm i @designerhub/sdk viem
 ```
 
 `viem` (>= 2) is a peer dependency.
@@ -27,7 +27,7 @@ npm i @yunzhujia/sdk viem
 ## Quickstart — read schemes (no wallet, no API key)
 
 ```ts
-import { publicClient, readTotalSupply, readScheme } from "@yunzhujia/sdk";
+import { publicClient, readTotalSupply, readScheme } from "@designerhub/sdk";
 
 const client = publicClient(); // Monad Testnet, https://testnet-rpc.monad.xyz
 const total = await readTotalSupply(client);
@@ -42,7 +42,7 @@ import {
   createPasskey, signAssertion, rpIdHashHex, originHashHex,
   deriveSingleChallenge, buildAttestData, passkeyFactoryAbi, publicClient,
   monadTestnet, KIMI_AGENT_ID
-} from "@yunzhujia/sdk";
+} from "@designerhub/sdk";
 
 const RP_ID = "designerhub.xyz";          // your registrable domain
 const ORIGIN = "https://designerhub.xyz";
@@ -92,7 +92,7 @@ See `examples/` for runnable code (`npx tsx examples/read-schemes.ts`).
 | Contract | Address |
 | --- | --- |
 | DreamScheme | `0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB` |
-| SchemeMarket | `0xD89a267605B7c3Ee9B172aB58b735686b3b0DC64` |
+| SchemeMarket | `0x51DBCb43D2279e7d108753490794f97AA43877a9` |
 | AgentRegistry | `0x9EB3d5C336c66823577F4FBB1E31dbABcf7c268D` |
 | ProvenanceRegistry | `0xCe41D2fa11fC3944662b783ac895D3380B8B09ED` |
 | PasskeyAccountFactory | `0x41E72cc140b30891b34Da45f3ed55a525c758C76` |

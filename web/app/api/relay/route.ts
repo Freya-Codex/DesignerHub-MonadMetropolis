@@ -15,7 +15,7 @@
  * ⚠️ 生产环境应改为：持久化配额、按账户/签名付费、指标与告警、密钥托管（KMS）。
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   createPublicClient,
   createWalletClient,
@@ -27,6 +27,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "@/lib/chains";
 import { passkeyAccountAbi, passkeyFactoryAbi } from "@/lib/abis";
+import { L, pickLang } from "@/lib/apiLang";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,16 +55,18 @@ function allowTargets(): Set<string> {
 // 进程内配额（演示级，重启清零）
 const state = { day: "", global: 0, perAccount: new Map<string, number>() };
 
-function takeQuota(account: string): { ok: true } | { ok: false; reason: string } {
+function takeQuota(account: string, lang: "zh" | "en"): { ok: true } | { ok: false; reason: string } {
   const today = new Date().toISOString().slice(0, 10);
   if (state.day !== today) {
     state.day = today;
     state.global = 0;
     state.perAccount.clear();
   }
-  if (state.global >= MAX_GLOBAL_PER_DAY) return { ok: false, reason: "已达当日全局额度上限" };
+  if (state.global >= MAX_GLOBAL_PER_DAY)
+    return { ok: false, reason: L(lang, "已达当日全局额度上限", "Global daily quota reached") };
   const used = state.perAccount.get(account.toLowerCase()) ?? 0;
-  if (used >= MAX_PER_ACCOUNT_PER_DAY) return { ok: false, reason: "该账户已达当日额度上限" };
+  if (used >= MAX_PER_ACCOUNT_PER_DAY)
+    return { ok: false, reason: L(lang, "该账户已达当日额度上限", "This account reached its daily quota") };
   state.global += 1;
   state.perAccount.set(account.toLowerCase(), used + 1);
   return { ok: true };
@@ -91,13 +94,16 @@ export async function GET() {
   });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   if (!RELAYER_KEY) {
     return bad(503, "relayer_disabled", {
-      hint: "未配置 RELAYER_PRIVATE_KEY（或 MONAD_PRIVATE_KEY）。relayer 为演示功能，可关闭。"
+      hint: L(pickLang(req), "未配置 RELAYER_PRIVATE_KEY（或 MONAD_PRIVATE_KEY）。relayer 为演示功能，可关闭。", "RELAYER_PRIVATE_KEY (or MONAD_PRIVATE_KEY) is not configured. The relayer is a demo feature and can be disabled.")
     });
   }
-  if (!FACTORY) return bad(503, "factory_unconfigured", { hint: "缺少 NEXT_PUBLIC_PASSKEY_FACTORY_ADDRESS" });
+  if (!FACTORY)
+    return bad(503, "factory_unconfigured", {
+      hint: L(pickLang(req), "缺少 NEXT_PUBLIC_PASSKEY_FACTORY_ADDRESS", "Missing NEXT_PUBLIC_PASSKEY_FACTORY_ADDRESS")
+    });
 
   let body: any;
   try {
@@ -105,6 +111,7 @@ export async function POST(req: Request) {
   } catch {
     return bad(400, "invalid_json");
   }
+  const lang = pickLang(req, body);
 
   const { wallet, pub } = clients();
 
@@ -124,7 +131,7 @@ export async function POST(req: Request) {
       if (existing && existing !== "0x") {
         return NextResponse.json({ ok: true, alreadyDeployed: true, account: predicted });
       }
-      const quota = takeQuota(predicted);
+      const quota = takeQuota(predicted, lang);
       if (!quota.ok) return bad(429, "quota_exceeded", { reason: quota.reason });
 
       const hash = await wallet.writeContract({
@@ -142,7 +149,8 @@ export async function POST(req: Request) {
       const { account, to, data, assertion } = body;
       const value = body.value ?? "0";
       if (!account || !to || !data || !assertion) return bad(400, "missing_fields");
-      if (BigInt(value) !== 0n) return bad(400, "value_must_be_zero", { hint: "relayer 不代转 ETH/MON" });
+      if (BigInt(value) !== 0n)
+        return bad(400, "value_must_be_zero", { hint: L(lang, "relayer 不代转 ETH/MON", "The relayer does not transfer ETH/MON") });
 
       const acct = getAddress(account);
       const target = getAddress(to);
@@ -156,7 +164,7 @@ export async function POST(req: Request) {
       const code = await pub.getCode({ address: acct });
       if (!code || code === "0x") return bad(400, "account_not_deployed", { account: acct });
 
-      const quota = takeQuota(acct);
+      const quota = takeQuota(acct, lang);
       if (!quota.ok) return bad(429, "quota_exceeded", { reason: quota.reason });
 
       const args = [

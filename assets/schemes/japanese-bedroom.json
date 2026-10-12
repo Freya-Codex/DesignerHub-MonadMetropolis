@@ -1,25 +1,30 @@
 {
   "version": "1.0",
   "name": "日式卧室 · 静夜原木",
+  "nameEn": "Japanese Bedroom · Quiet Night Wood",
   "description": "低矮床架贴近地面，榻榻米坐垫与纸艺吊灯营造宁静氛围，整墙原木衣柜收纳充足，适合沉浸式睡眠空间。",
+  "descriptionEn": "A low bed frame close to the floor, tatami cushions and a paper lantern set a calm mood; a full-wall solid-wood wardrobe offers ample storage — an immersive space for restful sleep.",
   "room": {
     "type": "卧室",
+    "typeEn": "Bedroom",
     "dimensions": { "width": 3.8, "length": 4.6, "height": 2.6, "unit": "m" }
   },
   "style": {
     "theme": "日式原木",
+    "themeEn": "Japanese Wood",
     "palette": ["#F2EEE6", "#D9C9A3", "#A67C52", "#5C5346", "#FFFFFF"],
-    "mood": "静谧侘寂 · 原木质感"
+    "mood": "静谧侘寂 · 原木质感",
+    "moodEn": "Quiet wabi-sabi · raw wood texture"
   },
   "furniture": [
-    { "modelId": "bed_low_platform_01", "name": "低矮平台双人床", "position": { "x": 1.6, "y": 1.1, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
-    { "modelId": "nightstand_oak_01", "name": "原木床头柜", "position": { "x": 0.6, "y": 1.3, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.8, "y": 0.8, "z": 0.8 } },
-    { "modelId": "nightstand_oak_02", "name": "原木床头柜", "position": { "x": 2.6, "y": 1.3, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.8, "y": 0.8, "z": 0.8 } },
-    { "modelId": "wardrobe_full_height_oak_01", "name": "整墙原木衣柜", "position": { "x": 3.9, "y": 2.4, "z": 0.1 }, "rotation": { "x": 0, "y": 90, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
-    { "modelId": "tatami_cushion_01", "name": "榻榻米坐垫", "position": { "x": 0.8, "y": 3.4, "z": 0.06 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
-    { "modelId": "tatami_cushion_02", "name": "榻榻米坐垫", "position": { "x": 1.8, "y": 3.4, "z": 0.06 }, "rotation": { "x": 0, "y": 8, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
-    { "modelId": "paper_pendant_light_01", "name": "纸艺吊灯", "position": { "x": 1.6, "y": 1.8, "z": 2.4 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.9, "y": 0.9, "z": 0.9 } },
-    { "modelId": "curtain_rod_linen_01", "name": "亚麻窗帘", "position": { "x": 2.0, "y": 4.7, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 2.2, "y": 1, "z": 1 } }
+    { "modelId": "bed_low_platform_01", "name": "低矮平台双人床", "nameEn": "Low Platform Double Bed", "position": { "x": 1.6, "y": 1.1, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "nightstand_oak_01", "name": "原木床头柜", "nameEn": "Solid Wood Nightstand", "position": { "x": 0.6, "y": 1.3, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.8, "y": 0.8, "z": 0.8 } },
+    { "modelId": "nightstand_oak_02", "name": "原木床头柜", "nameEn": "Solid Wood Nightstand", "position": { "x": 2.6, "y": 1.3, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.8, "y": 0.8, "z": 0.8 } },
+    { "modelId": "wardrobe_full_height_oak_01", "name": "整墙原木衣柜", "nameEn": "Full-Wall Wood Wardrobe", "position": { "x": 3.9, "y": 2.4, "z": 0.1 }, "rotation": { "x": 0, "y": 90, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "tatami_cushion_01", "name": "榻榻米坐垫", "nameEn": "Tatami Cushion", "position": { "x": 0.8, "y": 3.4, "z": 0.06 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "tatami_cushion_02", "name": "榻榻米坐垫", "nameEn": "Tatami Cushion", "position": { "x": 1.8, "y": 3.4, "z": 0.06 }, "rotation": { "x": 0, "y": 8, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "paper_pendant_light_01", "name": "纸艺吊灯", "nameEn": "Paper Pendant Lamp", "position": { "x": 1.6, "y": 1.8, "z": 2.4 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.9, "y": 0.9, "z": 0.9 } },
+    { "modelId": "curtain_rod_linen_01", "name": "亚麻窗帘", "nameEn": "Linen Curtains", "position": { "x": 2.0, "y": 4.7, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 2.2, "y": 1, "z": 1 } }
   ],
   "previewImage": "previews/japanese-bedroom.svg",
   "license": "CC-BY 4.0"

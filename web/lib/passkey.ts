@@ -26,13 +26,28 @@ import {
   type Address,
   type Hex
 } from "viem";
+import { L } from "./langStore";
 
-/** RP ID：默认取当前访问域名（localhost 打开即 "localhost"）；可用 env 覆盖为正式域名。 */
+/** 判断主机名是否为 IP 字面量（IPv4 / IPv6）。 */
+export function isIpLiteralHost(host: string): boolean {
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":");
+}
+
+/**
+ * RP ID：默认取当前访问域名（localhost 打开即 "localhost"）；可用 env 覆盖为正式域名。
+ *
+ * ⚠️ WebAuthn 规范要求 RP ID 必须是**合法域名**，浏览器会**直接拒绝 IP 字面量**（如 127.0.0.1），
+ * 报错 "The effective domain of the document is not a valid domain"。本地开发必须用
+ * http://localhost:PORT 访问（127.0.0.1 不行）；此处对 IP 兜底为 "localhost"。
+ * 生产环境请用 NEXT_PUBLIC_PASSKEY_RP_ID 指定正式域名。
+ */
 export function passkeyRpId(): string {
-  return (
-    process.env.NEXT_PUBLIC_PASSKEY_RP_ID ||
-    (typeof window !== "undefined" ? window.location.hostname : "localhost")
-  );
+  const env = process.env.NEXT_PUBLIC_PASSKEY_RP_ID;
+  if (env) return env;
+  if (typeof window === "undefined") return "localhost";
+  const host = window.location.hostname;
+  if (isIpLiteralHost(host)) return "localhost";
+  return host;
 }
 
 /** RP 展示名。 */
@@ -148,7 +163,7 @@ function cborDecode(buf: Uint8Array, offset = 0): { value: unknown; offset: numb
       return { value: len, offset: o };
     }
     default:
-      throw new Error(`passkey: 不支持的 CBOR major=${major}`);
+      throw new Error(L(`passkey: 不支持的 CBOR major=${major}`, `passkey: unsupported CBOR major=${major}`));
   }
 }
 
@@ -159,7 +174,7 @@ function cborDecode(buf: Uint8Array, offset = 0): { value: unknown; offset: numb
 /** 从 65 字节非压缩点（0x04‖X‖Y）取坐标。 */
 function xyFromRawPoint(point: Uint8Array): { x: Hex; y: Hex } {
   if (point.length < 65 || point[0] !== 0x04) {
-    throw new Error("passkey: 公钥非压缩 P-256 点");
+    throw new Error(L("passkey: 公钥非压缩 P-256 点", "passkey: public key is not an uncompressed P-256 point"));
   }
   const x = point.slice(point.length - 64, point.length - 32);
   const y = point.slice(point.length - 32);
@@ -182,23 +197,24 @@ function rawPointFromSpki(spki: Uint8Array): Uint8Array {
   for (let i = 0; i + 65 <= spki.length; i++) {
     if (spki[i] === 0x04) return spki.slice(i, i + 65);
   }
-  throw new Error("passkey: 无法从 SPKI 中定位 P-256 非压缩点");
+  throw new Error(L("passkey: 无法从 SPKI 中定位 P-256 非压缩点", "passkey: could not locate the P-256 uncompressed point in SPKI"));
 }
 
 /** 从认证器数据中解析 COSE_Key（EC2, P-256）→ (x, y)。 */
 function xyFromAuthData(authData: Uint8Array): { x: Hex; y: Hex } {
-  if (authData.length < 37) throw new Error("passkey: authenticatorData 过短");
+  if (authData.length < 37) throw new Error(L("passkey: authenticatorData 过短", "passkey: authenticatorData too short"));
   const flags = authData[32];
-  if ((flags & 0x40) === 0) throw new Error("passkey: 注册响应缺少 attested credential data");
+  if ((flags & 0x40) === 0)
+    throw new Error(L("passkey: 注册响应缺少 attested credential data", "passkey: registration response missing attested credential data"));
   let o = 37 + 16; // rpIdHash(32)+flags(1)+signCount(4)+aaguid(16)
   const credIdLen = (authData[o] << 8) | authData[o + 1];
   o += 2 + credIdLen;
   const cose = authData.slice(o);
   const { value } = cborDecode(cose);
-  if (!(value instanceof Map)) throw new Error("passkey: COSE_Key 解析失败");
+  if (!(value instanceof Map)) throw new Error(L("passkey: COSE_Key 解析失败", "passkey: failed to parse COSE_Key"));
   const x = value.get(-2) as Uint8Array | undefined;
   const y = value.get(-3) as Uint8Array | undefined;
-  if (!x || !y) throw new Error("passkey: COSE_Key 缺少 EC2 坐标 (-2/-3)");
+  if (!x || !y) throw new Error(L("passkey: COSE_Key 缺少 EC2 坐标 (-2/-3)", "passkey: COSE_Key missing EC2 coordinates (-2/-3)"));
   return { x: toHex(x), y: toHex(y) };
 }
 
@@ -240,7 +256,7 @@ export async function createPasskey(opts?: {
   userDisplayName?: string;
 }): Promise<PasskeyCredential> {
   if (typeof navigator === "undefined" || !navigator.credentials) {
-    throw new Error("passkey: 当前环境不支持 WebAuthn");
+    throw new Error(L("passkey: 当前环境不支持 WebAuthn", "passkey: WebAuthn is not supported in this environment"));
   }
   const rpId = opts?.rpId ?? passkeyRpId();
   const rpName = opts?.rpName ?? passkeyRpName();
@@ -259,7 +275,7 @@ export async function createPasskey(opts?: {
       attestation: "none"
     }
   })) as PublicKeyCredential | null;
-  if (!cred) throw new Error("passkey: 用户取消或创建失败");
+  if (!cred) throw new Error(L("passkey: 用户取消或创建失败", "passkey: user cancelled or creation failed"));
 
   const resp = cred.response as AuthenticatorAttestationResponse;
   let xy: { x: Hex; y: Hex } | null = null;
@@ -281,15 +297,15 @@ export async function createPasskey(opts?: {
 
 /** DER (ASN.1) ECDSA 签名 → (r, s)。 */
 export function derToRS(der: Uint8Array): { r: bigint; s: bigint } {
-  if (der[0] !== 0x30) throw new Error("passkey: 签名非 DER SEQUENCE");
+  if (der[0] !== 0x30) throw new Error(L("passkey: 签名非 DER SEQUENCE", "passkey: signature is not a DER SEQUENCE"));
   let i = 1;
   if (der[i] & 0x80) i += 1 + (der[i] & 0x7f);
   else i += 1;
-  if (der[i] !== 0x02) throw new Error("passkey: DER 缺少 r INTEGER");
+  if (der[i] !== 0x02) throw new Error(L("passkey: DER 缺少 r INTEGER", "passkey: DER missing r INTEGER"));
   const rLen = der[i + 1];
   const r = bytesToBigInt(der.slice(i + 2, i + 2 + rLen));
   let j = i + 2 + rLen;
-  if (der[j] !== 0x02) throw new Error("passkey: DER 缺少 s INTEGER");
+  if (der[j] !== 0x02) throw new Error(L("passkey: DER 缺少 s INTEGER", "passkey: DER missing s INTEGER"));
   const sLen = der[j + 1];
   const s = bytesToBigInt(der.slice(j + 2, j + 2 + sLen));
   return { r, s };
@@ -309,7 +325,7 @@ export async function signAssertion(opts: {
   credentialId: Uint8Array;
 }): Promise<PasskeyAssertion> {
   if (typeof navigator === "undefined" || !navigator.credentials) {
-    throw new Error("passkey: 当前环境不支持 WebAuthn");
+    throw new Error(L("passkey: 当前环境不支持 WebAuthn", "passkey: WebAuthn is not supported in this environment"));
   }
   const cred = (await navigator.credentials.get({
     publicKey: {
@@ -320,7 +336,7 @@ export async function signAssertion(opts: {
       timeout: 60000
     }
   })) as PublicKeyCredential | null;
-  if (!cred) throw new Error("passkey: 用户取消或断言失败");
+  if (!cred) throw new Error(L("passkey: 用户取消或断言失败", "passkey: user cancelled or assertion failed"));
 
   const resp = cred.response as AuthenticatorAssertionResponse;
   const { r, s } = derToRS(new Uint8Array(resp.signature));

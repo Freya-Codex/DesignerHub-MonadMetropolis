@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 768" width="1024" height="768" role="img" aria-label="Industrial Study · Concrete Studio floor plan preview">
+  <rect width="1024" height="768" fill="#FBFAF9"/>
+  <g><line x1="0" y1="0" x2="0" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="44" y1="0" x2="44" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="88" y1="0" x2="88" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="132" y1="0" x2="132" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="176" y1="0" x2="176" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="220" y1="0" x2="220" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="264" y1="0" x2="264" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="308" y1="0" x2="308" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="352" y1="0" x2="352" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="396" y1="0" x2="396" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="440" y1="0" x2="440" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="484" y1="0" x2="484" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="528" y1="0" x2="528" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="572" y1="0" x2="572" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="616" y1="0" x2="616" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="660" y1="0" x2="660" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="704" y1="0" x2="704" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="748" y1="0" x2="748" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="792" y1="0" x2="792" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="836" y1="0" x2="836" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="880" y1="0" x2="880" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="924" y1="0" x2="924" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="968" y1="0" x2="968" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="1012" y1="0" x2="1012" y2="768" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="0" x2="1024" y2="0" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="44" x2="1024" y2="44" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="88" x2="1024" y2="88" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="132" x2="1024" y2="132" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="176" x2="1024" y2="176" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="220" x2="1024" y2="220" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="264" x2="1024" y2="264" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="308" x2="1024" y2="308" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="352" x2="1024" y2="352" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="396" x2="1024" y2="396" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="440" x2="1024" y2="440" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="484" x2="1024" y2="484" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="528" x2="1024" y2="528" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="572" x2="1024" y2="572" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="616" x2="1024" y2="616" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="660" x2="1024" y2="660" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="704" x2="1024" y2="704" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/><line x1="0" y1="748" x2="1024" y2="748" stroke="#6E54FF" stroke-opacity="0.05" stroke-width="1"/></g>
+  <rect x="24" y="24" width="976" height="720" fill="none" stroke="#0F0F12" stroke-opacity="0.5" stroke-width="1.5"/>
+  <path d="M24 44 H44 M24 24 V44" stroke="#6E54FF" stroke-width="2.5" fill="none"/>
+  <path d="M1000 724 H980 M1000 744 V724" stroke="#6E54FF" stroke-width="2.5" fill="none"/>
+
+  <rect x="176" y="252" width="672" height="336" fill="#2B2B2B" fill-opacity="0.45" stroke="#0F0F12" stroke-width="2"/>
+
+  <g>
+    <g>
+      <rect x="218" y="294" width="84" height="84" rx="3" fill="#2B2B2B" fill-opacity="0.5" stroke="#0F0F12" stroke-opacity="0.55" stroke-width="1.4"/>
+      <text x="260" y="393" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#727285">Black Stee</text>
+    </g>
+    <g>
+      <rect x="388" y="296" width="80" height="80" rx="3" fill="#4D4D4D" fill-opacity="0.5" stroke="#0F0F12" stroke-opacity="0.55" stroke-width="1.4"/>
+      <text x="428" y="391" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#727285">Ergonomic </text>
+    </g>
+    <g>
+      <rect x="554" y="294" width="84" height="84" rx="3" fill="#B0B0B0" fill-opacity="0.5" stroke="#0F0F12" stroke-opacity="0.55" stroke-width="1.4"/>
+      <text x="596" y="393" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#727285">Black Meta</text>
+    </g>
+    <g>
+      <rect x="735" y="307" width="59" height="59" rx="3" fill="#C77B3F" fill-opacity="0.5" stroke="#0F0F12" stroke-opacity="0.55" stroke-width="1.4"/>
+      <text x="764" y="380" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#727285">Industrial</text>
+    </g>
+    <g>
+      <rect x="218" y="462" width="84" height="84" rx="3" fill="#1A1A1A" fill-opacity="0.5" stroke="#0F0F12" stroke-opacity="0.55" stroke-width="1.4"/>
+      <text x="260" y="561" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#727285">Metal Wall</text>
+    </g>
+    <g>
+      <rect x="386" y="462" width="84" height="84" rx="3" fill="#2B2B2B" fill-opacity="0.5" stroke="#0F0F12" stroke-opacity="0.55" stroke-width="1.4"/>
+      <text x="428" y="561" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#727285">Floor Stud</text>
+    </g>
+    <g>
+      <rect x="536" y="462" width="121" height="84" rx="3" fill="#4D4D4D" fill-opacity="0.5" stroke="#0F0F12" stroke-opacity="0.55" stroke-width="1.4"/>
+      <text x="596" y="561" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" fill="#727285">Dark Grey </text>
+    </g>
+  </g>
+
+  <g stroke="#6E54FF" stroke-width="1.4" fill="none">
+    <path d="M176 218 H848"/>
+    <path d="M176 212 V224"/>
+    <path d="M848 212 V224"/>
+    <path d="M142 252 V588"/>
+    <path d="M136 252 H148"/>
+    <path d="M136 588 H148"/>
+  </g>
+  <text x="512" y="210" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0F0F12">4.2 m</text>
+  <text x="130" y="420" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#0F0F12" transform="rotate(-90 130 420)">5.4 m</text>
+
+  <text x="64" y="90" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" letter-spacing="2.4" fill="#727285">FLOOR PLAN · Study · SCALE 1:50</text>
+  <text x="64" y="140" font-family="Archivo, PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="40" font-weight="800" letter-spacing="-1.4" fill="#0F0F12">Industrial Study · Con</text>
+  <text x="64" y="172" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#727285">Industrial · 7 items · 4.2×5.4×3 m</text>
+
+  <rect x="64" y="668" width="20" height="20" fill="#2B2B2B" stroke="#0F0F12" stroke-opacity="0.25"/><rect x="90" y="668" width="20" height="20" fill="#4D4D4D" stroke="#0F0F12" stroke-opacity="0.25"/><rect x="116" y="668" width="20" height="20" fill="#B0B0B0" stroke="#0F0F12" stroke-opacity="0.25"/><rect x="142" y="668" width="20" height="20" fill="#C77B3F" stroke="#0F0F12" stroke-opacity="0.25"/><rect x="168" y="668" width="20" height="20" fill="#1A1A1A" stroke="#0F0F12" stroke-opacity="0.25"/>
+  <text x="216" y="684" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#727285">Rugged &amp; bold · metal an</text>
+  <text x="960" y="684" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" letter-spacing="1.6" fill="#727285">DESIGNER HUB</text>
+</svg>

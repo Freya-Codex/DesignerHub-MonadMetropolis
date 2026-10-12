@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>seed</title>
+<script>
+  var p = new URLSearchParams(location.search);
+  var lang = p.get("lang") || "en";
+  var to = p.get("to") || "/";
+  try { localStorage.setItem("dh-lang", lang); } catch (e) {}
+  location.replace(to);
+</script>

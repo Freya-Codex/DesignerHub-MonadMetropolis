@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import type { CommentItem } from "@/lib/comments";
 import { shortAddress } from "@/lib/scheme";
+import { useI18n } from "@/lib/i18n";
 
 export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
+  const { t, lang, locale } = useI18n();
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
 
@@ -16,14 +18,14 @@ export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`/api/comment?tokenId=${tokenId.toString()}`);
-      if (!res.ok) throw new Error("评论读取失败");
+      const res = await fetch(`/api/comment?tokenId=${tokenId.toString()}&lang=${lang}`);
+      if (!res.ok) throw new Error(t("评论读取失败", "Failed to load comments"));
       const data = (await res.json()) as { items: CommentItem[] };
       setItems(data.items ?? []);
     } catch {
       setItems([]);
     }
-  }, [tokenId]);
+  }, [tokenId, lang]);
 
   useEffect(() => {
     void load();
@@ -32,11 +34,11 @@ export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
   const submit = async () => {
     const trimmed = text.trim();
     if (!trimmed) {
-      setError("请输入评论内容");
+      setError(t("请输入评论内容", "Please enter a comment"));
       return;
     }
     if (!address || !isConnected) {
-      setError("请先连接 MetaMask");
+      setError(t("请先连接 MetaMask", "Connect MetaMask first"));
       return;
     }
     setBusy(true);
@@ -56,14 +58,14 @@ export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
       const res = await fetch("/api/comment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tokenId: Number(tokenId), text: trimmed, address, signature, message })
+        body: JSON.stringify({ tokenId: Number(tokenId), text: trimmed, address, signature, message, lang })
       });
       const data = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(data.error ?? "发布失败");
+      if (!res.ok) throw new Error(data.error ?? t("发布失败", "Failed to publish"));
       setText("");
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "发布失败");
+      setError(e instanceof Error ? e.message : t("发布失败", "Failed to publish"));
     } finally {
       setBusy(false);
     }
@@ -72,9 +74,9 @@ export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
   return (
     <section className="sheet p-5">
       <div className="flex items-baseline justify-between">
-        <h2 className="display-sm text-[15px]">协作讨论</h2>
+        <h2 className="display-sm text-[15px]">{t("协作讨论", "Discussion")}</h2>
         <p className="eyebrow">
-          {items.length} 条 · OFF-CHAIN · 零 GAS
+          {t(`${items.length} 条`, `${items.length} comments`)} · OFF-CHAIN · {t("零 GAS", "ZERO GAS")}
         </p>
       </div>
 
@@ -84,28 +86,37 @@ export default function CommentsSection({ tokenId }: { tokenId: bigint }) {
           onChange={(e) => setText(e.target.value)}
           rows={2}
           maxLength={500}
-          placeholder={isConnected ? "写下你的反馈，或提出 remix 想法…" : "连接钱包后可签名发表评论"}
+          placeholder={
+            isConnected
+              ? t("写下你的反馈，或提出 remix 想法…", "Leave your feedback, or share a remix idea…")
+              : t("连接钱包后可签名发表评论", "Connect a wallet to sign and post a comment")
+          }
           className="input resize-none"
         />
         <button onClick={() => void submit()} disabled={busy || !isConnected} className="btn-primary h-fit shrink-0 whitespace-nowrap sm:!px-5">
-          {busy ? "签名中…" : "签名发布"}
+          {busy ? t("签名中…", "Signing…") : t("签名发布", "Sign & post")}
         </button>
       </div>
       <p className="mt-2 text-[11px] text-muted">
-        评论以钱包签名（SIWE 风格）校验归属后链下存储，不需要支付任何 gas。
+        {t(
+          "评论以钱包签名（SIWE 风格）校验归属后链下存储，不需要支付任何 gas。",
+          "Comments are verified by a wallet signature (SIWE-style) and stored off-chain — no gas required."
+        )}
       </p>
       {error && <p className="mt-2 rounded-xl bg-coral/15 p-2.5 text-xs text-[#a53f52]">{error}</p>}
 
       <ul className="mt-4 divide-y divide-hairline">
         {items.length === 0 && (
-          <li className="py-6 text-center text-xs text-muted">还没有评论 —— 成为第一个给作者反馈的人。</li>
+          <li className="py-6 text-center text-xs text-muted">
+            {t("还没有评论 —— 成为第一个给作者反馈的人。", "No comments yet — be the first to give the creator feedback.")}
+          </li>
         )}
         {[...items].reverse().map((c) => (
           <li key={c.id} className="py-3.5">
             <div className="flex items-center justify-between">
               <span className="mono text-[11px] font-semibold text-violet-deep">{shortAddress(c.author, 5)}</span>
               <time className="mono text-[10.5px] text-muted" dateTime={c.createdAt}>
-                {new Date(c.createdAt).toLocaleString("zh-CN", { hour12: false })}
+                {new Date(c.createdAt).toLocaleString(locale, { hour12: false })}
               </time>
             </div>
             <p className="mt-1.5 text-sm leading-relaxed text-ink/85">{c.text}</p>

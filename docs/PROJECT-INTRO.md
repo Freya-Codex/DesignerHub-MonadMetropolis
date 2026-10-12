@@ -4,7 +4,7 @@
 
 - **赛道**：**Track 04 — Trust, Identity & AI Infrastructure**
 - **网络**：Monad Testnet（chainId `10143`）
-- **交付物**：5 份已部署合约 + 前端应用 + 类型化 SDK（`@yunzhujia/sdk`）+ 集成文档（Track 04 要求的「原语」形态）
+- **交付物**：5 份已部署合约 + 前端应用 + 类型化 SDK（`@designerhub/sdk`）+ 集成文档（Track 04 要求的「原语」形态）
 - **本简介按比赛评分标准（Technical 20% / Design 20% / Originality 15% / Market 25% / Traction 20%）逐项组织**
 
 ---
@@ -21,7 +21,7 @@ Designer Hub 与这条赛道逐点对应，且**全部以「可被第三方集�
 | **Provenance（溯源）** | `ProvenanceRegistry`——只上链内容承诺 `keccak256(contentHash ‖ salt)`，内容本体永不上链；`DreamScheme` 记录链上谱系 |
 | **Data ownership（数据所有权）** | 谱系与分账在链上、不锁在单一平台数据库；无平台金库 |
 | **Agent trust（代理信任）** | `AgentRegistry`——AI 生成器注册 + 声誉 + 链上 `agentId` 归因 |
-| **「原语而非产品」** | 交付 `@yunzhujia/sdk` + `docs/INTEGRATING.md`，第三方可脱离我们的 UI 直接构建 |
+| **「原语而非产品」** | 交付 `@designerhub/sdk` + `docs/INTEGRATING.md`，第三方可脱离我们的 UI 直接构建 |
 | **cryptography / protocol design / agent frameworks** | 真实 P-256 + WebAuthn 链上验签、CREATE2 账户协议、AI agent 注册表 |
 
 ---
@@ -81,7 +81,7 @@ Designer Hub 不是「一个 App」，而是一组**可被第三方集成**的�
 ### 2. Design & Craft（开发者体验）— 20%
 **要求**：对「要基于它开发的开发者」可用——文档清晰、接口/API 干净，**即便没有面向终端用户的 UI**。
 
-- 类型化 SDK **`@yunzhujia/sdk`**（可构建、已通过类型检查，challenge 向量与链上交叉校验），三档集成路径：
+- 类型化 SDK **`@designerhub/sdk`**（可构建、已通过类型检查，challenge 向量与链上交叉校验），三档集成路径：
   - **只读**（无钱包无密钥，2 分钟）；
   - **标准钱包 EOA**（mint / setPrice / apply）；
   - **Passkey 账户**（无助记词 + 可选 gas 代付）。
@@ -123,7 +123,7 @@ Designer Hub 不是「一个 App」，而是一组**可被第三方集成**的�
 
 - **现状（如实）**：目前**自用 E2E 已跑通，尚无第三方集成**；这一点不夸大。集成所需的「接口」已就绪（SDK + 指南 + 可运行示例）。
 - **赛后计划**（`docs/INTEGRATING.md` §Roadmap，具体可执行）：
-  1. **交付套件**（已完成）：发布 `@yunzhujia/sdk` + 指南 + 示例；
+  1. **交付套件**（已完成）：发布 `@designerhub/sdk` + 指南 + 示例；
   2. **赛事期间落地一个集成方**：云筑家 App 为第一方集成者；招募**一个外部团队**（设计工具 / 资产库 / AI agent 平台）通过 SDK 完成 mint/attest——**只读集成也算**；
   3. **赛后**：开设小额集成赏金 / "built on Designer Hub" 赛道，新增 `builtWith` 注册表，并托管 Demo（Demo URL + 录制视频）；
   4. **后续**：relayer 计量 / 付费中继、`AgentRegistry` 的按 agent 分析、为「承诺 + 谱系」模式提 EIP 草案。
@@ -146,7 +146,7 @@ Designer Hub 不是「一个 App」，而是一组**可被第三方集成**的�
 | 合约 | 地址 |
 | --- | --- |
 | `DreamScheme` | `0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB` |
-| `SchemeMarket` | `0xD89a267605B7c3Ee9B172aB58b735686b3b0DC64` |
+| `SchemeMarket` | `0x51DBCb43D2279e7d108753490794f97AA43877a9` |
 | `AgentRegistry` | `0x9EB3d5C336c66823577F4FBB1E31dbABcf7c268D` |
 | `ProvenanceRegistry` | `0xCe41D2fa11fC3944662b783ac895D3380B8B09ED` |
 | `PasskeyAccountFactory` | `0x41E72cc140b30891b34Da45f3ed55a525c758C76` |
