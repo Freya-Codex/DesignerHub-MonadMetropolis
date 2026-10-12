@@ -57,7 +57,7 @@ export default function Header() {
           <span className="leading-none">
             <span className="display-sm block text-[15px]">Designer Hub</span>
             <span className="mono mt-1 hidden text-[9px] tracking-[0.2em] text-white/45 sm:block">
-              On-chain. Remixable. Attributable · MONAD
+              On-chain · Remixable · Attributable · MONAD
             </span>
           </span>
         </Link>

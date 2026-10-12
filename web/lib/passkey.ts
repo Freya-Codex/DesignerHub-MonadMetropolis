@@ -275,7 +275,7 @@ export async function createPasskey(opts?: {
       attestation: "none"
     }
   })) as PublicKeyCredential | null;
-  if (!cred) throw new Error(L("passkey: 用户取消或创建失败", "passkey: user cancelled or creation failed"));
+  if (!cred) throw new Error(L("passkey: 用户取消或创建失败", "passkey: user canceled or creation failed"));
 
   const resp = cred.response as AuthenticatorAttestationResponse;
   let xy: { x: Hex; y: Hex } | null = null;
@@ -336,7 +336,7 @@ export async function signAssertion(opts: {
       timeout: 60000
     }
   })) as PublicKeyCredential | null;
-  if (!cred) throw new Error(L("passkey: 用户取消或断言失败", "passkey: user cancelled or assertion failed"));
+  if (!cred) throw new Error(L("passkey: 用户取消或断言失败", "passkey: user canceled or assertion failed"));
 
   const resp = cred.response as AuthenticatorAssertionResponse;
   const { r, s } = derToRS(new Uint8Array(resp.signature));

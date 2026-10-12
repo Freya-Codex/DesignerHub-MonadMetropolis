@@ -24,7 +24,7 @@ export function buildLocalAdvice(req: AdviceRequest): string {
 For your ${req.roomType ?? "room"} (${size}, style: ${req.style ?? "unspecified"}), here are some suggestions:
 
 1. Circulation: keep at least 80cm between large furniture (sofa/bed) and the main walkway; place a desk to the side of the window to reduce glare.
-2. Color: let the primary color ${req.palette?.[0] ?? "—"} take 60%, the secondary ${req.palette?.[1] ?? "—"} take 30%, and the accent ${req.palette?.[2] ?? "—"} take 10% for a softer, layered look.
+2. Color: aim for the primary color ${req.palette?.[0] ?? "—"} at 60%, the secondary ${req.palette?.[1] ?? "—"} at 30%, and the accent ${req.palette?.[2] ?? "—"} at 10% for a softer, layered look.
 3. Lighting: use a three-layer scheme — ambient + mood + task lighting. Use 4000K in reading/work areas and 2700K in rest areas.
 4. Current furniture list:
 ${furniture}
@@ -76,6 +76,6 @@ export function buildKimiPrompt(req: AdviceRequest): string {
 /** Kimi system prompt by language. */
 export function kimiSystemPrompt(lang: "zh" | "en" = "zh"): string {
   return lang === "en"
-    ? "You are a senior interior designer, skilled in circulation planning, color, lighting and storage design. Answer in English, clearly and practically, within 300 words total."
+    ? "You are a senior interior designer, skilled in circulation planning, color, lighting, and storage design. Answer in English, clearly and practically, within 300 words total."
     : "你是资深室内设计师，擅长动线规划、配色、灯光与收纳设计。回答使用简体中文，条理清晰、可落地，总字数不超过 300 字。";
 }

@@ -332,7 +332,7 @@ export default function RemixPage() {
           </p>
           {t(
             "本次铸造的 parentId 将指向你自己的上一版",
-            "This mint's parentId will point to your own previous version"
+            "This mint’s parentId will point to your own previous version"
           )}{" "}
           #{tokenId?.toString()}
           {t("，作为该方案家族的 v", ", as v")}
@@ -349,7 +349,7 @@ export default function RemixPage() {
           <div className="sheet grid-sheet overflow-hidden">
             <div className="border-b border-hairline px-5 py-3">
               <p className="mono text-[10px] uppercase tracking-[0.14em] text-muted">
-                {t("Live Preview · Remix 后实时预览", "Live Preview · Live Remix Preview")}
+                {t("Live Preview · Remix 后实时预览", "Live Preview · Remix Result")}
               </p>
             </div>
             <SchemePreview scheme={remixed} />
@@ -433,7 +433,7 @@ export default function RemixPage() {
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder={t("例如：把沙发换成双人位、增加绿植", "e.g. swap the sofa for a two-seater, add plants")}
+                placeholder={t("例如：把沙发换成双人位、增加绿植", "e.g., swap the sofa for a two-seater, add plants")}
                 className="input"
               />
             </div>
@@ -452,7 +452,7 @@ export default function RemixPage() {
 
         <div className="space-y-4">
           <div className="sheet p-5">
-            <p className="eyebrow">{t("Mint · 铸造 Remix", "Mint · Mint Remix")}</p>
+            <p className="eyebrow">{t("Mint · 铸造 Remix", "Mint · Remix")}</p>
             <h2 className="display-sm mt-2 text-lg text-ink">{t("铸造 Remix NFT", "Mint Remix NFT")}</h2>
             <dl className="mt-5 divide-y divide-hairline border-y border-hairline text-[13px]">
               <Row label={t("PARENT / 父方案", "PARENT")}>
@@ -527,7 +527,7 @@ export default function RemixPage() {
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
                 {t(
                   "将用 MetaMask 铸造，请确认已切换到 Monad 测试网。",
-                  "Mint with MetaMask — make sure you've switched to Monad Testnet."
+                  "Mint with MetaMask — make sure you’ve switched to Monad Testnet."
                 )}
               </p>
             ) : (

@@ -135,25 +135,30 @@ export interface SchemeView {
   metadataURI: string;
 }
 
-/** Read a scheme's on-chain state (multicall-style parallel reads). */
+/** Read a scheme's on-chain state. Reads are paced sequentially by default to stay under
+ *  Monad's public-RPC limit (15 req/s); pass `{ paceMs: 0 }` to fire them in parallel on a private RPC. */
 export async function readScheme(
   client: PublicClient,
   tokenId: bigint,
-  addr: ContractAddresses = monadTestnet
+  addr: ContractAddresses = monadTestnet,
+  opts: { paceMs?: number } = {}
 ): Promise<SchemeView> {
   const scheme = addr.dreamScheme;
   const market = addr.schemeMarket;
+  const paceMs = opts.paceMs ?? 80;
+  const read = <T>(fn: () => Promise<T>, i: number): Promise<T> =>
+    paceMs > 0 && i > 0 ? new Promise<T>((res, rej) => setTimeout(() => fn().then(res, rej), i * paceMs)) : fn();
   const [creator, parentId, contentHash, agentId, createdAt, remixCount, metadataURI, appliedCount, priceWei] =
     await Promise.all([
-      client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "creatorOf", args: [tokenId] }),
-      client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "parentOf", args: [tokenId] }),
-      client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "contentHashOf", args: [tokenId] }),
-      client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "agentIdOf", args: [tokenId] }),
-      client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "createdAtOf", args: [tokenId] }),
-      client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "remixCount", args: [tokenId] }),
-      client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "tokenURI", args: [tokenId] }),
-      client.readContract({ address: market, abi: schemeMarketAbi, functionName: "appliedCount", args: [tokenId] }),
-      client.readContract({ address: market, abi: schemeMarketAbi, functionName: "priceOf", args: [tokenId] })
+      read(() => client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "creatorOf", args: [tokenId] }), 0),
+      read(() => client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "parentOf", args: [tokenId] }), 1),
+      read(() => client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "contentHashOf", args: [tokenId] }), 2),
+      read(() => client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "agentIdOf", args: [tokenId] }), 3),
+      read(() => client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "createdAtOf", args: [tokenId] }), 4),
+      read(() => client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "remixCount", args: [tokenId] }), 5),
+      read(() => client.readContract({ address: scheme, abi: dreamSchemeAbi, functionName: "tokenURI", args: [tokenId] }), 6),
+      read(() => client.readContract({ address: market, abi: schemeMarketAbi, functionName: "appliedCount", args: [tokenId] }), 7),
+      read(() => client.readContract({ address: market, abi: schemeMarketAbi, functionName: "priceOf", args: [tokenId] }), 8)
     ]);
   return {
     tokenId,

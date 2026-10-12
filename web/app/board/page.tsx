@@ -35,7 +35,7 @@ export default function BoardPage() {
 
       {isDemo && (
         <div className="sheet flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:gap-5">
-          <span className="chip chip-violet shrink-0 self-start">{t("演示数据模式", "Demo Data Mode")}</span>
+          <span className="chip chip-violet shrink-0 self-start">{t("演示数据模式", "Demo data mode")}</span>
           <p className="text-[13px] leading-relaxed text-muted">
             {t(
               "部署合约并完成 seed 后，排行榜会自动读取 Monad 测试网真实数据。",
@@ -52,7 +52,7 @@ export default function BoardPage() {
             <h2 className="display mt-3 text-2xl text-white sm:text-3xl">{pick(top.name, top.nameEn)}</h2>
             <p className="mono mt-3 text-[11px] uppercase tracking-[0.14em] text-white/50">
               #{top.tokenId.toString()} · {pick(top.theme, top.themeEn)} · {top.furnitureCount}{" "}
-              {t("件家具", "furniture items")} ·{" "}
+              {t("件家具", "items")} ·{" "}
               {shortAddress(top.creator)}
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function BoardPage() {
       <p className="mono text-[11px] leading-relaxed text-muted">
         {t(
           "归属规则 · 创作者地址在铸造时上链，NFT 转手不影响作者归因；「应用到我家」按创作者定价支付，原创 90% / 衍生 85%（+5% 祖先谱系）即时转给作者，10% 给平台。",
-          "Attribution rules · Creator addresses are recorded on-chain at mint; reselling the NFT does not change authorship. Applying a scheme to your home is paid at the creator's price — 90% for originals / 85% for remixes (+5% to the ancestor lineage) goes to the author instantly, and 10% to the platform."
+          "Attribution rules · Creator addresses are recorded on-chain at mint, and reselling the NFT does not change authorship. Applying a scheme to your home is paid at the creator’s price and split instantly — originals pay 90% to the author and 10% to the platform, while remixes pay 85% to the author, 10% to the platform, and 5% to the ancestor lineage."
         )}
       </p>
     </div>

@@ -577,9 +577,9 @@ function DetailFrame(props: DetailFrameProps) {
             )}
           </p>
           <p>
-            {t("「应用到我家」按创作者", "\"Apply to My Home\" is paid at the creator's")}{" "}
+            {t("「应用到我家」按创作者", "\"Apply to My Home\" is paid at the creator’s")}{" "}
             <code className="mono text-ink">setPrice</code>
-            {t(" 自主定价支付，收入即时分账：", " price, with revenue split instantly: ")}
+            {t(" 自主定价支付，收入即时分账：", ", with revenue split instantly: ")}
             {splitNote}
             {t("。市场合约", ". Market contract ")}{" "}
             <code className="mono break-all text-ink">{schemeMarketAddress() ?? t("未配置", "Not configured")}</code>
@@ -706,7 +706,7 @@ function CreatorPricePanel({
       <p className="mt-2 text-[11px] leading-relaxed text-muted">
         {t(
           "定价后他人「应用到我家」按此价格支付，分账即时到账（原创 90/10，衍生 85/10/5）。",
-          "Once priced, others pay this amount to \"apply to their home\", with splits paid out instantly (origin 90/10, derivative 85/10/5)."
+          "Once priced, others pay this amount to \"apply to their home\", with splits paid out instantly (originals 90/10, derivatives 85/10/5)."
         )}
         {price > 0n
           ? t(" 设为 0 或点「下架」可暂停售卖。", " Set to 0 or click \"Unlist\" to pause sales.")

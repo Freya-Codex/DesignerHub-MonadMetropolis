@@ -69,7 +69,7 @@ export default function TradesPage() {
         <h1 className="display mt-3 text-[30px] text-ink sm:text-[42px]">{t("交易记录", "Trade History")}</h1>
         <div className="dim-line mt-6" />
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
-          {t("每一次「应用到我家」都会触发 ", "Every “Apply to my home” triggers a ")}
+          {t("每一次「应用到我家」都会触发 ", "Every “Apply to My Home” triggers a ")}
           <span className="mono text-ink">SchemeApplied</span>
           {t(
             " 事件：按创作者自主定价支付，原创 ",
@@ -80,7 +80,7 @@ export default function TradesPage() {
           <span className="mono text-ink">85/10/5</span>
           {t(
             "（创作者/平台/祖先谱系）即时分账到账，无需提取。这里是完整、不可篡改的流水。",
-            " (creator/platform/ancestry) split and settle instantly — no claim needed. This is the complete, tamper-proof ledger."
+            " (creator / platform / ancestor lineage) — split and settled instantly, no claim needed. This is the complete, tamper-proof ledger."
           )}
         </p>
       </header>
@@ -139,7 +139,7 @@ export default function TradesPage() {
           <Stat label={t("APPLIES / 累计应用", "APPLIES")} value={String(totals.count)} />
           <Stat label={t("VOLUME / 累计成交", "VOLUME")} value={`${fmtMon(totals.volume)} MON`} />
           <Stat label={t("TO CREATORS / 创作者所得", "TO CREATORS")} value={`${fmtMon(totals.creatorPaid)} MON`} accent />
-          <Stat label={t("TO TREASURY / 平台所得", "TO TREASURY")} value={`${fmtMon(totals.platformPaid)} MON`} />
+          <Stat label={t("TO PLATFORM / 平台所得", "TO PLATFORM")} value={`${fmtMon(totals.platformPaid)} MON`} />
         </dl>
       </section>
 
@@ -190,8 +190,8 @@ export default function TradesPage() {
             {(
               [
                 ["all", t("全部", "All")],
-                ["bought", t("我买到的", "Mine bought")],
-                ["sold", t("我卖出的", "Mine sold")]
+                ["bought", t("我买到的", "Bought")],
+                ["sold", t("我卖出的", "Sold")]
               ] as Array<[Filter, string]>
             ).map(([key, label]) => (
               <button

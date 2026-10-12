@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import type { Address } from "viem";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
-import { dreamSchemeAddress, schemeMarketAddress, useSchemes, type SchemeSummary } from "@/lib/contracts";
+import { dreamSchemeAddress, schemeMarketAddress, useSchemes } from "@/lib/contracts";
+import { loadStoredPasskey, onPasskeyChange, passkeyAccountAddress } from "@/lib/passkeyAccount";
 import { demoActivity, useActivity } from "@/lib/events";
 import { demoSchemes } from "@/lib/demo";
 import { monadTestnet } from "@/lib/chains";
 import { shortAddress } from "@/lib/scheme";
 import { useI18n } from "@/lib/i18n";
-import PreviewImage from "@/components/PreviewImage";
 
 type SortKey = "recent" | "remix" | "applied";
 
@@ -20,6 +21,27 @@ export default function MintPage() {
   const { switchChainAsync } = useSwitchChain();
   const isDemo = !dreamSchemeAddress();
 
+  // Passkey 账户也能作为身份查看铸造记录（免 MetaMask）。
+  const [pkAddr, setPkAddr] = useState<Address | null>(null);
+  useEffect(() => {
+    const load = () => {
+      const cred = loadStoredPasskey();
+      if (cred) {
+        passkeyAccountAddress(cred)
+          .then((a) => setPkAddr(a ?? null))
+          .catch(() => setPkAddr(null));
+      } else {
+        setPkAddr(null);
+      }
+    };
+    load();
+    return onPasskeyChange(load);
+  }, []);
+
+  // 身份来源：连了 MetaMask 用钱包地址，否则用已创建的 Passkey 账户地址。
+  const identity = (address ?? pkAddr)?.toLowerCase();
+  const hasIdentity = isConnected || Boolean(pkAddr);
+
   const { data: schemesData, isLoading: schemesLoading } = useSchemes();
   const { data: activityData } = useActivity();
 
@@ -27,7 +49,7 @@ export default function MintPage() {
   const activity = isDemo ? demoActivity : activityData ?? { mints: [], trades: [], indexed: false };
 
   const wrongNetwork = isConnected && chainId !== monadTestnet.id;
-  const me = address?.toLowerCase();
+  const me = identity;
 
   const mine = useMemo(
     () => (me ? schemes.filter((s) => s.creator.toLowerCase() === me) : []),
@@ -53,15 +75,6 @@ export default function MintPage() {
     return set;
   }, [mine]);
 
-  // 可 Remix 的机会：他人方案，排除自己已经 Remix 过的
-  const opportunities = useMemo(() => {
-    return schemes
-      .filter((s) => !me || s.creator.toLowerCase() !== me)
-      .filter((s) => !myRemixedParents.has(s.tokenId.toString()))
-      .sort((a, b) => b.remixCount * 2 + b.appliedCount * 3 - (a.remixCount * 2 + a.appliedCount * 3))
-      .slice(0, 6);
-  }, [schemes, me, myRemixedParents]);
-
   const myRemixReceived = useMemo(
     () => mine.reduce((sum, s) => sum + s.remixCount, 0) + (isDemo ? demoActivity.trades.filter((t) => t.creator.toLowerCase() === (me ?? "")).length : 0),
     [mine, isDemo, me]
@@ -78,7 +91,7 @@ export default function MintPage() {
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
           {t(
             "这里汇总你的铸造入口：发布原创方案、在他人作品上 Remix 衍生、或把自己的作品迭代成新版本。每次铸造都会在链上写入 ",
-            "Your minting entry points live here: publish an original scheme, Remix on someone else’s work, or iterate your own into a new version. Every mint records "
+            "Your minting entry points live here: publish an original scheme, remix someone else’s work, or iterate your own into a new version. Every mint records "
           )}
           <span className="mono text-ink">creator</span>
           {t(" 与 ", " and ")}
@@ -121,7 +134,7 @@ export default function MintPage() {
       {/* ── 统计 ───────────────────────────────────── */}
       <section className="sheet-dark grid-sheet-dark rise px-5 py-8 sm:px-9 sm:py-10">
         <p className="eyebrow eyebrow-dark">{t("My Mint · 我的铸造", "My Mint")}</p>
-        {isConnected ? (
+        {hasIdentity ? (
           <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-6 border-t border-white/10 pt-6 sm:grid-cols-4">
             <Stat label={t("SCHEMES / 我的方案", "SCHEMES")} value={mine.length} />
             <Stat label={t("MINTS / 链上铸造", "MINTS")} value={isDemo ? mine.length : mintTotal} />
@@ -132,12 +145,12 @@ export default function MintPage() {
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
             <p className="text-sm leading-relaxed text-white/70">
               {t(
-                "连接 MetaMask 后即可看到你的铸造记录、被衍生次数与 Remix 机会。",
-                "Connect MetaMask to see your mint history, remix counts, and Remix opportunities."
+                "连接钱包或创建 Passkey 后即可看到你的铸造记录与被衍生次数。",
+                "Connect a wallet or create a passkey to see your mint history and remix counts."
               )}
             </p>
             <div className="mono shrink-0 text-[11px] uppercase tracking-[0.14em] text-white/45">
-              CONNECT WALLET ↑
+              CONNECT WALLET OR PASSKEY ↑
             </div>
           </div>
         )}
@@ -162,8 +175,8 @@ export default function MintPage() {
             "在他人方案上改风格、调配色、增减家具，铸造时 parentId 指向原作，归因自动上链。",
             "Change the style, palette, or furniture on someone’s scheme; when minting, parentId points to the original and attribution is recorded on-chain automatically."
           )}
-          href="#opportunities"
-          cta={t("看 Remix 机会", "See Remix opportunities")}
+          href="/demo"
+          cta={t("去画廊挑选", "Browse the gallery")}
         />
         <ActionCard
           eyebrow={t("Version · 迭代", "Version")}
@@ -177,44 +190,6 @@ export default function MintPage() {
         />
       </section>
 
-      {/* ── Remix 机会 ─────────────────────────────── */}
-      <section id="opportunities" className="scroll-mt-24">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="eyebrow">{t("Remix Opportunities · 可衍生机会", "Remix Opportunities")}</p>
-            <h2 className="display-sm mt-2 text-2xl text-ink">
-              {t("在别人的设计上继续创作", "Keep creating on someone else’s design")}
-            </h2>
-          </div>
-          <span className="mono text-[11px] text-muted">
-            {t("按热度排序 · 已排除你衍生过的方案", "Sorted by popularity · schemes you’ve remixed are excluded")}
-          </span>
-        </div>
-        <div className="dim-line mt-5" />
-
-        {opportunities.length === 0 ? (
-          <div className="sheet mt-6 p-10 text-center">
-            <p className="text-sm text-muted">
-              {isConnected
-                ? t("暂无可 Remix 的他人方案。", "No other schemes available to Remix right now.")
-                : t(
-                    "连接钱包后会显示为你筛选的 Remix 机会。",
-                    "Connect your wallet to see Remix opportunities curated for you."
-                  )}
-            </p>
-            <Link href="/demo" className="btn-secondary mt-4">
-              {t("先去画廊看看", "Check out the gallery first")}
-            </Link>
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {opportunities.map((s) => (
-              <OpportunityCard key={s.tokenId.toString()} scheme={s} disabled={!isConnected} />
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* ── 我的方案 ───────────────────────────────── */}
       <section id="mine" className="scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -222,7 +197,7 @@ export default function MintPage() {
             <p className="eyebrow">{t("My Schemes · 我的方案", "My Schemes")}</p>
             <h2 className="display-sm mt-2 text-2xl text-ink">{t("我铸造的方案", "Schemes I minted")}</h2>
           </div>
-          {isConnected && mine.length > 1 && (
+          {hasIdentity && mine.length > 1 && (
             <span className="mono text-[11px] text-muted">
               {t("共 {n} 个 · 其中衍生 {m} 个", "{n} total · {m} remixed", {
                 n: mine.length,
@@ -235,12 +210,12 @@ export default function MintPage() {
 
         {schemesLoading && !isDemo ? (
           <div className="sheet mt-6 h-40 animate-pulse bg-paper-2" />
-        ) : !isConnected ? (
+        ) : !hasIdentity ? (
           <div className="sheet mt-6 p-10 text-center">
             <p className="text-sm text-muted">
               {t(
-                "连接 MetaMask 后这里会列出你铸造的全部方案。",
-                "Connect MetaMask and all your minted schemes will be listed here."
+                "连接钱包或创建 Passkey 后，这里会列出你铸造的全部方案。",
+                "Connect a wallet or create a passkey and all your minted schemes will be listed here."
               )}
             </p>
           </div>
@@ -285,7 +260,7 @@ export default function MintPage() {
                             {pick(s.name, s.nameEn)}
                           </Link>
                           <div className="mono mt-1 text-[10.5px] text-muted">
-                            {pick(s.theme, s.themeEn)} · {s.furnitureCount} {t("家具", "furniture")}
+                            {pick(s.theme, s.themeEn)} · {s.furnitureCount} {t("家具", "items")}
                           </div>
                         </Td>
                         <Td center>
@@ -368,51 +343,6 @@ function ActionCard({
       <Link href={href} className="link mono mt-4 text-[11px] uppercase tracking-[0.12em]">
         {cta} →
       </Link>
-    </div>
-  );
-}
-
-function OpportunityCard({ scheme, disabled }: { scheme: SchemeSummary; disabled: boolean }) {
-  const { t, pick } = useI18n();
-  const href = disabled ? "#" : `/remix/${scheme.tokenId.toString()}`;
-  const name = pick(scheme.name, scheme.nameEn);
-  const theme = pick(scheme.theme, scheme.themeEn);
-  return (
-    <div className="sheet flex flex-col overflow-hidden">
-      <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
-        <PreviewImage
-          uri={scheme.image}
-          alt={name}
-          className="h-full w-full object-cover"
-        />
-        <span className="mono absolute left-3 top-3 rounded-md bg-ink/85 px-2 py-1 text-[10px] tracking-wider text-white">
-          #{scheme.tokenId.toString()}
-        </span>
-        <span className="absolute right-3 top-3 rounded-md border border-white/25 bg-white/85 px-2 py-1 text-[10px] font-semibold text-ink">
-          {theme}
-        </span>
-      </div>
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="display-sm line-clamp-1 text-[15px] text-ink">{name}</h3>
-        <p className="mono mt-1.5 text-[10.5px] text-muted">
-          {shortAddress(scheme.creator)} · {scheme.furnitureCount} {t("家具", "furniture")}
-        </p>
-        <div className="mt-3.5 flex items-center gap-4 border-t border-hairline pt-3">
-          <span className="mono text-[11px] text-muted">
-            REMIX <span className="text-ink">{scheme.remixCount}</span>
-          </span>
-          <span className="mono text-[11px] text-muted">
-            APPLIED <span className="text-violet-deep">{scheme.appliedCount}</span>
-          </span>
-        </div>
-        <Link
-          href={href}
-          aria-disabled={disabled}
-          className={`mt-4 ${disabled ? "btn-secondary pointer-events-none opacity-45" : "btn-primary"}`}
-        >
-          {disabled ? t("连接钱包后可 Remix", "Connect wallet to Remix") : t("去 Remix", "Go to Remix")}
-        </Link>
-      </div>
     </div>
   );
 }

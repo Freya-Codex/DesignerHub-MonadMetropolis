@@ -36,7 +36,7 @@ const MECHANISMS: Mechanism[] = [
     titleEn: "Remix Lineage",
     body: "任何人都能基于他人方案 Remix：新 NFT 的 parentId 指向来源方案，lineageOf 可回溯完整创作链，形成「家居设计界的 GitHub」。",
     bodyEn:
-      "Anyone can Remix another's scheme: the new NFT's parentId points to the source scheme, and lineageOf traces the full creation chain — the GitHub of home design."
+      "Anyone can Remix another’s scheme: the new NFT’s parentId points to the source scheme, and lineageOf traces the full creation chain — the GitHub of home design."
   },
   {
     tag: "03",
@@ -44,7 +44,7 @@ const MECHANISMS: Mechanism[] = [
     titleEn: "Version Timeline",
     body: "同一作者迭代自己作品时，parentId 指向自己的上一版，versionLineOf 把同一作者链归组为 v1 / v2 / v3，版本历史清晰可查。",
     bodyEn:
-      "When an author iterates on their own work, parentId points to their previous version, and versionLineOf groups the same author's chain into v1 / v2 / v3, keeping version history clear and auditable."
+      "When an author iterates on their own work, parentId points to their previous version, and versionLineOf groups an author’s own versions into v1 / v2 / v3, keeping version history clear and auditable."
   },
   {
     tag: "04",
@@ -76,15 +76,15 @@ const MECHANISMS: Mechanism[] = [
     titleEn: "Passkey Seedless Account",
     body: "主流程：P256PasskeyAccount 用 WebAuthn Passkey（指纹 / Face ID）替代助记词——CREATE2 工厂预计算地址，relayer 代付 gas 执行交易，私钥永不出设备安全芯片；多设备可添加多把公钥。铸造 / Remix / 上架定价均可用 Passkey 免钱包完成；连接钱包（MetaMask）作为备选。入口：/passkey。",
     bodyEn:
-      "Main flow: P256PasskeyAccount uses a WebAuthn Passkey (fingerprint / Face ID) instead of a seed phrase — a CREATE2 factory precomputes the address, a relayer pays gas to execute transactions, and the private key never leaves the device's secure chip; multiple public keys can be added across devices. Minting / Remix / listing for sale can all be done with Passkey, no wallet required; connecting a wallet (MetaMask) is the fallback. Entry: /passkey."
+      "Main flow: P256PasskeyAccount uses a WebAuthn Passkey (fingerprint / Face ID) instead of a seed phrase — a CREATE2 factory precomputes the address, a relayer pays gas to execute transactions, and the private key never leaves the device’s secure chip; multiple public keys can be added across devices. Minting / Remix / listing for sale can all be done with Passkey, no wallet required; connecting a wallet (MetaMask) is the fallback. Entry: /passkey."
   },
   {
-    tag: "06",
+    tag: "08",
     title: "交易账本可查",
     titleEn: "Auditable Transaction Ledger",
     body: "方案 JSON、预览图与 NFT 元数据都固定到 IPFS，链上只存 contentHash 与 URI；所有应用流水按 SchemeApplied 事件沉淀在交易页，可逐笔核对。",
     bodyEn:
-      "Scheme JSON, preview images, and NFT metadata are all pinned to IPFS, leaving only contentHash and URI on-chain; all application flow is recorded per SchemeApplied event on the trades page, reconcilable entry by entry."
+      "Scheme JSON, preview images, and NFT metadata are all pinned to IPFS, leaving only contentHash and URI on-chain; all application flow is recorded per SchemeApplied event on the trades page, reconcilable line by line."
   }
 ];
 
@@ -101,7 +101,7 @@ export default function DocsPage() {
     <>
       {t(
         "在 MetaMask 添加 Monad 测试网（Chain ID 10143，RPC 见左表）（仅连接钱包时需）",
-        "Add Monad Testnet in MetaMask (Chain ID 10143, RPC in the table at left) (only needed when connecting a wallet)"
+        "Add Monad Testnet in MetaMask (Chain ID 10143; RPC in the table at left) — only needed when connecting a wallet"
       )}
     </>,
     <>
@@ -118,7 +118,7 @@ export default function DocsPage() {
       </Link>{" "}
       {t(
         "拖拽/粘贴方案 JSON，或粘贴 base64url 方案码（本站 DesignScheme 或 VirtuHome HomePlan） → 查看参数摘要 → 固定到 IPFS 并铸造",
-        "drag/paste the scheme JSON, or paste a base64url scheme code (this site's DesignScheme or VirtuHome HomePlan) → review the parameter summary → pin to IPFS and mint"
+        " — drag/paste the scheme JSON, or paste a base64url scheme code (this site’s DesignScheme or VirtuHome HomePlan) → review the parameter summary → pin to IPFS and mint"
       )}
     </>,
     <>
@@ -128,7 +128,7 @@ export default function DocsPage() {
       </Link>{" "}
       {t(
         "浏览方案，进入详情页点「应用到我家」（按创作者定价支付，自动分账）",
-        "browse schemes, open a detail page, and click “Apply to My Home” (pay the creator's price, auto-split)"
+        "page, browse schemes, open a detail page, and click “Apply to My Home” (pay the creator’s price, auto-split)"
       )}
     </>,
     <>
@@ -151,13 +151,13 @@ export default function DocsPage() {
       </Link>{" "}
       {t(
         "页查看应用流水与 90/10 分账，提取待领份额",
-        "page, view application flow and the 90/10 split, and withdraw pending shares"
+        "page, view the application flow and the 90/10 split, and watch shares settle instantly"
       )}
     </>,
     <>
       {t(
         "作者可在自己最新版本上点「发布新版本」，形成 v1/v2/v3 版本时间线",
-        "Authors can click “Publish new version” on their latest version to build a v1 / v2 / v3 version timeline"
+        "Authors can click “Publish new version” on their latest version to build a v1 / v2 / v3 timeline"
       )}
     </>,
     <>
@@ -174,38 +174,38 @@ export default function DocsPage() {
 
   const faq = [
     {
-      q: t("铸造和 Remix 要花钱吗？", "Does minting and Remix cost money?"),
+      q: t("铸造和 Remix 要花钱吗？", "Do minting and Remix cost money?"),
       a: t(
         "用 Passkey 时铸造 / Remix / 上架定价完全免 gas（relayer 代付）；「应用到我家」按创作者 setPrice 定价支付，原创 90% 直达创作者。",
-        "With Passkey, minting / Remix / listing for sale are entirely gas-free (the relayer pays); “Apply to My Home” pays the creator's setPrice, and 90% of an original goes directly to the creator."
+        "With Passkey, minting / Remix / listing for sale are entirely gas-free (the relayer pays); “Apply to My Home” pays at the creator’s setPrice, and 90% of an original goes directly to the creator."
       )
     },
     {
       q: t("Passkey 会碰我的资金吗？", "Does Passkey touch my funds?"),
       a: t(
         "不会。Passkey 密钥不接触资金，支付密钥由用户自选：Passkey 只用于身份与签名（铸造 / Remix / 上架定价），不托管、不触碰你的资金；涉及付款（应用到我家）时，用哪种支付方式与密钥由用户自行选择。",
-        "No. The Passkey never touches funds, and the payment key is up to the user: Passkey is used only for identity and signatures (minting / Remix / listing for sale) and neither custodies nor touches your funds; for payments (Apply to My Home), which payment method and key to use is the user's own choice."
+        "No. A passkey is used only for identity and signatures (minting / Remix / listing for sale); it never custodies or moves your funds. For payments (Apply to My Home), the choice of payment method and key is entirely yours."
       )
     },
     {
-      q: t("评论为什么不用 gas？", "Why do comments cost no gas?"),
+      q: t("评论为什么不用 gas？", "Why don’t comments cost gas?"),
       a: t(
         "评论走链下存储 + 钱包签名验证：MetaMask 对文本签名，后端校验通过后按 tokenId 存到本地 JSON，接口为 POST/GET /api/comment。",
-        "Comments use off-chain storage + wallet signature verification: MetaMask signs the text, and after backend verification it is stored as local JSON keyed by tokenId, via the POST/GET /api/comment endpoints."
+        "Comments use off-chain storage plus wallet signature verification: MetaMask signs the text, and after backend verification it is stored as local JSON keyed by tokenId, via POST and GET on /api/comment."
       )
     },
     {
       q: t("方案码（base64url）是什么？", "What is a scheme code (base64url)?"),
       a: t(
         "把方案压成一段 base64url 码，便于分享/搬运。创建页「方案码」页签可直接粘贴解析：既支持本站 DesignScheme，也支持云筑家 VirtuHome 的 HomePlan（自动转换）。也可在 JSON 模式下点「复制方案码」把当前方案导出为码。",
-        "It compresses a scheme into a base64url string for easy sharing / transfer. The Create page's “Scheme code” tab parses pasted codes directly: it supports both this site's DesignScheme and 云筑家 VirtuHome's HomePlan (auto-converted). In JSON mode you can also click “Copy scheme code” to export the current scheme as a code."
+        "It compresses a scheme into a base64url string for easy sharing / transfer. The Create page’s “Scheme code” tab parses pasted codes directly: it supports both this site’s DesignScheme and VirtuHome’s HomePlan (auto-converted). In JSON mode you can also click “Copy scheme code” to export the current scheme as a code."
       )
     },
     {
       q: t("没配置 Pinata / Kimi 也能演示吗？", "Can I demo without configuring Pinata / Kimi?"),
       a: t(
         "可以。未配置密钥时自动进入 local:// 本地固定模式，装修建议走内置规则引擎，全流程依然可跑通。",
-        "Yes. With no keys configured, it automatically falls back to local:// local pinning mode, and renovation suggestions use the built-in rules engine — the whole flow still works end to end."
+        "Yes. With no keys configured, it automatically falls back to local pinning mode (local://), and renovation suggestions use the built-in rules engine — the whole flow still works end to end."
       )
     },
     {
@@ -232,20 +232,20 @@ export default function DocsPage() {
           <p className="mt-5 max-w-3xl text-sm leading-relaxed text-white/70 sm:text-[15px]">
             {t(
               "在「云筑家 VirtuHome」网站里完成「AI生成装修方案」，将方案导入这里，变成",
-              "On the 云筑家 VirtuHome site you complete “AI-generated renovation schemes”, then import them here and turn them into "
+              "On the VirtuHome site you create “AI-generated renovation schemes”, then import them here and turn them into "
             )}
             <span className="text-white">
-              {t("可 remix、可归因、可分账的创作资产", "creative assets that are remixable, attributable, and revenue-splitting")}
+              {t("可 remix、可归因、可分账的创作资产", "creative assets that are remixable, attributable, and revenue-sharing")}
             </span>
             {t("。创作者的每一次迭代、被引用、被应用，都会沉淀为链上注意力资产。", ". Every iteration, citation, and application by a creator settles into an on-chain attention asset.")}
           </p>
           <p className="mt-3 max-w-3xl text-[13px] leading-relaxed text-white/60">
             <span className="text-white">
-              {t("Passkey 密钥不接触资金，支付密钥由用户自选。", "The Passkey key never touches funds; the payment key is up to the user.")}
+              {t("Passkey 密钥不接触资金，支付密钥由用户自选。", "Passkey keys never touch funds; the payment key is yours to choose.")}
             </span>{" "}
             {t(
               "Passkey 只用于身份与签名，不托管、不触碰你的资金；涉及付款时，用哪种支付方式与密钥由你自行选择。",
-              "Passkey is used only for identity and signatures; it neither custodies nor touches your funds. For payments, which method and key to use is your own choice."
+              "Passkey is used only for identity and signatures; it never custodies or moves your funds. For payments, the choice of method and key is yours."
             )}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -271,7 +271,7 @@ export default function DocsPage() {
       </section>
 
       <section>
-        <p className="eyebrow">{t("Mechanism · 六个机制", "Mechanism")}</p>
+        <p className="eyebrow">{t("Mechanism · 八个机制", "Mechanisms")}</p>
         <div className="dim-line mt-4" />
         <div className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-hairline bg-hairline sm:grid-cols-2 lg:grid-cols-3">
           {MECHANISMS.map((m) => {
@@ -320,11 +320,11 @@ export default function DocsPage() {
             </li>
           </ul>
           <p className="mt-4 text-xs leading-relaxed text-muted">
-            {t("衍生方案的应用收入会沿", "Application revenue from a derivative is split down the ")}
+            {t("衍生方案的应用收入会沿", "Application revenue from a derivative sends 5% up the ")}
             <code className="mono text-ink">parentId</code>
-            {t("谱系向所有祖先创作者均分 5%（事件", " lineage 5% to all ancestor creators (event ")}
+            {t("谱系向所有祖先创作者均分 5%（事件", " lineage to all ancestor creators (event ")}
             <code className="mono text-ink">AncestorPaid</code>
-            {t("），原创的 remix 价值持续回流。原创方案无祖先池，创作者拿 90%。", "), so the remix value of originals keeps flowing back. Original schemes have no ancestor pool, so the creator takes 90%.")}
+            {t("），原创的 remix 价值持续回流。原创方案无祖先池，创作者拿 90%。", "), so value from remixes keeps flowing back to the originals. An original scheme has no ancestor pool, so its creator takes 90%.")}
           </p>
         </div>
 

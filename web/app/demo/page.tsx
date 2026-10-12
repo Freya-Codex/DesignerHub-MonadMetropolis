@@ -70,7 +70,7 @@ export default function GalleryPage() {
 
       {isDemo && (
         <div className="sheet rise flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:gap-5">
-          <span className="chip chip-violet shrink-0 self-start">{t("演示数据模式", "Demo Data Mode")}</span>
+          <span className="chip chip-violet shrink-0 self-start">{t("演示数据模式", "Demo data mode")}</span>
           <p className="text-[13px] leading-relaxed text-muted">
             {t("尚未配置", "Not yet configured")}{" "}
             <code className="mono text-ink">NEXT_PUBLIC_DREAM_SCHEME_ADDRESS</code>

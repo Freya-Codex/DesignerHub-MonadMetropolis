@@ -38,24 +38,24 @@ export default function HomePage() {
         />
         <div className="relative">
           <p className="eyebrow eyebrow-dark">
-            Monad Testnet · Chain 10143 · Track 04 — Trust, Identity &amp; AI Infrastructure
+            Monad Testnet · Chain ID 10143 · Track 04 — Trust, Identity &amp; AI Infrastructure
           </p>
 
           <h1 className="display mt-5 max-w-3xl text-[36px] text-white sm:text-[64px]">
             {t("家居设计界的", "The ")}
-            <span className="text-violet">"Github"</span>
+            <span className="text-violet">"GitHub"</span>
             {t("", " for Interior Design")}
           </h1>
 
           <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-white/70">
             {t(
               "把装修设计方案变成链上可 remix、可归因、可分账的创作资产。由 AI 生成方案，在这里发布上链，任何人都能在你的设计上继续创作；",
-              "Turn interior design schemes into on-chain creative assets that are remixable, attributable and revenue-sharing. Generate with AI, publish on-chain, and let anyone build on your design;"
+              "Turn interior design schemes into on-chain creative assets that are remixable, attributable, and revenue-sharing. Generate with AI, publish on-chain, and let anyone build on your design;"
             )}
             <span className="mono text-white/90"> parentId </span>
             {t(
               "记录完整谱系，收益按创作者定价自动分账。",
-              "the full lineage is recorded on-chain and revenue splits automatically at the creator's price."
+              "records the full lineage on-chain, and revenue splits automatically at the creator’s price."
             )}
           </p>
 
@@ -123,7 +123,7 @@ export default function HomePage() {
               title: t("谱系与归因", "Lineage & Attribution"),
               body: t(
                 "通过 parentId 记录每一次 Remix 的来源，形成可追溯的创作谱系；原始创作者持续获得 ERC-2981 版税，引用关系永久留痕。",
-                "A parentId records where every remix came from, forming a traceable lineage. Original creators keep earning ERC-2981 royalties — citations leave a permanent trace."
+                "The parentId field records where every remix came from, forming a traceable lineage. Original creators keep earning ERC-2981 royalties — citations leave a permanent trace."
               )
             },
             {

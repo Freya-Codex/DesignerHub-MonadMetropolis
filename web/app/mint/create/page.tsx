@@ -39,6 +39,22 @@ const SAMPLE_JSON = `{
   "license": "CC-BY 4.0"
 }`;
 
+const SAMPLE_JSON_EN = `{
+  "version": "1.0",
+  "name": "My Cream Living Room",
+  "description": "A living room I designed myself: soft curves + cream tones, warm and easy on the eye.",
+  "room": { "type": "Living Room", "dimensions": { "width": 4.5, "length": 5.8, "height": 2.7, "unit": "m" } },
+  "style": { "theme": "Cream", "palette": ["#FBF6EC", "#F3E3D3", "#E7C8A8", "#B98A68", "#FFFFFF"], "mood": "Warm & soothing" },
+  "furniture": [
+    { "modelId": "sofa_curved_cream_01", "name": "Cream Curved Sofa", "position": { "x": 1.0, "y": 0.5, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "coffee_table_marble_01", "name": "Round Marble Coffee Table", "position": { "x": 2.1, "y": 1.7, "z": 0.1 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 0.8, "y": 0.8, "z": 0.8 } },
+    { "modelId": "tv_stand_cream_01", "name": "Cream TV Stand", "position": { "x": 4.6, "y": 3.1, "z": 0.1 }, "rotation": { "x": 0, "y": 90, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "floor_lamp_arc_02", "name": "Arched Floor Lamp", "position": { "x": 0.7, "y": 3.9, "z": 0.1 }, "rotation": { "x": 0, "y": -10, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } },
+    { "modelId": "rug_round_cream_01", "name": "Round Cream Rug", "position": { "x": 2.2, "y": 1.9, "z": 0.05 }, "rotation": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1.6, "y": 1.6, "z": 1 } }
+  ],
+  "license": "CC-BY 4.0"
+}`;
+
 export default function CreatePage() {
   const { t, lang } = useI18n();
   const { isConnected } = useAccount();
@@ -386,7 +402,7 @@ export default function CreatePage() {
                   onChange={(e) => setRaw(e.target.value)}
                   rows={12}
                   spellCheck={false}
-                  placeholder={SAMPLE_JSON}
+                  placeholder={lang === "en" ? SAMPLE_JSON_EN : SAMPLE_JSON}
                   className="input mono mt-3 text-xs leading-relaxed"
                 />
                 {validationError && (
@@ -398,14 +414,14 @@ export default function CreatePage() {
                 <p className="mt-3 text-xs leading-relaxed text-muted">
                   {t("粘贴 ", "Paste a ")}
                   <span className="mono">base64url</span>
-                  {t(" 方案码（本站 DesignScheme 或 VirtuHome HomePlan），自动解码为方案 JSON 后走同一套预览 / 铸造流程。", " scheme code (this site's DesignScheme or VirtuHome HomePlan); it will be auto-decoded to scheme JSON and go through the same preview / mint flow.")}
+                  {t(" 方案码（本站 DesignScheme 或 VirtuHome HomePlan），自动解码为方案 JSON 后走同一套预览 / 铸造流程。", " scheme code (this site’s DesignScheme or VirtuHome HomePlan); it will be auto-decoded to scheme JSON and go through the same preview / mint flow.")}
                 </p>
                 <textarea
                   value={codeText}
                   onChange={(e) => setCodeText(e.target.value)}
                   rows={6}
                   spellCheck={false}
-                  placeholder={t("粘贴方案码，例如：3sY9x…", "Paste a scheme code, e.g. 3sY9x…")}
+                  placeholder={t("粘贴方案码，例如：3sY9x…", "Paste a scheme code, e.g., 3sY9x…")}
                   className="input mono mt-3 text-xs leading-relaxed"
                 />
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -427,7 +443,7 @@ export default function CreatePage() {
             <input
               value={nameOverride}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t("例如：我家客厅 v2", "e.g. My living room v2")}
+              placeholder={t("例如：我家客厅 v2", "e.g., My living room v2")}
               className="input"
             />
           </div>
@@ -540,7 +556,7 @@ export default function CreatePage() {
                 <span className="mono ml-1 text-[11px] text-muted">{scheme.style.mood ?? ""}</span>
               </div>
               <p className="mt-4 text-xs leading-relaxed text-muted">
-                {t("确认无误后点击左侧「固定 + 铸造」上链；名称可在上方覆盖 JSON 中的 name。", "Once everything looks right, click \"Pin + mint\" on the left to go on-chain; the name can be overridden above the JSON's name.")}
+                {t("确认无误后点击左侧「固定 + 铸造」上链；名称可在上方覆盖 JSON 中的 name。", "Once everything looks right, click \"Pin + mint\" on the left to go on-chain; the name can be overridden above the JSON’s name.")}
               </p>
             </div>
           )}
@@ -572,18 +588,18 @@ export default function CreatePage() {
             </dl>
             {isConnected ? (
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
-                {t("将用 MetaMask 铸造，请确认已切换到 Monad 测试网。", "You'll mint with MetaMask — please make sure you've switched to Monad Testnet.")}
+                {t("将用 MetaMask 铸造，请确认已切换到 Monad 测试网。", "You’ll mint with MetaMask — please make sure you’ve switched to Monad Testnet.")}
               </p>
             ) : pk ? (
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
-                {t("将用 Passkey 智能账户铸造，relayer 代付 gas（无需 MetaMask、无需持有 MON）。", "You'll mint with a Passkey smart account; the relayer covers gas (no MetaMask, no MON needed).")}
+                {t("将用 Passkey 智能账户铸造，relayer 代付 gas（无需 MetaMask、无需持有 MON）。", "You’ll mint with a Passkey smart account; the relayer covers gas (no MetaMask, no MON needed).")}
                 {pkAccount && (pkDeployed ? t(" 账户已部署。", " The account is already deployed.") : t(" 首次铸造会自动部署账户。", " The account will be deployed automatically on first mint."))}
               </p>
             ) : (
               <p className="mt-4 rounded-xl bg-paper-2 p-3 text-xs leading-relaxed text-muted">
-                {t("铸造前请先在 ", "Before minting, ")}
+                {t("铸造前请先在 ", "Before minting, go to the ")}
                 <Link href="/passkey" className="text-violet-deep underline">{t("Passkey 页", "Passkey page")}</Link>
-                {t(" 创建通行密钥，或到 /passkey 连接 MetaMask（备选）。", " create a passkey, or connect MetaMask (fallback) at /passkey.")}
+                {t(" 创建通行密钥，或到 /passkey 连接 MetaMask（备选）。", " to create a passkey, or connect MetaMask (fallback) at /passkey.")}
               </p>
             )}
           </div>

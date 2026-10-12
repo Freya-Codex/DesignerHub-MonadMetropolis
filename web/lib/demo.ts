@@ -74,7 +74,7 @@ export const demoSchemes: SchemeSummary[] = [
     name: "工业风书房 · 混凝土工作室",
     nameEn: "Industrial Study · Concrete Studio",
     description: "深灰水泥墙面搭配黑色金属书架与橙色点缀，粗粝与秩序并存，专注思考的工作间。",
-    descriptionEn: "Dark grey concrete walls with black metal shelving and orange accents — raw texture and order side by side, a study built for focused thinking.",
+    descriptionEn: "Dark gray concrete walls with black metal shelving and orange accents — raw texture and order side by side, a study built for focused thinking.",
     image: "/renders/industrial-study.jpg",
     theme: "工业风",
     themeEn: "Industrial",

@@ -261,7 +261,7 @@ export default function PasskeyPage() {
           <p className="mt-5 max-w-3xl text-sm leading-relaxed text-white/70 sm:text-[15px]">
             {t("无需助记词、无需安装浏览器插件、", "No seed phrase, no browser extension, ")}
             <span className="text-white">{t("无需持有 MON", "no MON required")}</span>
-            {t("。私钥在设备安全芯片内生成且永不导出；relayer 代付 gas，你只需一次指纹 / 面容确认即可完成链上动作。", ". The private key is generated inside your device's secure chip and never exported; the relayer covers gas, so a single fingerprint / face confirmation completes the on-chain action.")}
+            {t("。私钥在设备安全芯片内生成且永不导出；relayer 代付 gas，你只需一次指纹 / 面容确认即可完成链上动作。", ". The private key is generated inside your device’s secure chip and never exported; the relayer covers gas, so a single fingerprint / face confirmation completes the on-chain action.")}
             <span className="text-white">{t(" Passkey 密钥不接触资金，支付密钥由用户自选", " Passkey keys never touch funds; the payment key is yours to choose")}</span>
             {t("——涉及付款的操作，可在本页下方连接 MetaMask（备选）完成。", " — for operations involving payment, connect MetaMask (fallback) below on this page.")}
           </p>
@@ -280,7 +280,7 @@ export default function PasskeyPage() {
         <div className="sheet border-l-4 border-coral p-5 text-sm text-ink">
           {t(
             "当前通过 IP 地址访问，WebAuthn / Passkey 要求 RP ID 为合法域名（浏览器会拒绝 IP，如 127.0.0.1）。请改用 ",
-            "You're visiting via an IP address; WebAuthn / Passkey requires a valid domain as the RP ID (browsers reject IPs such as 127.0.0.1). Please open "
+            "You’re visiting via an IP address; WebAuthn / Passkey requires a valid domain as the RP ID (browsers reject IPs such as 127.0.0.1). Please open "
           )}
           {altUrl ? (
             <a className="mono break-all underline decoration-dotted" href={altUrl}>
@@ -297,7 +297,7 @@ export default function PasskeyPage() {
         <div className="sheet border-l-4 border-coral p-5 text-sm text-ink">
           {t(
             "当前浏览器不支持 WebAuthn（Passkey）。请用 Chrome / Edge / Safari（≥16）桌面版或手机浏览器打开；也可改用 MetaMask（备选）。",
-            "Your browser doesn't support WebAuthn (Passkey). Please use desktop or mobile Chrome / Edge / Safari (≥16); you can also use MetaMask (fallback)."
+            "Your browser doesn’t support WebAuthn (Passkey). Please use desktop or mobile Chrome / Edge / Safari (≥16); you can also use MetaMask (fallback)."
           )}
         </div>
       )}
@@ -401,7 +401,7 @@ export default function PasskeyPage() {
         <ul className="mt-5 grid gap-3 text-[13px] text-muted sm:grid-cols-2">
           <li>{t("· 仅 Monad 测试网（chainId 10143）", "· Monad Testnet only (chainId 10143)")}</li>
           <li>{t("· value 恒为 0，不代转任何 ETH/MON", "· value is always 0; never transfers any ETH/MON")}</li>
-          <li>{t("· 目标白名单：本项目 4 个合约 + 账户自身 addKey", "· Target allowlist: this project's 4 contracts + the account's own addKey")}</li>
+          <li>{t("· 目标白名单：本项目 4 个合约 + 账户自身 addKey", "· Target allowlist: this project’s four contracts + the account’s own addKey")}</li>
           <li>{t("· 全局 / 单账户每日额度上限（进程内计数）", "· Global / per-account daily quota caps (counted in-process)")}</li>
         </ul>
       </section>
