@@ -343,6 +343,14 @@ export default function DocsPage() {
                 testnet-rpc.monad.xyz ↗
               </a>
             </Row>
+            <Row label={t("数据层", "Data layer")}>
+              <span className="text-[11px] leading-snug">
+                {t(
+                  "服务端读取：Alchemy RPC（主）+ Envio 全量索引，公共 RPC 兜底",
+                  "Server reads: Alchemy RPC (primary) + Envio full-history index; public RPC fallback"
+                )}
+              </span>
+            </Row>
             <Row label={t("水龙头", "Faucet")}>
               <a className="link mono text-[12px]" href="https://faucet.monad.xyz" target="_blank" rel="noreferrer">
                 faucet.monad.xyz ↗

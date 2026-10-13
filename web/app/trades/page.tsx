@@ -110,7 +110,10 @@ export default function TradesPage() {
               "The on-chain activity index hasn’t been generated yet; only a live scan of the most recent blocks is shown. Run "
             )}
             <code className="mono text-ink">npm run index</code>
-            {t(" 可补齐完整历史流水。", " to backfill the full history.")}
+            {t(
+              " 可补齐完整历史流水（配置 ENVIO_API_TOKEN 时经 Envio HyperSync 一次拉全）。",
+              " to backfill the full history (with ENVIO_API_TOKEN set it pulls the whole history from Envio HyperSync in one pass)."
+            )}
           </p>
         </div>
       )}
@@ -348,8 +351,8 @@ export default function TradesPage() {
 
         <p className="mono mt-5 text-[11px] leading-relaxed text-muted">
           {t(
-            "数据来源 · SchemeApplied 链上事件（离线索引 + 最近若干区块实时增量）。市场合约 ",
-            "Source · SchemeApplied on-chain events (offline index + live increments from recent blocks). Market contract "
+            "数据来源 · SchemeApplied 链上事件：全量历史索引（Envio HyperSync）+ 事件驱动增量（Alchemy Webhook，缺失时回退最近若干区块 RPC 扫描）。市场合约 ",
+            "Source · SchemeApplied on-chain events: full-history index (Envio HyperSync) + event-driven increments (Alchemy webhooks; falls back to a recent-block RPC scan when absent). Market contract "
           )}
           {market ? shortAddress(market, 6) : t("未配置", "not configured")}
           {t("，收入在购买交易中即时分账。", "; revenue is split instantly within the purchase transaction.")}

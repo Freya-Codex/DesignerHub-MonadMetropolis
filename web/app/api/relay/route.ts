@@ -20,13 +20,13 @@ import {
   createPublicClient,
   createWalletClient,
   getAddress,
-  http,
   type Address,
   type Hex
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "@/lib/chains";
 import { passkeyAccountAbi, passkeyFactoryAbi } from "@/lib/abis";
+import { serverTransport, usingAlchemy, safeRpcLabel } from "@/lib/serverRpc";
 import { L, pickLang } from "@/lib/apiLang";
 
 export const runtime = "nodejs";
@@ -74,7 +74,8 @@ function takeQuota(account: string, lang: "zh" | "en"): { ok: true } | { ok: fal
 
 function clients() {
   const account = privateKeyToAccount(RELAYER_KEY as Hex);
-  const transport = http(monadTestnet.rpcUrls.default.http[0]);
+  // 服务端统一走 serverTransport()：Alchemy 优先，公共 RPC 自动兜底。
+  const transport = serverTransport();
   const wallet = createWalletClient({ account, chain: monadTestnet, transport });
   const pub = createPublicClient({ chain: monadTestnet, transport });
   return { account, wallet, pub };
@@ -90,7 +91,10 @@ export async function GET() {
     chainId: monadTestnet.id,
     maxGlobalPerDay: MAX_GLOBAL_PER_DAY,
     maxPerAccountPerDay: MAX_PER_ACCOUNT_PER_DAY,
-    usedToday: state.day === new Date().toISOString().slice(0, 10) ? state.global : 0
+    usedToday: state.day === new Date().toISOString().slice(0, 10) ? state.global : 0,
+    // 服务端 RPC 提供方（Alchemy 优先，公共 RPC 兜底）；只暴露标签，不含 Key。
+    rpcProvider: usingAlchemy() ? "alchemy" : "public",
+    rpcLabel: safeRpcLabel()
   });
 }
 
