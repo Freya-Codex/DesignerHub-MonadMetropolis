@@ -1,12 +1,12 @@
 /**
- * 端到端验收脚本：在 Monad 测试网上真实跑一遍「Remix 衍生 + 应用到我家」，
- * 并校验链上状态与 90/10 分账金额是否与预期一致。
+  * End-to-end acceptance script: actually run "Remix derivative + apply to my home" on Monad Testnet,
+  * and verify that the on-chain state and the 90/10 split amounts match expectations.
  *
- * 用法（web/ 目录下）：
- *   npm run verify:flow                 # Remix #3 + 应用 #3
+  * Usage (from the web/ dir):
+  *   npm run verify:flow                 # Remix #3 + apply #3
  *   PARENT=3 APPLY=1 npm run verify:flow
- *   SKIP_REMIX=1 npm run verify:flow    # 只测「应用到我家」
- *   SKIP_APPLY=1 npm run verify:flow    # 只测 Remix
+  *   SKIP_REMIX=1 npm run verify:flow    # test only "apply to my home"
+  *   SKIP_APPLY=1 npm run verify:flow    # test only Remix
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -32,9 +32,9 @@ import { buildTokenMetadata } from "../lib/metadata";
 import { schemeToPreviewSvg, validateScheme, type DesignScheme } from "../lib/scheme";
 
 /**
- * Next.js 会自动加载 .env.local，但 tsx 直接跑脚本不会。
- * 这里手动加载，避免「.env.local 明明填了却报未设置」。
- * 优先级：真实环境变量 > .env.local（不覆盖已存在的值）。
+  * Next.js auto-loads .env.local, but running a script directly via tsx does not.
+  * Loaded manually here to avoid "filled in .env.local yet reported unset".
+  * Precedence: real env vars > .env.local (does not overwrite existing values).
  */
 function loadEnvLocal(): void {
   const file = path.join(process.cwd(), ".env.local");
@@ -67,7 +67,7 @@ function resolveAddress(envKey: string, jsonKey: string): Address | undefined {
     try {
       return getAddress(fromEnv);
     } catch {
-      /* 忽略 */
+      /* Ignore */
     }
   }
   const f = path.join(process.cwd(), "..", "contracts", "deployments", "monad-testnet.json");
@@ -77,7 +77,7 @@ function resolveAddress(envKey: string, jsonKey: string): Address | undefined {
       const a = data[jsonKey];
       if (a?.startsWith("0x")) return getAddress(a);
     } catch {
-      /* 忽略 */
+      /* Ignore */
     }
   }
   return undefined;
@@ -133,7 +133,7 @@ async function main(): Promise<void> {
   );
   console.log("");
 
-  /* ---------------- 1. Remix 衍生 ---------------- */
+  /* ---------------- 1. Remix derivative ---------------- */
   if (!env.SKIP_REMIX) {
     const files = fs
       .readdirSync(path.join(process.cwd(), "..", "assets", "schemes"))
@@ -180,7 +180,7 @@ async function main(): Promise<void> {
         const d = decodeEventLog({ abi: [schemeMintedEvent], data: log.data, topics: log.topics, strict: true });
         if (d.eventName === "SchemeMinted") newId = d.args.tokenId;
       } catch {
-        /* 忽略 */
+        /* Ignore */
       }
     }
     check("解析到 SchemeMinted 事件", newId !== null, `newTokenId=#${newId?.toString()}`);
@@ -221,7 +221,7 @@ async function main(): Promise<void> {
     console.log("");
   }
 
-  /* ---------------- 2. 应用到我家（创作者定价 + 谱系即时分账） ---------------- */
+  /* ---------------- 2. Apply to my home (creator pricing + instant lineage split) ---------------- */
   if (!env.SKIP_APPLY) {
     const platform = await publicClient.readContract({
       address: schemeMarket,
@@ -240,7 +240,7 @@ async function main(): Promise<void> {
       functionName: "parentOf",
       args: [applyToken]
     })) === 0n;
-    // 原创 90/10；衍生 85/10/5（创作者/平台/祖先池）
+    // Original 90/10; derivative 85/10/5 (creator / platform / ancestor pool)
     const creatorBps = isParent ? 9000n : 8500n;
     const platformBps = 1000n;
 
@@ -296,12 +296,12 @@ async function main(): Promise<void> {
             };
           }
         } catch {
-          /* 忽略 */
+          /* Ignore */
         }
       }
       check("解析到 SchemeApplied 事件", ev !== null);
 
-      // 链上 splitPreview 作为分账预言机（自 remix 时祖先份额会并入创作者，占比随谱系动态）
+      // The on-chain splitPreview serves as the split oracle (when remixing one's own, the ancestor share folds into the creator; ratios are dynamic per lineage)
       const [previewCreator, previewPlatform, ancestorPool, ancestors] = await publicClient.readContract({
         address: schemeMarket,
         abi: schemeMarketAbi,
@@ -312,7 +312,7 @@ async function main(): Promise<void> {
       const expectedPlatform = previewPlatform as bigint;
       const pool = ancestorPool as bigint;
       const ancestorList = ancestors as readonly `0x${string}`[];
-      // splitPreview 不合并「祖先即本人」的份额，而事件里的 creatorCut 会并入（85% + 5%）
+      // splitPreview does not merge the "ancestor == self" share, whereas the event's creatorCut does merge it (85% + 5%)
       const each = ancestorList.length > 0 ? pool / BigInt(ancestorList.length) : 0n;
       const poolRemainder = pool - each * BigInt(ancestorList.length);
       const selfExtra = ancestorList.some((a) => a.toLowerCase() === String(creator).toLowerCase()) ? each : 0n;
@@ -358,7 +358,7 @@ async function main(): Promise<void> {
       const platformIsMe = platform.toLowerCase() === me;
       check("appliedCount +1", appliedAfter === appliedBefore + 1n, `${appliedBefore} → ${appliedAfter}`);
 
-      // 平台余额检查（平台 == 买家时无意义，收入与支出混在同一账户，改由净支出覆盖）
+      // Platform balance check (meaningless when platform == buyer, mixing income and expense in one account; covered by net spend instead)
       if (platformIsMe) {
         check("平台 == 本账户（份额直接回流）", true, `+${formatEther(expectedEventPlatform)} MON`);
       } else {
@@ -369,7 +369,7 @@ async function main(): Promise<void> {
         );
       }
 
-      // 买家净支出 = 全额 + gas - 回流（creatorCut / platformCut / 祖先池中属于本账户的部分）
+      // Buyer net spend = full amount + gas - rebate (creatorCut / platformCut / this account's portion of the ancestor pool)
       const baseReturn = (creatorIsMe ? expectedEventCreator : 0n) + (platformIsMe ? expectedEventPlatform : 0n);
       const netSpent = balBefore - balAfter;
       const upper = price + gasCost - baseReturn; // 祖先池不回流时的最大支出

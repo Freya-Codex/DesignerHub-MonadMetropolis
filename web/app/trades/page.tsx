@@ -135,7 +135,7 @@ export default function TradesPage() {
         </div>
       )}
 
-      {/* ── 总览 ───────────────────────────────────── */}
+      {/* -- Overview ----------------------------------------- */}
       <section className="sheet-dark grid-sheet-dark rise px-5 py-8 sm:px-9 sm:py-10">
         <p className="eyebrow eyebrow-dark">{t("Ledger Overview · 账本总览", "Ledger Overview")}</p>
         <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-6 border-t border-white/10 pt-6 sm:grid-cols-4">
@@ -146,7 +146,7 @@ export default function TradesPage() {
         </dl>
       </section>
 
-      {/* ── 我的分账 ───────────────────────────────── */}
+      {/* -- My splits ---------------------------------------- */}
       {isConnected && (
         <section className="sheet p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -182,7 +182,7 @@ export default function TradesPage() {
         </section>
       )}
 
-      {/* ── 流水表 ─────────────────────────────────── */}
+      {/* -- Ledger table ------------------------------------- */}
       <section>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -213,7 +213,7 @@ export default function TradesPage() {
         <div className="dim-line mt-5" />
 
         <div className="sheet mt-6 overflow-hidden">
-          {/* 手机端：卡片列表，避免横向滚动条（≥md 用表格） */}
+          {/* Mobile: card list to avoid horizontal scrolling (table at >=md) */}
           <div className="divide-y divide-hairline md:hidden">
             {isLoading && !isDemo &&
               [0, 1, 2].map((i) => (

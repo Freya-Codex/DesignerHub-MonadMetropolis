@@ -8,7 +8,7 @@ import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.s
 import {AgentRegistry} from "../src/AgentRegistry.sol";
 import {DreamScheme} from "../src/DreamScheme.sol";
 
-/// @title DreamSchemeTest — 方案铸造 / 谱系 / 版税
+/// @title DreamSchemeTest — scheme minting / lineage / royalties
 contract DreamSchemeTest is Test {
     AgentRegistry internal agents;
     DreamScheme internal scheme;
@@ -22,7 +22,7 @@ contract DreamSchemeTest is Test {
         kimiId = agents.registerAgent("ipfs://kimi");
     }
 
-    // ------------------------------- 铸造 --------------------------------- //
+    // -------------------------------- Mint -------------------------------- //
 
     function test_Mint_Original() public {
         bytes32 contentHash = keccak256("plan-a");
@@ -44,7 +44,7 @@ contract DreamSchemeTest is Test {
         assertEq(scheme.remixCount(1), 0);
         assertGt(scheme.createdAtOf(1), 0);
 
-        // 铸造即设默认版税 5%（ERC-2981）
+        // Setting the default 5% royalty at mint (ERC-2981)
         (address receiver, uint256 amount) = scheme.royaltyInfo(1, 1 ether);
         assertEq(receiver, alice);
         assertEq(amount, 0.05 ether);
@@ -129,7 +129,7 @@ contract DreamSchemeTest is Test {
         }
     }
 
-    // ------------------------------ 版税 ---------------------------------- //
+    // ------------------------------ Royalty -------------------------------- //
 
     function test_SetRoyalty_Bounds() public {
         vm.prank(alice);
@@ -167,7 +167,7 @@ contract DreamSchemeTest is Test {
         scheme.setRoyalty(99, 500);
     }
 
-    // --------------------------- 归因稳定性 ------------------------------- //
+    // ------------------------ Attribution stability ------------------------ //
 
     function test_CreatorStableAfterTransfer() public {
         vm.prank(alice);
@@ -176,16 +176,16 @@ contract DreamSchemeTest is Test {
         scheme.transferFrom(alice, bob, 1);
 
         assertEq(scheme.ownerOf(1), bob);
-        assertEq(scheme.creatorOf(1), alice); // 归因与分账受益人不随 NFT 转手变化
+        assertEq(scheme.creatorOf(1), alice); // attribution and split beneficiary do not change when the NFT is transferred
 
         (address receiver,) = scheme.royaltyInfo(1, 1 ether);
         assertEq(receiver, alice);
     }
 
-    // ----------------------------- 版本链 --------------------------------- //
+    // ---------------------------- Version chain ---------------------------- //
 
     function test_VersionLine_SameAuthorChain() public {
-        // alice：1 ← 2 ← 3；bob：4 remix 自 1
+        // alice: 1 <- 2 <- 3; bob: 4 remixed from 1
         for (uint256 i = 1; i <= 3; i++) {
             vm.prank(alice);
             scheme.mint(i - 1, keccak256(abi.encodePacked("v", i)), 0, "ipfs://v");
@@ -205,7 +205,7 @@ contract DreamSchemeTest is Test {
         assertEq(scheme.versionLineOf(4), bobOnly);
     }
 
-    // ------------------------------ 查询 ---------------------------------- //
+    // ------------------------------ Queries -------------------------------- //
 
     function test_SchemeOf_UnmintedReverts() public {
         vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 99));

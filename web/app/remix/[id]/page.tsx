@@ -70,7 +70,7 @@ export default function RemixPage() {
     confirmations: 1
   });
 
-  // 签名者选择：连了 MetaMask 优先 MetaMask，否则用本机 passkey（免钱包）
+  // Signer selection: prefer MetaMask if connected, otherwise the local passkey (wallet-free)
   const [pk, setPk] = useState<StoredPasskey | null>(null);
   const [busyPasskey, setBusyPasskey] = useState(false);
   useEffect(() => {
@@ -81,12 +81,12 @@ export default function RemixPage() {
   const useMetaMask = isConnected;
   const usePasskey = !useMetaMask && Boolean(pk);
 
-  // ?newVersion=1：从详情页「发布新版本」进入，parentId 指向自己的上一版
+  // ?newVersion=1: entered from "publish new version" on the detail page; parentId points to its own previous version
   useEffect(() => {
     setIsNewVersion(new URLSearchParams(window.location.search).get("newVersion") === "1");
   }, []);
 
-  // 加载原方案：链上模式读取 IPFS 元数据里的 scheme；演示模式读取 assets 示例
+  // Load the original scheme: on-chain mode reads the scheme from IPFS metadata; demo mode reads the assets sample
   useEffect(() => {
     if (!tokenId) return;
     let cancelled = false;
@@ -203,7 +203,7 @@ export default function RemixPage() {
         ...remixed,
         parentId: Number(tokenId)
       };
-      // 按方案 provider 分配 agentId（Kimi=1、Qwen=2、DeepSeek=3 …；未声明/未知则回退 Custom(12)）。
+      // Assign the agentId by the scheme provider (Kimi=1, Qwen=2, DeepSeek=3 ...; undeclared/unknown falls back to Custom(12)).
       const agentId = agentIdForScheme(designWithParent);
       const previewDataUri = svgToDataUri(schemeToPreviewSvg(designWithParent, lang));
       const res = await fetch("/api/pin", {
@@ -266,11 +266,11 @@ export default function RemixPage() {
               setTokenIdOut(decoded.args.tokenId);
             }
           } catch {
-            // 忽略
+            // Ignore
           }
         }
       } catch {
-        // 收据解析失败不影响成功提示
+        // Receipt parsing failure does not affect the success message
       }
     })();
   }, [isConfirmed, mintHash, tokenId, tokenIdOut]);

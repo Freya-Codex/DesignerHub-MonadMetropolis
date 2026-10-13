@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * lib/passkeyAccount.ts —— Passkey 智能账户的客户端辅助（在 /passkey 与 /mint/create 之间复用）。
+  * lib/passkeyAccount.ts -- client helper for the passkey smart account (shared between /passkey and /mint/create).
  *
- * 把「从 localStorage 读取 passkey → 推导 CREATE2 账户 → relayer 代付部署 → 用 passkey 签名执行链上动作」
- * 这套流程收敛到一处，供任意页面复用（例如铸造页用 passkey 免 MetaMask 铸币）。
+  * Consolidates "read passkey from localStorage -> derive the CREATE2 account -> relayer-sponsored deploy -> sign an on-chain action with the passkey"
+  * into one place for any page to reuse (e.g. the mint page using a passkey to mint without MetaMask).
  *
- * 全程无私钥：私钥只在设备安全芯片内；relayer 只付 gas，无法篡改操作（挑战覆盖 calldata 与 nonce）。
+  * No private key throughout: it stays in the device secure chip; the relayer only pays gas and cannot tamper with the operation (the challenge covers calldata and nonce).
  */
 
 import type { Address, Hex } from "viem";
@@ -23,17 +23,17 @@ import {
 } from "@/lib/passkey";
 import { L, getLang } from "@/lib/langStore";
 
-/** 本机 passkey 记录的 localStorage key（与 /passkey 页一致）。 */
+/** localStorage key for the local passkey record (same as the /passkey page). */
 export const PASSKEY_STORE_KEY = "dh.passkey.v1";
 
-/** passkey 记录变化时派发的事件名（Header 等跨页感知）。 */
+/** Event name dispatched when the passkey record changes (so Header etc. notice across pages). */
 export const PASSKEY_EVENT = "dh:passkey-changed";
 
 function emitPasskeyChange(): void {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(PASSKEY_EVENT));
 }
 
-/** 订阅 passkey 变化（返回取消函数）。 */
+/** Subscribe to passkey changes (returns an unsubscribe function). */
 export function onPasskeyChange(cb: () => void): () => void {
   if (typeof window === "undefined") return () => {};
   window.addEventListener(PASSKEY_EVENT, cb);
@@ -46,7 +46,7 @@ export interface StoredPasskey {
   y: Hex;
 }
 
-/** 读取本机保存的 passkey（无则 null）。 */
+/** Read the locally saved passkey (null when absent). */
 export function loadStoredPasskey(): StoredPasskey | null {
   if (typeof window === "undefined") return null;
   try {
@@ -70,7 +70,7 @@ export function clearStoredPasskey(): void {
   emitPasskeyChange();
 }
 
-/** 由 passkey 公钥 + RP ID + Origin 推导 CREATE2 账户地址（counterfactual，部署前即可用）。 */
+/** Derive the CREATE2 account address from the passkey public key + RP ID + Origin (counterfactual, usable before deployment). */
 export async function passkeyAccountAddress(cred: StoredPasskey): Promise<Address | undefined> {
   const client = publicClientFor();
   const factory = passkeyFactoryAddress();
@@ -83,7 +83,7 @@ export async function passkeyAccountAddress(cred: StoredPasskey): Promise<Addres
   })) as Address;
 }
 
-/** 账户合约是否已部署。 */
+/** Whether the account contract is deployed. */
 export async function isAccountDeployed(addr: Address): Promise<boolean> {
   const client = publicClientFor();
   if (!client) return false;
@@ -91,7 +91,7 @@ export async function isAccountDeployed(addr: Address): Promise<boolean> {
   return Boolean(code && code !== "0x");
 }
 
-/** 通过 relayer 代付部署 passkey 账户（已部署则直接返回）。 */
+/** Deploy the passkey account via relayer sponsorship (returns early if already deployed). */
 export async function deployPasskeyAccount(
   cred: StoredPasskey
 ): Promise<{ account: Address; txHash?: Hex; alreadyDeployed?: boolean }> {
@@ -113,8 +113,8 @@ export async function deployPasskeyAccount(
 }
 
 /**
- * 用 passkey 签名并通过 relayer 代付执行一次链上调用（value 恒为 0）。
- * 返回 relayer 提交的交易哈希。
+  * Sign with the passkey and execute one on-chain call via relayer sponsorship (value is always 0).
+  * Returns the tx hash submitted by the relayer.
  */
 export async function executeViaPasskey(opts: {
   account: Address;
@@ -172,8 +172,8 @@ export async function executeViaPasskey(opts: {
 }
 
 /**
- * 确保 passkey 账户可用：推导地址 → 未部署则先由 relayer 代付部署。返回账户地址。
- * 供 Remix / setPrice 等页在 executeViaPasskey 之前调用。
+  * Ensure the passkey account is usable: derive the address -> if undeployed, deploy it via relayer sponsorship first. Returns the account address.
+  * Called by pages such as Remix / setPrice before executeViaPasskey.
  */
 export async function ensurePasskeyAccount(cred: StoredPasskey): Promise<Address> {
   const addr = await passkeyAccountAddress(cred);
@@ -185,7 +185,7 @@ export async function ensurePasskeyAccount(cred: StoredPasskey): Promise<Address
   return addr;
 }
 
-/** 签名者选择结果：连了 MetaMask 优先 MetaMask，否则用本机 passkey，都无则 none。 */
+/** Signer selection result: prefer MetaMask if connected, otherwise the local passkey, else none. */
 export type SignerMode = "metamask" | "passkey" | "none";
 
 export function pickSigner(isConnected: boolean): { mode: SignerMode; cred: StoredPasskey | null } {

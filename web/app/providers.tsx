@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { config } from "@/lib/wagmi";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 
-/** Monad 风格的钱包主题：紫罗兰主色 + 直角感 + 系统字体栈 */
+/** Monad-style wallet theme: violet primary + sharp corners + system font stack */
 const monadTheme = lightTheme({
   accentColor: "#6E54FF",
   accentColorForeground: "#FFFFFF",
@@ -17,8 +17,8 @@ const monadTheme = lightTheme({
 });
 
 /**
- * 根据语言切换 document.title / meta description。
- * （layout.tsx 是 Server Component，无法直接读取客户端语言，故在此同步。）
+  * Switch document.title / meta description by language.
+  * (layout.tsx is a Server Component and cannot read the client language directly, so it is synced here.)
  */
 function DocumentMeta() {
   const { lang } = useI18n();

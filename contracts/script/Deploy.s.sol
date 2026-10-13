@@ -9,14 +9,14 @@ import {DreamScheme} from "../src/DreamScheme.sol";
 import {SchemeMarket} from "../src/SchemeMarket.sol";
 import {PasskeyAccountFactory} from "../src/P256PasskeyAccount.sol";
 
-/// @title Deploy — Designer Hub 协议全家桶部署脚本
-/// @notice 部署顺序（接线关系决定）：
-///         AgentRegistry → ProvenanceRegistry → 接线 → DreamScheme → SchemeMarket
-///         → PasskeyAccountFactory → 按顺序预注册全部 AI agent。
+/// @title Deploy — full-suite deployment script for the Designer Hub protocol
+/// @notice Deployment order (determined by wiring):
+///         AgentRegistry -> ProvenanceRegistry -> wire -> DreamScheme -> SchemeMarket
+///         -> PasskeyAccountFactory -> pre-register all AI agents in order.
 contract Deploy is Script {
-    /// @notice AI 生成器元数据 URI，**按数组顺序**注册 → agentId 依次为 1..N。
-    ///         顺序必须与 web/lib/agents.ts 的 AGENTS 保持一致
-    ///         （Kimi=1、Qwen=2、DeepSeek=3 …），否则链上归因与前端展示会错配。
+    /// @notice AI generator metadata URIs, registered **in array order** -> agentId 1..N.
+    ///         The order must match AGENTS in web/lib/agents.ts
+    ///         (Kimi=1, Qwen=2, DeepSeek=3 ...), otherwise on-chain attribution and the front-end display mismatch.
     function agentUris() internal pure returns (string[12] memory uris) {
         uris = [
             "https://designerhub.xyz/agents/kimi.json",
@@ -47,7 +47,7 @@ contract Deploy is Script {
         SchemeMarket market = new SchemeMarket(scheme, payable(platform));
         PasskeyAccountFactory factory = new PasskeyAccountFactory();
 
-        // 按顺序预注册全部 AI agent（agentId = 1..12）
+        // Pre-register all AI agents in order (agentId = 1..12)
         string[12] memory uris = agentUris();
         uint256[] memory agentIds = new uint256[](uris.length);
         for (uint256 i = 0; i < uris.length; i++) {

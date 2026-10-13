@@ -5,7 +5,7 @@ export interface AdviceRequest {
   palette?: string[];
   furniture?: Array<{ name?: string; nameEn?: string; modelId?: string }>;
   question?: string;
-  /** 输出语言（默认 zh）。服务端路由会根据请求里的 lang 传入。 */
+  /** Output language (default zh). The server route passes it in from the request's lang. */
   lang?: "zh" | "en";
 }
 

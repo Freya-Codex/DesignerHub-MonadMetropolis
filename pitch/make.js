@@ -8,7 +8,7 @@ const html2pptx = require('./html2pptx.js');
 const ROOT = __dirname;
 const ASSETS = path.join(ROOT, 'assets');
 const SLIDES_DIR = path.join(ROOT, 'slides');
-const MONAD = '/Users/freya/Desktop/VirtuHome/monad';
+const MONAD = path.resolve(__dirname, '..');
 const SHOTS = path.join(MONAD, 'docs/screenshots');
 fs.mkdirSync(ASSETS, { recursive: true });
 fs.mkdirSync(SLIDES_DIR, { recursive: true });

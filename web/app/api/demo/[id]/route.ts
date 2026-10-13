@@ -6,7 +6,7 @@ import { L, pickLang } from "@/lib/apiLang";
 
 export const runtime = "nodejs";
 
-/** 读取 assets/schemes 下的示例方案 JSON（演示模式使用，保持单一数据源）。 */
+/** Read a sample scheme JSON from assets/schemes (used in demo mode to keep a single data source). */
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const lang = pickLang(req);
   const file = DEMO_SCHEME_FILES[Number(params.id)];

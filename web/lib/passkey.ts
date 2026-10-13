@@ -1,18 +1,18 @@
 /**
- * lib/passkey.ts —— 浏览器侧 passkey（WebAuthn + P-256）客户端。
+  * lib/passkey.ts -- browser-side passkey (WebAuthn + P-256) client.
  *
- * 严格镜像链上 P256PasskeyAccount / WebAuthn.sol / PasskeyAccountFactory 的约定：
- *   · rpIdHash   = sha256(utf8(rpId))            （合约 immutable，注册时写入）
- *   · originHash = keccak256(utf8(origin))        （0 表示不校验 origin）
+  * Strictly mirrors the conventions of on-chain P256PasskeyAccount / WebAuthn.sol / PasskeyAccountFactory:
+  *   - rpIdHash   = sha256(utf8(rpId))            (contract immutable, written at registration)
+  *   - originHash = keccak256(utf8(origin))        (0 means origin is not checked)
  *   · challenge  = keccak256(abi.encodePacked(
  *         "dh/passkey/tx"    | "dh/passkey/batch",
  *         account, chainId, nonce, to, value, keccak256(data)     // single
  *         account, chainId, nonce, keccak256(abi.encode(to,value,dataHashes))  // batch
  *       ))
- *   · 断言签名覆盖 sha256(authenticatorData ‖ sha256(clientDataJSON))，r/s 为 P-256 分量。
- *   · 账户地址 = PasskeyAccountFactory.accountOf(x, y, rpIdHash, originHash)（CREATE2，counterfactual）。
+  *   - the assertion signature covers sha256(authenticatorData ‖ sha256(clientDataJSON)); r/s are the P-256 components.
+  *   - account address = PasskeyAccountFactory.accountOf(x, y, rpIdHash, originHash) (CREATE2, counterfactual).
  *
- * 全程无私钥、无助记词：私钥只存在于设备安全芯片（Secure Enclave / StrongBox / TPM）。
+  * No private key, no seed phrase throughout: the private key lives only in the device secure chip (Secure Enclave / StrongBox / TPM).
  */
 
 import {
@@ -28,18 +28,18 @@ import {
 } from "viem";
 import { L } from "./langStore";
 
-/** 判断主机名是否为 IP 字面量（IPv4 / IPv6）。 */
+/** Whether the hostname is an IP literal (IPv4 / IPv6). */
 export function isIpLiteralHost(host: string): boolean {
   return /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":");
 }
 
 /**
- * RP ID：默认取当前访问域名（localhost 打开即 "localhost"）；可用 env 覆盖为正式域名。
+  * RP ID: defaults to the current host (localhost when opened via localhost); overridable via env to a real domain.
  *
- * ⚠️ WebAuthn 规范要求 RP ID 必须是**合法域名**，浏览器会**直接拒绝 IP 字面量**（如 127.0.0.1），
- * 报错 "The effective domain of the document is not a valid domain"。本地开发必须用
- * http://localhost:PORT 访问（127.0.0.1 不行）；此处对 IP 兜底为 "localhost"。
- * 生产环境请用 NEXT_PUBLIC_PASSKEY_RP_ID 指定正式域名。
+  * WARNING: the WebAuthn spec requires RP ID to be a **valid domain**, and browsers **reject IP literals** (e.g. 127.0.0.1),
+  * throwing "The effective domain of the document is not a valid domain". Local development must use
+  * http://localhost:PORT (127.0.0.1 does not work); here an IP falls back to "localhost".
+  * In production, specify the real domain via NEXT_PUBLIC_PASSKEY_RP_ID.
  */
 export function passkeyRpId(): string {
   const env = process.env.NEXT_PUBLIC_PASSKEY_RP_ID;
@@ -50,12 +50,12 @@ export function passkeyRpId(): string {
   return host;
 }
 
-/** RP 展示名。 */
+/** RP display name. */
 export function passkeyRpName(): string {
   return process.env.NEXT_PUBLIC_PASSKEY_RP_NAME || "Designer Hub";
 }
 
-/** Origin：默认取当前站点 origin（如 http://localhost:3005）。 */
+/** Origin: defaults to the current site origin (e.g. http://localhost:3005). */
 export function passkeyOrigin(): string {
   return (
     process.env.NEXT_PUBLIC_PASSKEY_ORIGIN ||
@@ -63,18 +63,18 @@ export function passkeyOrigin(): string {
   );
 }
 
-/** rpIdHash = sha256(rpId)，32 字节。（viem 的 sha256 已返回 0x Hex。） */
+/** rpIdHash = sha256(rpId), 32 bytes. (viem's sha256 already returns 0x hex.) */
 export function rpIdHashHex(rpId: string = passkeyRpId()): Hex {
   return sha256(toBytes(rpId));
 }
 
-/** originHash = keccak256(origin)，32 字节（bytes32(0) 表示不校验 origin）。 */
+/** originHash = keccak256(origin), 32 bytes (bytes32(0) means origin is not checked). */
 export function originHashHex(origin: string = passkeyOrigin()): Hex {
   return keccak256(toBytes(origin));
 }
 
 // ------------------------------------------------------------------ //
-//                        base64url / 字节工具                         //
+//                        base64url / byte utils                         //
 // ------------------------------------------------------------------ //
 
 export function b64urlEncode(bytes: Uint8Array): string {
@@ -99,7 +99,7 @@ function bytesToBigInt(bytes: Uint8Array): bigint {
 }
 
 // ------------------------------------------------------------------ //
-//                        最小 CBOR 解码器                             //
+//                        minimal CBOR decoder                          //
 // ------------------------------------------------------------------ //
 
 function cborDecode(buf: Uint8Array, offset = 0): { value: unknown; offset: number } {
@@ -168,10 +168,10 @@ function cborDecode(buf: Uint8Array, offset = 0): { value: unknown; offset: numb
 }
 
 // ------------------------------------------------------------------ //
-//                  从注册响应提取 P-256 公钥 (x, y)                    //
+//                  extract P-256 public key (x, y) from the registration response //
 // ------------------------------------------------------------------ //
 
-/** 从 65 字节非压缩点（0x04‖X‖Y）取坐标。 */
+/** Take coordinates from a 65-byte uncompressed point (0x04‖X‖Y). */
 function xyFromRawPoint(point: Uint8Array): { x: Hex; y: Hex } {
   if (point.length < 65 || point[0] !== 0x04) {
     throw new Error(L("passkey: 公钥非压缩 P-256 点", "passkey: public key is not an uncompressed P-256 point"));
@@ -182,25 +182,25 @@ function xyFromRawPoint(point: Uint8Array): { x: Hex; y: Hex } {
 }
 
 /**
- * 从 SPKI（SubjectPublicKeyInfo，DER）中取出 65 字节非压缩点（0x04‖X‖Y）。
+  * Extract the 65-byte uncompressed point (0x04‖X‖Y) from SPKI (SubjectPublicKeyInfo, DER).
  *
- * 注意：WebAuthn 的 `getPublicKey()` 返回的是 **SPKI DER**（P-256 为 91 字节，首字节 0x30），
- * 而不是原始点。其尾部 BIT STRING 为 `0x00（未用位数）‖ 0x04‖X‖Y`，因此最后 65 字节即目标点。
- * 直接把它当原始点校验会在 `point[0] !== 0x04` 处误判失败。
+  * Note: WebAuthn's `getPublicKey()` returns **SPKI DER** (91 bytes for P-256, first byte 0x30),
+  * not the raw point. Its trailing BIT STRING is `0x00 (unused bits) ‖ 0x04‖X‖Y`, so the last 65 bytes are the target point.
+  * Treating it as a raw point would fail the check at `point[0] !== 0x04`.
  */
 function rawPointFromSpki(spki: Uint8Array): Uint8Array {
-  // 规范路径：SPKI 末尾固定为 BIT STRING，最后 65 字节即 0x04‖X‖Y。
+  // Canonical path: SPKI ends with a fixed BIT STRING; the last 65 bytes are 0x04‖X‖Y.
   if (spki.length >= 65 && spki[spki.length - 65] === 0x04) {
     return spki.slice(spki.length - 65);
   }
-  // 已是原始点（非标准实现）或含额外字段：扫描首个 0x04 标记。
+  // Already a raw point (non-standard) or containing extra fields: scan for the first 0x04 marker.
   for (let i = 0; i + 65 <= spki.length; i++) {
     if (spki[i] === 0x04) return spki.slice(i, i + 65);
   }
   throw new Error(L("passkey: 无法从 SPKI 中定位 P-256 非压缩点", "passkey: could not locate the P-256 uncompressed point in SPKI"));
 }
 
-/** 从认证器数据中解析 COSE_Key（EC2, P-256）→ (x, y)。 */
+/** Parse a COSE_Key (EC2, P-256) from authenticator data -> (x, y). */
 function xyFromAuthData(authData: Uint8Array): { x: Hex; y: Hex } {
   if (authData.length < 37) throw new Error(L("passkey: authenticatorData 过短", "passkey: authenticatorData too short"));
   const flags = authData[32];
@@ -219,10 +219,10 @@ function xyFromAuthData(authData: Uint8Array): { x: Hex; y: Hex } {
 }
 
 /**
- * 从 attestationObject（CBOR map：{ fmt, attStmt, authData }）中取回 authData 字节。
+  * Retrieve the authData bytes from attestationObject (a CBOR map: { fmt, attStmt, authData }).
  *
- * 注意：`resp.attestationObject` 是 CBOR 包装对象，**不是**裸 authData；
- * 直接送入 `xyFromAuthData` 会因偏移错位而解析失败。
+  * Note: `resp.attestationObject` is a CBOR wrapper object, **not** raw authData;
+  * feeding it directly to `xyFromAuthData` fails to parse due to offset misalignment.
  */
 function authDataFromAttestationObject(attestationObject: Uint8Array): Uint8Array {
   try {
@@ -232,13 +232,13 @@ function authDataFromAttestationObject(attestationObject: Uint8Array): Uint8Arra
       if (a instanceof Uint8Array) return a;
     }
   } catch {
-    /* 落到下面的兼容分支 */
+    /* fall through to the compatible branch below */
   }
   return attestationObject; // 兼容直接传 authData 的实现
 }
 
 // ------------------------------------------------------------------ //
-//                       WebAuthn 注册 / 断言                          //
+//                       WebAuthn register / assert                     //
 // ------------------------------------------------------------------ //
 
 export interface PasskeyCredential {
@@ -248,7 +248,7 @@ export interface PasskeyCredential {
   y: Hex;
 }
 
-/** 创建 passkey（navigator.credentials.create），返回公钥坐标与凭证 id。 */
+/** Create a passkey (navigator.credentials.create); returns the public-key coordinates and credential id. */
 export async function createPasskey(opts?: {
   rpId?: string;
   rpName?: string;
@@ -295,7 +295,7 @@ export async function createPasskey(opts?: {
   return { credentialId, credentialIdB64: b64urlEncode(credentialId), ...xy };
 }
 
-/** DER (ASN.1) ECDSA 签名 → (r, s)。 */
+/** DER (ASN.1) ECDSA signature -> (r, s). */
 export function derToRS(der: Uint8Array): { r: bigint; s: bigint } {
   if (der[0] !== 0x30) throw new Error(L("passkey: 签名非 DER SEQUENCE", "passkey: signature is not a DER SEQUENCE"));
   let i = 1;
@@ -318,7 +318,7 @@ export interface PasskeyAssertion {
   s: bigint;
 }
 
-/** 对给定挑战发起 WebAuthn 断言（navigator.credentials.get），返回链上可直接使用的材料。 */
+/** Perform a WebAuthn assertion for the given challenge (navigator.credentials.get), returning material directly usable on-chain. */
 export async function signAssertion(opts: {
   challenge: Hex;
   rpId?: string;
@@ -349,10 +349,10 @@ export async function signAssertion(opts: {
 }
 
 // ------------------------------------------------------------------ //
-//                          挑战派生（镜像）                            //
+//                          challenge derivation (mirror)              //
 // ------------------------------------------------------------------ //
 
-/** 单笔：keccak256(abi.encodePacked("dh/passkey/tx", account, chainId, nonce, to, value, keccak256(data)))。 */
+/** Single: keccak256(abi.encodePacked("dh/passkey/tx", account, chainId, nonce, to, value, keccak256(data))). */
 export function deriveSingleChallenge(p: {
   account: Address;
   chainId: bigint;
@@ -369,7 +369,7 @@ export function deriveSingleChallenge(p: {
   );
 }
 
-/** 批量：keccak256(abi.encodePacked("dh/passkey/batch", account, chainId, nonce, keccak256(abi.encode(to,value,dataHashes))))。 */
+/** Batch: keccak256(abi.encodePacked("dh/passkey/batch", account, chainId, nonce, keccak256(abi.encode(to,value,dataHashes)))). */
 export function deriveBatchChallenge(p: {
   account: Address;
   chainId: bigint;

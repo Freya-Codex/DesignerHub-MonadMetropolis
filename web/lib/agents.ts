@@ -1,33 +1,33 @@
 /**
- * AI 生成器（agent）注册表 —— 「按 provider 分配不同 agentId」的唯一事实来源。
+  * AI generator (agent) registry -- the single source of truth for "assign a different agentId per provider".
  *
- * 背景：AgentRegistry 的 agentId 从 1 起自增（0 保留给「无 AI 归因」）。
- * 部署脚本预注册的第一个 agent 是 Kimi（agentId = 1），末尾是 Custom（id 12）。
- * 本文件把「常见的 LLM provider」映射到固定 agentId，前端在 mint / remix /
- * 存证 / 展示时依方案自带的 `generator.provider` 取到对应 id，从而让链上归因
- * 能区分 Kimi / Qwen / DeepSeek 等不同 AI，而不是一律写死 1。
- * 方案未声明 provider（或声明了未知 provider）时，兜底记为 Custom（id 12）。
+  * Background: AgentRegistry's agentId auto-increments from 1 (0 is reserved for "no AI attribution").
+  * The deployment script pre-registers Kimi as the first agent (agentId = 1) and Custom as the last (id 12).
+  * This file maps common LLM providers to fixed agentIds so the front end, when minting / remixing /
+  * attesting / displaying, can pick the matching id from the scheme's `generator.provider`, letting on-chain attribution
+  * distinguish Kimi / Qwen / DeepSeek and others instead of hardcoding 1.
+  * When a scheme declares no provider (or an unknown one), it falls back to Custom (id 12).
  *
- * 不变式（务必保持）：`AGENTS` 的顺序 = 链上注册顺序，`id` 与注册得到的
- * agentId 一一对应。新增 provider 时，追加到末尾并到链上注册一次
- * （见 scripts/register-agents.ts），否则 attest 会因未注册而 revert。
+  * Invariant (must hold): the order of `AGENTS` = the on-chain registration order, and `id` matches the registered
+  * agentId one-to-one. When adding a provider, append it to the end and register it on-chain once
+  * (see scripts/register-agents.ts); otherwise attest reverts because the agent is unregistered.
  */
 import type { GeneratorInfo } from "./scheme";
 
 export interface AgentDef {
-  /** 链上 agentId（与 AgentRegistry 注册顺序一致）。 */
+  /** On-chain agentId (matches the AgentRegistry registration order). */
   id: bigint;
-  /** 展示名（如 "Kimi"、"Qwen"）。 */
+  /** Display name (e.g. "Kimi", "Qwen"). */
   name: string;
-  /** 链上注册用的元数据 URI。 */
+  /** Metadata URI used for on-chain registration. */
   metadataURI: string;
-  /** 归一化（小写）的 provider 关键词，可多个别名指向同一 agent。 */
+  /** Normalized (lowercase) provider keywords; multiple aliases may point to the same agent. */
   providers: string[];
 }
 
 const SITE = "https://designerhub.xyz/agents";
 
-/** 规范 agent 列表。顺序 = 链上注册顺序；Kimi 固定为 1（部署脚本预注册）。 */
+/** Canonical agent list. Order = on-chain registration order; Kimi is fixed at 1 (pre-registered by the deploy script). */
 export const AGENTS: AgentDef[] = [
   { id: 1n, name: "Kimi", metadataURI: `${SITE}/kimi.json`, providers: ["kimi", "moonshot"] },
   { id: 2n, name: "Qwen", metadataURI: `${SITE}/qwen.json`, providers: ["qwen", "dashscope"] },
@@ -43,14 +43,14 @@ export const AGENTS: AgentDef[] = [
   { id: 12n, name: "Custom", metadataURI: `${SITE}/custom.json`, providers: ["custom"] }
 ];
 
-/** Kimi 的 agentId（保留旧常量名，兼容既有导入）。 */
+/** Kimi's agentId (kept under the old constant name for backward-compatible imports). */
 export const KIMI_AGENT_ID = 1n;
 
-/** 未声明 / 未知 provider 的兜底 agentId —— 记为“Custom”（id 12）。 */
+/** Fallback agentId for an undeclared / unknown provider -- recorded as "Custom" (id 12). */
 export const DEFAULT_AGENT_ID = 12n;
 
-/** provider 关键词 → 展示名（与 VirtuHome 的 provider 预设保持一致）。
- *  与 AGENTS[*].providers 的键集合一一对应；generatorLabel 从这里取展示名。 */
+/** Provider keyword -> display name (consistent with VirtuHome's provider presets).
+  *  One-to-one with the key set of AGENTS[*].providers; generatorLabel takes the display name from here. */
 export const PROVIDER_LABELS: Record<string, string> = {
   kimi: "Kimi (Moonshot)",
   moonshot: "Kimi (Moonshot)",
@@ -77,18 +77,18 @@ for (const a of AGENTS) {
 
 const ID_TO_NAME = new Map<string, string>(AGENTS.map((a) => [a.id.toString(), a.name]));
 
-/** provider 关键词 → agentId（未声明 / 未知 → 兜底 Custom，id 12）。 */
+/** Provider keyword -> agentId (undeclared / unknown -> fallback Custom, id 12). */
 export function agentIdForProvider(provider: string | undefined | null): bigint {
   if (!provider) return DEFAULT_AGENT_ID;
   return PROVIDER_TO_ID.get(provider.trim().toLowerCase()) ?? DEFAULT_AGENT_ID;
 }
 
-/** 方案（含可选 generator）→ agentId。用于 mint / remix / 存证。 */
+/** Scheme (with optional generator) -> agentId. Used for mint / remix / attest. */
 export function agentIdForScheme(scheme: { generator?: GeneratorInfo } | null | undefined): bigint {
   return agentIdForProvider(scheme?.generator?.provider);
 }
 
-/** agentId → 展示名（0 或未知 → "" / "Agent #N"）。 */
+/** agentId -> display name (0 or unknown -> "" / "Agent #N"). */
 export function agentNameForId(agentId: bigint | number | string | undefined | null): string {
   if (agentId === undefined || agentId === null) return "";
   let id: bigint;
@@ -101,7 +101,7 @@ export function agentNameForId(agentId: bigint | number | string | undefined | n
   return ID_TO_NAME.get(id.toString()) ?? `Agent #${id.toString()}`;
 }
 
-/** agentId → 完整定义（含 metadataURI），未登记则返回 undefined。 */
+/** agentId -> full definition (with metadataURI); returns undefined when unregistered. */
 export function agentById(agentId: bigint | number | string | undefined | null): AgentDef | undefined {
   if (agentId === undefined || agentId === null) return undefined;
   let id: bigint;

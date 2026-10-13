@@ -21,7 +21,7 @@ export default function MintPage() {
   const { switchChainAsync } = useSwitchChain();
   const isDemo = !dreamSchemeAddress();
 
-  // Passkey 账户也能作为身份查看铸造记录（免 MetaMask）。
+  // A passkey account can also act as an identity to view mint records (MetaMask-free).
   const [pkAddr, setPkAddr] = useState<Address | null>(null);
   useEffect(() => {
     const load = () => {
@@ -38,7 +38,7 @@ export default function MintPage() {
     return onPasskeyChange(load);
   }, []);
 
-  // 身份来源：连了 MetaMask 用钱包地址，否则用已创建的 Passkey 账户地址。
+  // Identity source: the wallet address if MetaMask is connected, otherwise the created passkey account address.
   const identity = (address ?? pkAddr)?.toLowerCase();
   const hasIdentity = isConnected || Boolean(pkAddr);
 
@@ -56,7 +56,7 @@ export default function MintPage() {
     [schemes, me]
   );
 
-  // 我铸造过的方案（含链上事件里出现、但元数据尚未加载的情况）
+  // Schemes I have minted (including ones appearing in on-chain events whose metadata has not loaded yet)
   const mintedIds = useMemo(() => {
     if (!me) return new Set<string>();
     const ids = new Set<string>();
@@ -131,7 +131,7 @@ export default function MintPage() {
         </div>
       )}
 
-      {/* ── 统计 ───────────────────────────────────── */}
+      {/* -- Stats -------------------------------------------- */}
       <section className="sheet-dark grid-sheet-dark rise px-5 py-8 sm:px-9 sm:py-10">
         <p className="eyebrow eyebrow-dark">{t("My Mint · 我的铸造", "My Mint")}</p>
         {hasIdentity ? (
@@ -156,7 +156,7 @@ export default function MintPage() {
         )}
       </section>
 
-      {/* ── 快捷铸造入口 ───────────────────────────── */}
+      {/* -- Quick mint entry -------------------------------- */}
       <section className="grid gap-5 sm:grid-cols-3">
         <ActionCard
           eyebrow={t("Origin · 原创", "Origin")}
@@ -190,7 +190,7 @@ export default function MintPage() {
         />
       </section>
 
-      {/* ── 我的方案 ───────────────────────────────── */}
+      {/* -- My schemes -------------------------------------- */}
       <section id="mine" className="scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

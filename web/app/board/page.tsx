@@ -65,7 +65,7 @@ export default function BoardPage() {
       )}
 
       <section className="sheet overflow-hidden">
-        {/* 手机端：卡片列表，避免横向滚动条（≥md 用表格） */}
+        {/* Mobile: card list to avoid horizontal scrolling (table at >=md) */}
         <div className="divide-y divide-hairline md:hidden">
           {isLoading &&
             [0, 1, 2].map((i) => (

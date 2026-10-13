@@ -4,9 +4,9 @@ import { useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 
 /**
- * 页面级错误兜底：任何页面组件抛错时，不再显示 Next.js 默认的
+  * Page-level error boundary: when any page component throws, it no longer shows the Next.js default
  * “Application error: a client-side exception has occurred”，
- * 而是把**真实错误信息**显示出来（方便截图/复制反馈），并保留顶部导航。
+  * but surfaces the **real error message** (for easy screenshot/copy feedback) while keeping the top nav.
  */
 export default function Error({
   error,

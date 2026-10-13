@@ -10,16 +10,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Alchemy Webhook 接收端（Address Activity）。
+  * Alchemy Webhook receiver (Address Activity).
  *
- * 作用：把 Alchemy 推送的「合约地址活动」事件落成链上活动索引，
- * 使 铸造(SchemeMinted) / 应用(SchemeApplied) 的归因与统计变成事件驱动，
- * 而不必依赖浏览器分片扫描或离线全量重扫。
+  * Purpose: turn the "contract address activity" events pushed by Alchemy into the on-chain activity index,
+  * making the attribution and stats for mint (SchemeMinted) / apply (SchemeApplied) event-driven
+  * instead of relying on browser chunked scanning or a full offline rescan.
  *
- * 安全：Alchemy 回调带 X-Alchemy-Signature（对原始 body 做 HMAC-SHA256）。
- * 配置了 ALCHEMY_WEBHOOK_SIGNING_KEY 时强制校验；未配置时放行并记录警告（便于先联调）。
+  * Security: Alchemy callbacks carry X-Alchemy-Signature (HMAC-SHA256 over the raw body).
+  * When ALCHEMY_WEBHOOK_SIGNING_KEY is set, verification is enforced; otherwise it is allowed through with a warning (for easier initial integration).
  *
- * 落盘：data/activity-webhooks.json（运行时增量，已在 .gitignore 中忽略）。
+  * Persisted to: data/activity-webhooks.json (runtime increments; already ignored in .gitignore).
  */
 
 const SIGNING_KEY = process.env.ALCHEMY_WEBHOOK_SIGNING_KEY?.trim();
@@ -45,7 +45,7 @@ function readIndex(): RuntimeIndex {
       };
     }
   } catch {
-    /* 忽略损坏文件，重建 */
+    /* Ignore the corrupt file and rebuild */
   }
   return { generatedAt: new Date().toISOString(), source: "alchemy-webhook", mints: [], trades: [] };
 }
@@ -56,7 +56,7 @@ function writeIndex(idx: RuntimeIndex): void {
   fs.writeFileSync(OUT_FILE, JSON.stringify(idx, null, 2) + "\n");
 }
 
-/** 从 Alchemy 回调里尽量提取「像日志」的对象（不同类别字段位置不同）。 */
+/** Extract "log-like" objects from an Alchemy callback as much as possible (fields live in different places per category). */
 function collectLogs(payload: any): any[] {
   const out: any[] = [];
   const ev = payload?.event ?? {};
@@ -76,7 +76,7 @@ function collectLogs(payload: any): any[] {
     }
   }
 
-  // 兜底：某些自定义 Webhook 把日志放在 event.logs
+  // Fallback: some custom webhooks put logs under event.logs
   const logs: any[] = Array.isArray(ev.logs) ? ev.logs : [];
   for (const l of logs) {
     if (Array.isArray(l.topics)) out.push(l);
@@ -84,7 +84,7 @@ function collectLogs(payload: any): any[] {
   return out;
 }
 
-/** 用两个事件的 ABI 解码日志；无法匹配则返回 null。 */
+/** Decode a log using the two events' ABIs; returns null when nothing matches. */
 function decodeAny(log: any): { name: string; args: any } | null {
   try {
     const decoded = decodeEventLog({
@@ -115,7 +115,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const raw = await req.text();
 
-  // 1) 签名校验（配置了 signing key 时强制）
+  // 1) Signature verification (enforced when a signing key is configured)
   if (SIGNING_KEY) {
     const sig = req.headers.get("x-alchemy-signature") ?? "";
     const expected = crypto.createHmac("sha256", SIGNING_KEY).update(raw).digest("hex");

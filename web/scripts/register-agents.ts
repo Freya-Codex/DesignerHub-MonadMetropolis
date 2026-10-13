@@ -1,16 +1,16 @@
 /**
- * register-agents：把 web/lib/agents.ts 里声明的 AI agent 补登到链上 AgentRegistry，
- * 使 agentId 按 provider 分配真正生效（Kimi=1、Qwen=2、DeepSeek=3 …）。
+  * register-agents: register the AI agents declared in web/lib/agents.ts into the on-chain AgentRegistry,
+  * making per-provider agentId assignment actually effective (Kimi=1, Qwen=2, DeepSeek=3 ...).
  *
- * 用法（在 web/ 目录下）：
- *   cp .env.example .env.local        # 填入 MONAD_PRIVATE_KEY（AgentRegistry owner）
- *   npm run register-agents           # 幂等：已注册的跳过，缺失的按序补登
+  * Usage (from the web/ dir):
+  *   cp .env.example .env.local        # fill in MONAD_PRIVATE_KEY (AgentRegistry owner)
+  *   npm run register-agents           # idempotent: skip registered ones, register missing ones in order
  *
- * 说明：
- * - 需要 MONAD_PRIVATE_KEY 对应 AgentRegistry 的 owner（registerAgent 为 onlyOwner）。
- * - 会校验链上返回的 agentId 与 lib/agents.ts 的声明一致，不一致立即报错，
- *   避免前端映射与链上错配。
- * - 合约地址读取顺序：AGENT_REGISTRY_ADDRESS > contracts/deployments/monad-testnet.json。
+  * Notes:
+  * - MONAD_PRIVATE_KEY must be the AgentRegistry owner (registerAgent is onlyOwner).
+  * - verifies the on-chain returned agentId matches lib/agents.ts's declaration and errors immediately on mismatch,
+  *   to avoid a front-end mapping / on-chain mismatch.
+  * - contract address read order: AGENT_REGISTRY_ADDRESS > contracts/deployments/monad-testnet.json.
  */
 import fs from "node:fs";
 import path from "node:path";

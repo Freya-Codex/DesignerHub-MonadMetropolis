@@ -2,7 +2,8 @@
 import subprocess, os, tempfile, sys
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 HERE = os.path.dirname(os.path.abspath(__file__))
-M = os.path.expanduser("~/Library/Application Support/ClawHiveApp/accounts/acct_5cc7c0015f55fc7c/tenants/tnt_150141c94f913cc1/openclaw/state/media/outgoing/originals")
+M = os.path.join(HERE, "shots-out")
+os.makedirs(M, exist_ok=True)
 pages = [("demo", 1280, 1500), ("mint", 1280, 1500), ("board", 1280, 1200)]
 for p, w, h in pages:
     out = os.path.join(HERE, f"shot-{p}.png")

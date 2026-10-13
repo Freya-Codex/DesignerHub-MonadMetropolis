@@ -14,7 +14,7 @@ export default function GalleryPage() {
   const schemes = data && data.length > 0 ? data : isDemo ? demoSchemes : [];
   const [activeStyle, setActiveStyle] = useState<string | null>(null);
 
-  // 从方案 JSON 的 style.theme 提取风格，作为标签（保持出现顺序、去重）。
+  // Extract styles from the scheme JSON's style.theme as tags (preserving order, deduplicated).
   const styles = useMemo(() => {
     const seen = new Set<string>();
     const list: Array<{ key: string; zh: string; en: string; count: number }> = [];
@@ -39,7 +39,7 @@ export default function GalleryPage() {
 
   return (
     <div className="space-y-10">
-      {/* ── 画廊页头（紧凑）─────────────────────────── */}
+      {/* -- Gallery header (compact) -------------------------- */}
       <header className="rise">
         <p className="eyebrow">Gallery · Track 04 — Trust, Identity &amp; AI Infrastructure</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
@@ -85,7 +85,7 @@ export default function GalleryPage() {
         </div>
       )}
 
-      {/* ── 画廊 ─────────────────────────────────────── */}
+      {/* -- Gallery ------------------------------------------ */}
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="display-sm text-xl text-ink sm:text-2xl">

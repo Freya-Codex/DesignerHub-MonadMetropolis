@@ -1,8 +1,8 @@
 /**
- * lib/apiLang.ts —— API 路由错误信息的多语言选择。
+  * lib/apiLang.ts -- language selection for API route error messages.
  *
- * 服务端不共享客户端 React 的语言状态，因此由客户端在请求里带上 lang
- * （查询参数 `?lang=en` 或 JSON body 的 `lang` 字段），路由据此挑选语言。
+  * The server does not share the client React language state, so the client sends lang with the request
+  * (query param `?lang=en` or the JSON body's `lang` field), and the route picks the language from it.
  */
 import type { NextRequest } from "next/server";
 

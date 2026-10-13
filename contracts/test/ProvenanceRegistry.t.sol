@@ -6,7 +6,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {AgentRegistry} from "../src/AgentRegistry.sol";
 import {ProvenanceRegistry} from "../src/ProvenanceRegistry.sol";
 
-/// @title ProvenanceRegistryTest — 确权登记 + EIP-712 relayer 代付
+/// @title ProvenanceRegistryTest — attestation registry + EIP-712 relayer payment
 contract ProvenanceRegistryTest is Test {
     AgentRegistry internal agents;
     ProvenanceRegistry internal provenance;
@@ -95,9 +95,9 @@ contract ProvenanceRegistryTest is Test {
 
     function test_AttestByRelayer_GaslessAttestation() public {
         ProvenanceRegistry.AttestRequest memory req = _request(keccak256("c-relay"), 0, block.timestamp + 1 hours);
-        bytes memory sig = _signed(req, ALICE_PK); // 先签名（内部含外部 view 调用，避免吞掉 prank/expectRevert）
+        bytes memory sig = _signed(req, ALICE_PK); // sign first (contains an external view call; avoids swallowing prank/expectRevert)
 
-        // EIP-712 编码正确性：手工重算摘要并与合约一致
+        // EIP-712 encoding correctness: manually recompute the digest and match the contract
         bytes32 manualDigest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -117,7 +117,7 @@ contract ProvenanceRegistryTest is Test {
         );
         assertEq(provenance.attestRequestDigest(req), manualDigest);
 
-        // relayer（bob）代为提交，attestor 是 alice
+        // the relayer (bob) submits; the attestor is alice
         vm.prank(bob);
         provenance.attestByRelayer(req, sig);
 
@@ -156,17 +156,17 @@ contract ProvenanceRegistryTest is Test {
 
     function test_AttestByRelayer_WrongSignerRejected() public {
         ProvenanceRegistry.AttestRequest memory req = _request(keccak256("c-relay"), 0, block.timestamp + 1 hours);
-        bytes memory sig = _signed(req, BOB_PK); // bob 冒签 alice 的请求
+        bytes memory sig = _signed(req, BOB_PK); // bob forges alice's request signature
         vm.expectRevert(abi.encodeWithSelector(ProvenanceRegistry.InvalidSigner.selector, bob, alice));
         provenance.attestByRelayer(req, sig);
     }
 
     function test_AttestByRelayer_TamperedRequestRejected() public {
-        // alice 对 c1 签名，relayer 篡改为 c2 提交 → 摘要不匹配
+        // alice signs c1, the relayer tampers it to c2 and submits -> digest mismatch
         bytes memory sig = _signed(_request(keccak256("c1"), 0, block.timestamp + 1 hours), ALICE_PK);
         ProvenanceRegistry.AttestRequest memory tampered = _request(keccak256("c2"), 0, block.timestamp + 1 hours);
 
-        // 精确预期恢复出的地址
+        // Exact expected recovered address
         address recovered = ECDSA.recover(provenance.attestRequestDigest(tampered), sig);
         vm.expectRevert(abi.encodeWithSelector(ProvenanceRegistry.InvalidSigner.selector, recovered, alice));
         provenance.attestByRelayer(tampered, sig);

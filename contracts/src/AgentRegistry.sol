@@ -3,25 +3,26 @@ pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title AgentRegistry — AI 生成器（agent）注册与声誉账本
-/// @notice 参考 ERC-8004（AI agent 注册表）设计：生成方案的 AI 工具在此登记，
-///         方案铸造时携带 agentId 形成「AI 归因」；声誉由 ProvenanceRegistry 在
-///         每次确权时自动累加——声誉只能来自真实确权，不能人工刷。
-/// @dev 合约不可升级；addReputation 仅允许 ProvenanceRegistry 调用（部署后接线一次）。
+/// @title AgentRegistry — AI generator (agent) registration and reputation ledger
+/// @notice Designed after ERC-8004 (an AI agent registry): AI tools that generate schemes register here,
+///         and the scheme carries an agentId at mint to form "AI attribution"; reputation is accrued
+///         automatically by ProvenanceRegistry on every attestation — reputation can only come from
+///         real attestations, never be farmed manually.
+/// @dev Non-upgradeable; addReputation is callable only by ProvenanceRegistry (wired once after deployment).
 contract AgentRegistry is Ownable {
     struct Agent {
-        string metadataURI; // agent 元数据（名称、模型、能力声明等），通常为 ipfs://
-        uint256 reputation; // 声誉分 = 被确权方案累计次数
+        string metadataURI; // agent metadata (name, model, capability claims, etc.), usually ipfs://
+        uint256 reputation; // reputation score = cumulative number of attested schemes
         uint64 registeredAt;
         bool registered;
     }
 
-    /// @notice agentId 从 1 开始递增；0 保留给「无 AI 归因」。
+    /// @notice agentId increments from 1; 0 is reserved for "no AI attribution".
     uint256 public nextAgentId = 1;
 
     mapping(uint256 agentId => Agent) private _agents;
 
-    /// @notice 唯一有权累加声誉的协议合约。
+    /// @notice The only protocol contract allowed to accrue reputation.
     address public provenanceRegistry;
 
     event AgentRegistered(uint256 indexed agentId, address indexed owner, string metadataURI);
@@ -34,7 +35,7 @@ contract AgentRegistry is Ownable {
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
-    /// @notice 登记（预注册）一个 AI agent。任何工具方都可以自助注册。
+    /// @notice Register (pre-register) an AI agent. Any toolkit owner can self-register.
     function registerAgent(string calldata metadataURI) external returns (uint256 agentId) {
         if (bytes(metadataURI).length == 0) revert EmptyMetadataURI();
         agentId = nextAgentId++;
@@ -43,7 +44,7 @@ contract AgentRegistry is Ownable {
         emit AgentRegistered(agentId, msg.sender, metadataURI);
     }
 
-    /// @notice 声誉累加：仅 ProvenanceRegistry 可调用（每次确权 +1）。
+    /// @notice Accrue reputation: callable only by ProvenanceRegistry (+1 per attestation).
     function addReputation(uint256 agentId) external {
         if (msg.sender != provenanceRegistry) revert NotProvenanceRegistry(msg.sender);
         if (!_agents[agentId].registered) revert NotRegistered(agentId);
@@ -51,7 +52,7 @@ contract AgentRegistry is Ownable {
         emit ReputationAdded(agentId, _agents[agentId].reputation, 1);
     }
 
-    /// @notice 部署后由 owner 接线一次，之后不可更换。
+    /// @notice Wired once by the owner after deployment; cannot be changed afterwards.
     function setProvenanceRegistry(address provenance) external onlyOwner {
         if (provenanceRegistry != address(0)) revert ProvenanceAlreadyWired();
         provenanceRegistry = provenance;

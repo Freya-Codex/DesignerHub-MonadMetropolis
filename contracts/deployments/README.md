@@ -1,6 +1,7 @@
-# 部署记录
+# Deployment records
 
-运行部署脚本后，这里会生成当前链的部署信息（例如 `monad-testnet.json`）：
+After running the deploy script, the deployment info for the current chain is written here
+(for example `monad-testnet.json`):
 
 ```json
 {
@@ -22,7 +23,7 @@ cd contracts
 forge script script/Deploy.s.sol --rpc-url monad_testnet --broadcast -vv
 ```
 
-把输出的五个地址填入 `web/.env.local`：
+Fill the five printed addresses into `web/.env.local`:
 
 ```
 NEXT_PUBLIC_DREAM_SCHEME_ADDRESS=0x...
@@ -32,4 +33,5 @@ NEXT_PUBLIC_PROVENANCE_REGISTRY_ADDRESS=0x...
 NEXT_PUBLIC_PASSKEY_FACTORY_ADDRESS=0x...
 ```
 
-> 历史（旧版）地址见根 `README.md` 的「历史部署」章节，存档于本地 `monad-testnet-v1.json`（被 `.gitignore` 覆盖）。
+> Historical (old) addresses are listed in the root `README.md` under "Historical deployments",
+> archived locally as `monad-testnet-v1.json` (covered by `.gitignore`).

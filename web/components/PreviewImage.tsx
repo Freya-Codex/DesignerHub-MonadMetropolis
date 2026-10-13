@@ -7,9 +7,9 @@ import { useI18n } from "@/lib/i18n";
 const FALLBACK = "/previews/placeholder.svg";
 
 /**
- * 统一的方案预览图。
- * IPFS 网关偶尔抽风或 CID 缺失时回退到本地占位图，避免出现碎裂图标。
- * 站点自带示例预览（/previews/*.svg）为双语资源：英文界面自动切换到 *.en.svg。
+  * Unified scheme preview image.
+  * Falls back to a local placeholder when the IPFS gateway hiccups or the CID is missing, avoiding a broken icon.
+  * The site's bundled sample previews (/previews/*.svg) are bilingual: the English UI auto-switches to *.en.svg.
  */
 export default function PreviewImage({
   uri,

@@ -1,16 +1,16 @@
 /**
- * hypersync.ts —— 用 Envio HyperSync 拉取历史链上活动（SchemeMinted / SchemeApplied）。
+  * hypersync.ts -- pull historical on-chain activity (SchemeMinted / SchemeApplied) via Envio HyperSync.
  *
- * 背景（为什么不用公共 RPC）：
- *   Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 个区块内，而部署块到最新块已有
- *   千万级区块；前端/离线脚本用「分片 + 指数退避」扫完全史需要上万次请求，慢且易缺。
- *   HyperSync 是 Envio 为高吞吐链上数据设计的查询服务，可一次拉全量历史日志，
- *   这正是 /trades（交易账本）与 /mint（铸造流水）两个功能依赖的数据。
+  * Background (why not the public RPC):
+  *   the Monad Testnet public RPC caps eth_getLogs at 100 blocks, while the deploy block to latest already spans
+  *   tens of millions of blocks; a front-end/offline script using "chunking + exponential backoff" to scan the full history needs tens of thousands of requests -- slow and prone to gaps.
+  *   HyperSync is Envio's query service for high-throughput on-chain data; it can pull the full history of logs in one pass,
+  *   which is exactly the data the /trades (ledger) and /mint (mint feed) features rely on.
  *
- * 定位：服务端数据层（构建期索引）。
- *   · 读取 ENVIO_API_TOKEN（无 NEXT_PUBLIC_ 前缀 → 不会内联进前端 bundle）；
- *   · 未配置 token 时 usingHyperSync() 返回 false，调用方回退到公共 RPC 分片扫描；
- *   · 只做读，不写链；端点只读，无资金/写权限。
+  * Role: server-side data layer (build-time indexing).
+  *   - reads ENVIO_API_TOKEN (no NEXT_PUBLIC_ prefix -> not inlined into the front-end bundle);
+  *   - when no token is set, usingHyperSync() returns false and the caller falls back to public-RPC chunked scanning;
+  *   - read-only, no chain writes; the endpoint is read-only with no funds/write permissions.
  */
 import {
   HypersyncClient,
@@ -21,7 +21,7 @@ import {
 import { decodeEventLog, toEventSelector, type Address, type Hex } from "viem";
 import { schemeAppliedEvent, schemeMintedEvent } from "./abis";
 
-/** HyperSync 公共端点（Monad Testnet）。可用 ENVIO_HYPERSYNC_URL 覆盖。 */
+/** HyperSync public endpoint (Monad Testnet). Overridable via ENVIO_HYPERSYNC_URL. */
 function hypersyncUrl(): string {
   return (
     process.env.ENVIO_HYPERSYNC_URL?.trim().replace(/\/+$/, "") ||
@@ -29,17 +29,17 @@ function hypersyncUrl(): string {
   );
 }
 
-/** Envio API token（服务端）。未配置返回 undefined。 */
+/** Envio API token (server side). Returns undefined when unset. */
 export function envioApiToken(): string | undefined {
   return process.env.ENVIO_API_TOKEN?.trim() || undefined;
 }
 
-/** 是否已配置 Envio HyperSync（决定索引走 Envio 还是回退公共 RPC）。 */
+/** Whether Envio HyperSync is configured (decides whether indexing uses Envio or falls back to the public RPC). */
 export function usingHyperSync(): boolean {
   return Boolean(envioApiToken());
 }
 
-/** 取链上所需的最小日志字段（省带宽、更快）。 */
+/** Fetch only the minimal log fields needed (saves bandwidth, faster). */
 const LOG_FIELDS: LogField[] = [
   "BlockNumber",
   "LogIndex",
@@ -79,7 +79,7 @@ export type HyperSyncActivity = {
   archiveHeight: number;
 };
 
-/** 构造 HyperSync 客户端（无 token 时抛错，调用方须先判 usingHyperSync()）。 */
+/** Build the HyperSync client (throws without a token; the caller must check usingHyperSync() first). */
 function makeClient(): HypersyncClient {
   const apiToken = envioApiToken();
   if (!apiToken) throw new Error("ENVIO_API_TOKEN 未配置，无法使用 HyperSync");
@@ -87,8 +87,8 @@ function makeClient(): HypersyncClient {
 }
 
 /**
- * 拉取 [fromBlock, toBlock] 区间内某合约的指定事件日志（query 的 toBlock 为开区间）。
- * collect() 会自动分页直到覆盖整个区间。
+  * Pull the specified event logs of a contract within [fromBlock, toBlock] (query's toBlock is exclusive).
+  * collect() auto-paginates until it covers the whole range.
  */
 async function collectLogs(
   client: HypersyncClient,
@@ -108,8 +108,8 @@ async function collectLogs(
 }
 
 /**
- * 用 HyperSync 拉取全量历史活动，返回与 index-activity.ts 落盘格式一致的记录。
- * 若未配置 token，返回 null（调用方回退公共 RPC）。
+  * Pull the full historical activity via HyperSync, returning records in the same on-disk format as index-activity.ts.
+  * Returns null when no token is configured (the caller falls back to the public RPC).
  */
 export async function fetchActivityViaHyperSync(opts: {
   scheme: Address;

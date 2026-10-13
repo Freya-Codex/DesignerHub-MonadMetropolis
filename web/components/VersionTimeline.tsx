@@ -9,7 +9,7 @@ interface Props {
   names?: Record<string, string>;
 }
 
-/** 版本时间线：同一作者链上的 v1 / v2 / v3…（顺序本身承载信息） */
+/** Version timeline: v1 / v2 / v3... on the same author chain (the order itself carries meaning) */
 export default function VersionTimeline({ line, currentId, names }: Props) {
   const { t } = useI18n();
   if (!line || line.length === 0) return null;

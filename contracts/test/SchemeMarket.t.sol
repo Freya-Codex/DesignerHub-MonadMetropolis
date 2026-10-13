@@ -16,7 +16,7 @@ contract RevertingReceiver {
     }
 }
 
-/// @title SchemeMarketTest — 使用权交易与谱系分账
+/// @title SchemeMarketTest — usage-rights trading and lineage splits
 contract SchemeMarketTest is Test {
     AgentRegistry internal agents;
     DreamScheme internal scheme;
@@ -44,7 +44,7 @@ contract SchemeMarketTest is Test {
         return scheme.remix(parentId, keccak256(abi.encodePacked(creator, parentId)), 0, "ipfs://r");
     }
 
-    // ------------------------------- 定价 --------------------------------- //
+    // ------------------------------ Pricing -------------------------------- //
 
     function test_SetPrice_OnlyCreator() public {
         _mintOriginal(alice);
@@ -64,7 +64,7 @@ contract SchemeMarketTest is Test {
         market.setPrice(1, 0.1 ether);
         assertEq(market.priceOf(1), 0.1 ether);
 
-        // 价格 0 = 下架
+        // price 0 = delisted
         vm.prank(alice);
         market.setPrice(1, 0);
         vm.prank(carol);
@@ -72,7 +72,7 @@ contract SchemeMarketTest is Test {
         market.applyScheme{value: 0.1 ether}(1);
     }
 
-    // ---------------------------- 购买：原创 ------------------------------ //
+    // --------------------------- Buy: original ----------------------------- //
 
     function test_Apply_Original_90_10() public {
         _mintOriginal(alice);
@@ -115,43 +115,43 @@ contract SchemeMarketTest is Test {
 
         assertEq(alice.balance, 0.09 ether);
         assertEq(platform.balance, 0.01 ether);
-        assertEq(carol.balance, 10 ether - 0.1 ether, unicode"多付部分应退回");
+        assertEq(carol.balance, 10 ether - 0.1 ether, unicode"overpayment should be refunded");
     }
 
-    // ---------------------------- 购买：衍生 ------------------------------ //
+    // --------------------------- Buy: derivative ---------------------------- //
 
     function test_Apply_Remix_85_10_5() public {
         _mintOriginal(alice); // 1
-        _remix(bob, 1); // 2：bob 的衍生方案
+        _remix(bob, 1); // 2: bob's derivative scheme
         vm.prank(bob);
         market.setPrice(2, 0.1 ether);
 
         vm.prank(carol);
         market.applyScheme{value: 0.1 ether}(2);
 
-        // bob（二创作者）85%，alice（原作）5%，平台 10%
+        // bob (remixer) 85%, alice (original) 5%, platform 10%
         assertEq(bob.balance, 0.085 ether);
         assertEq(alice.balance, 0.005 ether);
         assertEq(platform.balance, 0.01 ether);
-        // 守恒：0.085 + 0.005 + 0.01 = 0.1
+        // conservation: 0.085 + 0.005 + 0.01 = 0.1
     }
 
     function test_Apply_SelfRemix_AncestorShareMergesIntoCreator() public {
         _mintOriginal(alice); // 1
-        _remix(alice, 1); // 2：alice remix 自己的原作
+        _remix(alice, 1); // 2: alice remixes her own original
         vm.prank(alice);
         market.setPrice(2, 0.1 ether);
 
         vm.prank(carol);
         market.applyScheme{value: 0.1 ether}(2);
 
-        // 祖先（= 原作作者 = alice 本人）份额并入主体：85% + 5% = 90%
+        // The ancestor (= original author = alice herself) share folds into the main portion: 85% + 5% = 90%
         assertEq(alice.balance, 0.09 ether);
         assertEq(platform.balance, 0.01 ether);
     }
 
     function test_Apply_DeepLineage_UniqueAncestors() public {
-        // A(1) ← B(2) ← C(3) ← D(4)，四位不同创作者；买家 erin 与链上创作者无重叠
+        // A(1) <- B(2) <- C(3) <- D(4), four distinct creators; buyer erin does not overlap with on-chain creators
         _mintOriginal(alice);
         _remix(bob, 1);
         _remix(carol, 2);
@@ -165,29 +165,29 @@ contract SchemeMarketTest is Test {
         vm.prank(erin);
         market.applyScheme{value: 1 ether}(4);
 
-        // 二创作者 dave 85%；祖先 {C, B, A} 去重均分 5%；平台 10%
+        // remixer dave 85%; ancestors {C, B, A} deduplicated and split evenly 5%; platform 10%
         uint256 each = uint256(0.05 ether) / 3;
         assertEq(dave.balance, 0.85 ether);
-        assertEq(carol.balance, 10 ether + each, unicode"carol 是祖先创作者（deal 初始 10 ETH）");
+        assertEq(carol.balance, 10 ether + each, unicode"carol is an ancestor creator (deal starts at 10 ETH)");
         assertEq(bob.balance, each);
         assertEq(alice.balance, each);
-        assertEq(platform.balance, 0.1 ether + (0.05 ether - each * 3), unicode"取整余数归平台");
-        assertEq(erin.balance, 1 ether, unicode"买家付 1 ether");
+        assertEq(platform.balance, 0.1 ether + (0.05 ether - each * 3), unicode"rounding remainder goes to the platform");
+        assertEq(erin.balance, 1 ether, unicode"buyer pays 1 ether");
     }
 
     function test_Apply_DuplicateAncestorCountedOnce() public {
-        // A(1) ← B(2) ← A(3)：3 的祖先 = {B, A}，且 A 同时是二创作者
+        // A(1) <- B(2) <- A(3): 3's ancestors = {B, A}, and A is also the remixer
         _mintOriginal(alice);
         _remix(bob, 1);
-        _remix(alice, 2); // 3：alice remix bob 的衍生
+        _remix(alice, 2); // 3: alice remixes bob's derivative
         vm.prank(alice);
         market.setPrice(3, 0.06 ether);
 
         vm.prank(carol);
         market.applyScheme{value: 0.06 ether}(3);
 
-        // 主体 85% = 0.051；祖先池 5% = 0.003，祖先 {B, A} 均分 → each = 0.0015
-        // alice 的祖先份额并入主体：0.051 + 0.0015
+        // main portion 85% = 0.051; ancestor pool 5% = 0.003, ancestors {B, A} split evenly -> each = 0.0015
+        // alice's ancestor share folds into the main portion: 0.051 + 0.0015
         uint256 each = 0.003 ether / 2;
         assertEq(alice.balance, 0.051 ether + each);
         assertEq(bob.balance, each);
@@ -195,11 +195,11 @@ contract SchemeMarketTest is Test {
     }
 
     function test_Apply_DustOneWei_AllToPlatform() public {
-        // 1 wei 的衍生方案：主体/祖先份额全为 0，灰尘归平台（金额守恒）
+        // A 1 wei derivative scheme: main/ancestor shares are all 0, dust goes to the platform (amount conserved)
         _mintOriginal(alice); // 1
         _remix(bob, 1); // 2
         address cat = makeAddr("cat");
-        _remix(cat, 2); // 3：祖先 = {bob, alice}
+        _remix(cat, 2); // 3: ancestors = {bob, alice}
         vm.prank(cat);
         market.setPrice(3, 1 wei);
 
@@ -209,7 +209,7 @@ contract SchemeMarketTest is Test {
         assertEq(cat.balance, 0, "creator cut = 0");
         assertEq(bob.balance, 0, "ancestor each = 0");
         assertEq(alice.balance, 0, "ancestor each = 0");
-        assertEq(platform.balance, 1, unicode"1 wei 灰尘归平台");
+        assertEq(platform.balance, 1, unicode"1 wei dust goes to the platform");
     }
 
     function test_Apply_PaymentFailedReverts() public {
@@ -224,11 +224,11 @@ contract SchemeMarketTest is Test {
         market.applyScheme{value: 0.1 ether}(1);
     }
 
-    // ------------------------------ 预览 ---------------------------------- //
+    // ------------------------------ Preview -------------------------------- //
 
     function test_SplitPreview_Original() public view {
         (uint256 creatorCut, uint256 platformCut, uint256 pool,) = market.splitPreview(1, 1 ether);
-        // token 1 未铸造 → parentOf = 0 → 原创路径
+        // token 1 unminted -> parentOf = 0 -> original path
         assertEq(creatorCut, 0.9 ether);
         assertEq(platformCut, 0.1 ether);
         assertEq(pool, 0);
@@ -246,7 +246,7 @@ contract SchemeMarketTest is Test {
         assertEq(ancestors[0], alice);
     }
 
-    // ------------------------------ 计数 ---------------------------------- //
+    // ------------------------------- Counts -------------------------------- //
 
     function test_AppliedCount_Accumulates() public {
         _mintOriginal(alice);
@@ -264,7 +264,7 @@ contract SchemeMarketTest is Test {
         assertEq(platform.balance, 0.002 ether);
     }
 
-    // ------------------------------ 收款地址 ------------------------------ //
+    // ---------------------------- Payout address --------------------------- //
 
     function test_SetPayout_OnlyCreator() public {
         _mintOriginal(alice);
@@ -289,8 +289,8 @@ contract SchemeMarketTest is Test {
         vm.prank(carol);
         market.applyScheme{value: 1 ether}(1);
 
-        assertEq(wallet.balance, 0.9 ether, unicode"90% 直达收款地址");
-        assertEq(alice.balance, 0, unicode"创作者地址不再收款");
+        assertEq(wallet.balance, 0.9 ether, unicode"90% goes directly to the payout address");
+        assertEq(alice.balance, 0, unicode"the creator address no longer receives funds");
         assertEq(platform.balance, 0.1 ether);
     }
 
@@ -299,14 +299,14 @@ contract SchemeMarketTest is Test {
         address wallet = makeAddr("aliceWallet");
         vm.startPrank(alice);
         market.setPayout(1, wallet);
-        market.setPayout(1, address(0)); // 重置为默认
+        market.setPayout(1, address(0)); // reset to default
         market.setPrice(1, 1 ether);
         vm.stopPrank();
 
         vm.prank(carol);
         market.applyScheme{value: 1 ether}(1);
 
-        assertEq(alice.balance, 0.9 ether, unicode"重置后回到创作者地址");
+        assertEq(alice.balance, 0.9 ether, unicode"after reset it returns to the creator address");
         assertEq(wallet.balance, 0);
     }
 
@@ -314,7 +314,7 @@ contract SchemeMarketTest is Test {
         _mintOriginal(alice); // 1
         address aliceWallet = makeAddr("aliceWallet");
         vm.prank(alice);
-        market.setPayout(1, aliceWallet); // 原作收益改走钱包
+        market.setPayout(1, aliceWallet); // route the original's revenue to the wallet
         _remix(bob, 1); // 2
         vm.prank(bob);
         market.setPrice(2, 0.1 ether);
@@ -322,9 +322,9 @@ contract SchemeMarketTest is Test {
         vm.prank(carol);
         market.applyScheme{value: 0.1 ether}(2);
 
-        assertEq(bob.balance, 0.085 ether, unicode"二创作者 85%");
-        assertEq(aliceWallet.balance, 0.005 ether, unicode"谱系 5% 走原作收款地址");
-        assertEq(alice.balance, 0, unicode"原作创作者地址不收款");
+        assertEq(bob.balance, 0.085 ether, unicode"remixer 85%");
+        assertEq(aliceWallet.balance, 0.005 ether, unicode"lineage 5% goes to the original's payout address");
+        assertEq(alice.balance, 0, unicode"the original creator address receives nothing");
         assertEq(platform.balance, 0.01 ether);
     }
 
@@ -332,17 +332,17 @@ contract SchemeMarketTest is Test {
         _mintOriginal(alice); // 1
         address wallet = makeAddr("aliceWallet");
         vm.prank(alice);
-        market.setPayout(1, wallet); // 祖先 #1 收款地址
+        market.setPayout(1, wallet); // ancestor #1's payout address
         uint256 id2 = _remix(alice, 1); // 2
         vm.prank(alice);
-        market.setPayout(id2, wallet); // 二创作者 #2 同一收款地址
+        market.setPayout(id2, wallet); // remixer #2 has the same payout address
         vm.prank(alice);
         market.setPrice(id2, 0.1 ether);
 
         vm.prank(carol);
         market.applyScheme{value: 0.1 ether}(id2);
 
-        // 85% + 5% 合并到同一收款地址
+        // 85% + 5% merge into the same payout address
         assertEq(wallet.balance, 0.09 ether);
         assertEq(platform.balance, 0.01 ether);
     }

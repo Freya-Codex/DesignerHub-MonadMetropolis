@@ -1,68 +1,77 @@
-# Spec · Passkey 全站化（Designer Hub · Monad）
+# Spec · Full-site Passkey (Designer Hub · Monad)
 
-- 日期：2026-10-10
-- 状态：已批准（设计中「整体 OK」）
-- 目标：让 **Passkey 用户全站无需钱包**（铸造成交主线），并把顶栏从「Passkey 介绍 + 高级模式钱包按钮」收敛为「单一 Passkey 控件」。
+- Date: 2026-10-10
+- Status: approved (design "overall OK")
+- Goal: make the **whole site wallet-free for Passkey users** (the mint/transaction main flow), and
+  collapse the top bar from "Passkey blurb + advanced-mode wallet button" down to a **single Passkey control**.
 
-## 背景与约束
+## Background & constraints
 
-站点为 Monad 测试网 DApp（Next.js 14，`web/`）。身份/签名有两条路：
+The site is a Monad Testnet DApp (Next.js 14, `web/`). There are two identity/signing paths:
 
-1. **Passkey**（主）：`P256PasskeyAccount` 智能账户。地址由工厂 `accountOf(x,y,rpIdHash,originHash)` 经 CREATE2 推导；私钥不出设备安全芯片；交易经 `/api/relay` 由 relayer **代付 gas**（`value` 恒为 0）。
-2. **MetaMask**（备选/高级）：EOA，直连合约，自付 gas。
+1. **Passkey** (primary): the `P256PasskeyAccount` smart account. The address is derived via CREATE2 by
+   the factory `accountOf(x,y,rpIdHash,originHash)`; the private key never leaves the device secure
+   element; transactions go through `/api/relay` where the relayer **pays gas** (`value` is always 0).
+2. **MetaMask** (fallback / advanced): an EOA calling contracts directly, paying its own gas.
 
-### 关键约束（代码确认）
+### Key constraints (confirmed in code)
 
-- relay `execute` 现**硬性禁止带 value**（`value_must_be_zero`，「relayer 不代转 ETH/MON」）。
-- `applyScheme` 是 **payable**（付 `price` MON）→ passkey 无法代付。
-- 因此本方案采用 **A：付费购买保持钱包专属**，其余可 gasless 的全部 passkey 化。
+- relay `execute` currently **hard-forbids value** (`value_must_be_zero`, "the relayer does not forward ETH/MON").
+- `applyScheme` is **payable** (pays `price` MON) → a passkey cannot sponsor it.
+- So this design uses **Option A: paid purchases stay wallet-only**; everything else that can be gasless is passkey-enabled.
 
-## 设计
+## Design
 
-### ① 顶栏重构（`components/Header.tsx`）
+### ① Top-bar refactor (`components/Header.tsx`)
 
-- 移除右上角「高级模式」小字与 RainbowKit `ConnectButton`。
-- 右上角改为**单一 Passkey 控件**，按状态显示：
-  - 未创建 →「创建通行密钥」→ 跳 `/passkey`
-  - 已创建 → `Passkey · 0x…（短地址）` + 部署状态圆点 → 点击进 `/passkey`
-- 导航移除 `Passkey` 项（入口即右上角控件），保留：`画廊 · 铸造 · 交易 · 排行榜 · 文档`。
-- MetaMask 连接移入 `/passkey` 页作为**备选项**（「已有钱包？连接 MetaMask」）。
-- Header 需感知 passkey 状态：`lib/passkeyAccount.ts` 在 save/clear 时派发 `dh:passkey-changed` 事件，Header 监听 + 路由变化时重读 localStorage。
+- Remove the top-right "advanced mode" microcopy and the RainbowKit `ConnectButton`.
+- Replace the top-right with a **single Passkey control**, whose display depends on state:
+  - not created → "Create passkey" → links to `/passkey`
+  - created → `Passkey · 0x…` (short address) + a deploy-status dot → click goes to `/passkey`
+- Remove the `Passkey` item from the nav (the top-right control is the entry point); keep:
+  `Gallery · Mint · Trades · Board · Docs`.
+- Move the MetaMask connection into the `/passkey` page as a **fallback** ("Already have a wallet? Connect MetaMask").
+- The Header must be aware of passkey state: `lib/passkeyAccount.ts` dispatches a `dh:passkey-changed`
+  event on save/clear; the Header listens and re-reads localStorage on route changes.
 
-### ② Passkey 覆盖 Remix 与上架定价
+### ② Passkey covers Remix and listing/pricing
 
-- 复用 `executeViaPasskey({ to, data })`（内部处理「未部署先由 relayer 部署」）。
-- `app/remix/[id]/page.tsx`：`const useMetaMask = isConnected; const usePasskey = !isConnected && Boolean(pk);`。passkey 分支用 `encodeFunctionData(dreamSchemeAbi, "remix", [tokenId, contentHash, KIMI_AGENT_ID, tokenUri])` 经 passkey 执行。
-- `app/scheme/[id]/page.tsx`：**上架 / 改定价**（`setPrice`）对「passkey 自有方案」开放（`ownerOf == passkey 地址`）。
-- **「应用到我家」（购买）保持钱包专属**：passkey 用户点击 → 提示「付费需连接钱包」。
-- `/trades` 为只读流水，无需改动。
+- Reuse `executeViaPasskey({ to, data })` (internally handling "deploy via relayer first if not deployed").
+- `app/remix/[id]/page.tsx`: `const useMetaMask = isConnected; const usePasskey = !isConnected && Boolean(pk);`.
+  The passkey branch uses `encodeFunctionData(dreamSchemeAbi, "remix", [tokenId, contentHash, KIMI_AGENT_ID, tokenUri])` executed through the passkey.
+- `app/scheme/[id]/page.tsx`: **list / change price** (`setPrice`) is opened up for "passkey-owned schemes"
+  (`ownerOf == passkey address`).
+- **"Apply to my home" (purchase) stays wallet-only**: a passkey user clicking it sees "payment requires connecting a wallet".
+- `/trades` is a read-only ledger; no change needed.
 
-### ③ 文档更新
+### ③ Docs update
 
-- 删除「MetaMask（高级模式）」措辞，统一为「Passkey 主流程 / 连接钱包为备选」。
-- 新增说明（用户指定原文）：
+- Delete "MetaMask (advanced mode)" wording; standardize on "Passkey is the primary flow / connecting a wallet is the fallback".
+- Add the note (text specified by the user):
 
-  > **Passkey 密钥不接触资金，支付密钥由用户自选。** Passkey 只用于身份与签名（铸造 / Remix / 上架定价），不托管、不触碰你的资金；涉及付款（应用到我家）时，用哪种支付方式与密钥由用户自行选择。
+  > **Passkey keys never touch funds; the payment key is the user's choice.** The Passkey is used only
+  > for identity and signing (mint / Remix / listing & pricing); it does not custody or touch your funds.
+  > For payments (apply to my home), which payment method and key to use is the user's own choice.
 
-### ④ 验证
+### ④ Verification
 
-- `npm run build` 通过。
-- E2E（全新 Chrome）：passkey gasless **Remix** 与 **setPrice** 各跑通一次。
+- `npm run build` passes.
+- E2E (fresh Chrome): passkey gasless **Remix** and **setPrice** each run through once.
 
-## 影响面
+## Impact surface
 
-| 文件 | 改动 |
+| File | Change |
 |---|---|
-| `components/Header.tsx` | 顶栏 Passkey 控件，去 ConnectButton/高级模式 |
-| `lib/passkeyAccount.ts` | 派发 `dh:passkey-changed`；供多页复用 |
-| `app/passkey/page.tsx` | 内含「连接 MetaMask（备选）」 |
-| `app/remix/[id]/page.tsx` | passkey Remix 分支 |
-| `app/scheme/[id]/page.tsx` | passkey setPrice 分支；购买提示 |
-| `app/mint/create/page.tsx` | 文案：高级模式 → 连接钱包（备选） |
-| `app/docs/page.tsx` | 文案 + 新声明 |
+| `components/Header.tsx` | top-bar Passkey control; drop ConnectButton / advanced mode |
+| `lib/passkeyAccount.ts` | dispatch `dh:passkey-changed`; reusable across pages |
+| `app/passkey/page.tsx` | includes "Connect MetaMask (fallback)" |
+| `app/remix/[id]/page.tsx` | passkey Remix branch |
+| `app/scheme/[id]/page.tsx` | passkey setPrice branch; purchase prompt |
+| `app/mint/create/page.tsx` | copy: advanced mode → connect wallet (fallback) |
+| `app/docs/page.tsx` | copy + new statement |
 
-## 非目标（YAGNI）
+## Non-goals (YAGNI)
 
-- 不改合约、不改 relay 的 `value_must_be_zero`。
-- 不给 passkey 账户做充值入口。
-- 评论（EIP-191 签名）本期不动，仍为钱包签名。
+- No contract changes; no change to relay's `value_must_be_zero`.
+- No top-up entry for passkey accounts.
+- Comments (EIP-191 signatures) are untouched this cycle; still wallet-signed.

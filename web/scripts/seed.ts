@@ -1,14 +1,14 @@
 /**
- * Seed：用 assets/schemes 里的 3 套示例方案铸造初始 NFT，便于演示。
+  * Seed: mint the initial NFTs from the 3 sample schemes in assets/schemes, for demo convenience.
  *
- * 用法（在 web/ 目录下）：
- *   cp .env.example .env.local        # 填入 MONAD_PRIVATE_KEY 与合约地址
- *   npm run seed                       # 铸造 3 个原创方案
- *   SEED_REMIX_FROM=1 npm run seed     # 以 #1 为 parent 铸造 remix 版本
- *   SEED_APPLY_TOKEN=1 npm run seed    # 对 #1 额外执行一次「应用到我家」（需账户有 MON）
+  * Usage (from the web/ dir):
+  *   cp .env.example .env.local        # fill in MONAD_PRIVATE_KEY and contract addresses
+  *   npm run seed                       # mint 3 original schemes
+  *   SEED_REMIX_FROM=1 npm run seed     # mint a remix version with #1 as parent
+  *   SEED_APPLY_TOKEN=1 npm run seed    # additionally run one "apply to my home" on #1 (account needs MON)
  *
- * 合约地址读取顺序：环境变量 DREAM_SCHEME_ADDRESS > contracts/deployments/monad-testnet.json
- * 未配置 Pinata 密钥时会自动进入 local:// 本地演示模式（URI 一致，全流程可跑通）。
+  * Contract address read order: env var DREAM_SCHEME_ADDRESS > contracts/deployments/monad-testnet.json
+  * Without a Pinata key it automatically enters local:// demo mode (same URIs, the full flow runs).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -33,9 +33,9 @@ import { buildTokenMetadata } from "../lib/metadata";
 import { validateScheme, type DesignScheme } from "../lib/scheme";
 
 /**
- * Next.js 会自动加载 .env.local，但 tsx 直接跑脚本不会。
- * 这里手动加载，避免「.env.local 明明填了却报未设置」。
- * 优先级：真实环境变量 > .env.local（不覆盖已存在的值）。
+  * Next.js auto-loads .env.local, but running a script directly via tsx does not.
+  * Loaded manually here to avoid "filled in .env.local yet reported unset".
+  * Precedence: real env vars > .env.local (does not overwrite existing values).
  */
 function loadEnvLocal(): void {
   const file = path.join(process.cwd(), ".env.local");
@@ -77,7 +77,7 @@ function resolveAddress(envKey: string, jsonKey: string): Address | undefined {
       const addr = data[jsonKey];
       if (addr && addr.startsWith("0x")) return getAddress(addr);
     } catch {
-      // 忽略读取错误
+      // Ignore read errors
     }
   }
   return undefined;
@@ -127,7 +127,7 @@ async function main(): Promise<void> {
 
     const schemePin = await pinJson(design, `seed-${file.replace(/\.json$/, "")}`);
 
-    // 预览图：优先 assets/schemes/previews/<同名>.svg
+    // Preview image: prefer assets/schemes/previews/<same-name>.svg
     const previewName = file.replace(/\.json$/, ".svg");
     const previewPath = path.join(schemesDir, "previews", previewName);
     let imageUri = "";
@@ -169,7 +169,7 @@ async function main(): Promise<void> {
           break;
         }
       } catch {
-        // 忽略
+        // Ignore
       }
     }
 
@@ -179,7 +179,7 @@ async function main(): Promise<void> {
 
     if (applyToken !== undefined && applyToken !== 0n && schemeMarket && mintedId === applyToken) {
       const price = parseEther(env.SEED_APPLY_PRICE_ETH ?? "0.01");
-      // 新版市场：创作者先自主定价上架，买家按定价支付
+      // New market: the creator lists at their own price first, and the buyer pays the listed price
       const sp = await walletClient.writeContract({
         address: schemeMarket,
         abi: schemeMarketAbi,

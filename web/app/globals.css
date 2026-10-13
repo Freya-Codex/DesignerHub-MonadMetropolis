@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /* ---------------------------------------------------------------
-   Archivo（自托管，variable 400–800）—— 拉丁标题/数字的几何 grotesque
-   中文正文回落到系统黑体，数据/地址使用等宽
+   Archivo (self-hosted, variable 400-800) -- geometric grotesque for Latin headings/numbers;
+   Chinese body text falls back to the system sans, and data/addresses use the monospace font
    --------------------------------------------------------------- */
 @font-face {
   font-family: "Archivo";
@@ -15,7 +15,7 @@
 }
 
 :root {
-  /* Monad 风格色板 */
+  /* Monad-style palette */
   --ink: #0f0f12;
   --ink-deep: #05060a;
   --paper: #fbfaf9;
@@ -60,7 +60,7 @@ body {
 }
 
 @layer components {
-  /* ---------- 排版 ---------- */
+  /* ---------- Typography ---------- */
   .display {
     font-family: var(--font-display);
     font-weight: 800;
@@ -89,7 +89,7 @@ body {
     color: rgba(255, 255, 255, 0.55);
   }
 
-  /* ---------- 容器 ---------- */
+  /* ---------- Container ---------- */
   .sheet {
     @apply rounded-2xl border bg-white;
     border-color: var(--hairline);
@@ -103,7 +103,7 @@ body {
     border-top: 1px solid var(--hairline);
   }
 
-  /* ---------- 按钮 ---------- */
+  /* ---------- Buttons ---------- */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition;
     background: var(--violet);
@@ -152,7 +152,7 @@ body {
     background: var(--paper-2);
   }
 
-  /* ---------- 表单 ---------- */
+  /* ---------- Forms ---------- */
   .field-label {
     @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em];
     font-family: var(--font-mono);
@@ -169,7 +169,7 @@ body {
     box-shadow: 0 0 0 3px rgba(110, 84, 255, 0.12);
   }
 
-  /* ---------- 标签 / 徽章 ---------- */
+  /* ---------- Tags / badges ---------- */
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium;
     border-color: var(--hairline);
@@ -186,7 +186,7 @@ body {
     color: #a53f52;
   }
 
-  /* ---------- 签名元素：蓝图标注线 ---------- */
+  /* ---------- Signature element: blueprint annotation lines ---------- */
   .dim-line {
     position: relative;
     height: 1px;
@@ -216,15 +216,15 @@ body {
     padding: 0 6px;
   }
 
-  /* ---------- 图纸网格背景 ---------- */
+  /* ---------- Blueprint grid background ---------- */
   .grid-sheet {
     background-image:
       linear-gradient(to right, rgba(110, 84, 255, 0.06) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(110, 84, 255, 0.06) 1px, transparent 1px);
     background-size: 44px 44px;
   }
-  /* 深色图纸：网格线 + 墨黑→李子→紫罗兰渐变一次声明，
-     避免 background-image 被后定义的网格类覆盖掉底色 */
+  /* Dark blueprint: grid lines + ink-black->plum->violet gradient declared once,
+     avoiding a later-defined grid class overriding the background color */
   .grid-sheet-dark {
     background-color: var(--ink);
     background-image:
@@ -234,7 +234,7 @@ body {
     background-size: 44px 44px, 44px 44px, 100% 100%;
   }
 
-  /* ---------- 链接 ---------- */
+  /* ---------- Links ---------- */
   .link {
     color: var(--violet-deep);
     text-underline-offset: 3px;
@@ -244,7 +244,7 @@ body {
   }
 }
 
-/* 入场动效（尊重 reduced-motion） */
+/* Entrance animations (respecting reduced-motion) */
 @keyframes rise {
   from {
     opacity: 0;

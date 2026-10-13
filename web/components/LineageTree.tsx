@@ -9,7 +9,7 @@ interface Props {
   names?: Record<string, string>;
 }
 
-/** 谱系树：以「图纸节点 + 虚线脊线」呈现从原创到当前的创作链。 */
+/** Lineage tree: shows the creation chain from original to current as "blueprint nodes + dashed spine". */
 export default function LineageTree({ lineage, currentId, names }: Props) {
   const { t } = useI18n();
   if (lineage.length === 0) {

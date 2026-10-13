@@ -89,7 +89,7 @@ export default function Header() {
   );
 }
 
-/** 中英切换按钮：显示目标语言标签。 */
+/** zh/en toggle button: shows the target-language label. */
 function LangToggle() {
   const { lang, toggle } = useI18n();
   return (
@@ -110,8 +110,8 @@ function LangToggle() {
 }
 
 /**
- * 右上角单一 Passkey 控件：替代原先的「连接钱包」。
- * 未创建 → 引导创建；已创建 → 显示 passkey 账户短地址 + 部署状态，点击进入 /passkey（内含 MetaMask 备选）。
+  * Single Passkey control in the top right: replaces the former "connect wallet".
+  * Not created -> prompt to create; created -> show the short passkey account address + deployment status, click to open /passkey (which also offers MetaMask as an alternative).
  */
 function PasskeyControl() {
   const { lang } = useI18n();

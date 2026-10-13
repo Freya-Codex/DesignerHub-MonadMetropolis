@@ -6,7 +6,7 @@ import { L, pickLang } from "@/lib/apiLang";
 
 export const runtime = "nodejs";
 
-/** GET /api/comment?tokenId=1 —— 读取某方案的链下评论。 */
+/** GET /api/comment?tokenId=1 -- read the off-chain comments of a scheme. */
 export async function GET(req: NextRequest) {
   const lang = pickLang(req);
   const tokenId = Number(req.nextUrl.searchParams.get("tokenId"));
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/comment
  * body: { tokenId, text, address, signature, message }
- * 后端用 viem verifyMessage 校验钱包签名（SIWE 风格），通过后写入本地 JSON，不消耗 gas。
+  * The backend verifies the wallet signature (SIWE-style) with viem verifyMessage; on success it writes local JSON and consumes no gas.
  */
 export async function POST(req: NextRequest) {
   try {

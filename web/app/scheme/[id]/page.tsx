@@ -43,7 +43,7 @@ export default function SchemeDetailPage() {
   const { data: allSchemes } = useSchemes();
   const [txNote, setTxNote] = useState<string>("");
 
-  // passkey 签名者（免钱包）：用于 setPrice；付费购买仍走钱包
+  // Passkey signer (wallet-free): for setPrice; paid purchases still use a wallet
   const [pk, setPk] = useState<StoredPasskey | null>(null);
   const [passkeyAddr, setPasskeyAddr] = useState<Address | null>(null);
   const [busySetPrice, setBusySetPrice] = useState(false);
@@ -179,7 +179,7 @@ export default function SchemeDetailPage() {
     }
   };
 
-  // 设置收款地址（passkey 免钱包 / MetaMask 均可）。0x0 = 恢复默认（付给创作者地址）。
+  // Set the payout address (passkey wallet-free / MetaMask both fine). 0x0 = restore default (pay the creator address).
   const onSetPayout = async (payoutAddr: Address) => {
     setTxNote("");
     const market = schemeMarketAddress();
@@ -356,7 +356,7 @@ function DetailFrame(props: DetailFrameProps) {
   const splitNote = isRemix ? "85% creator · 10% treasury · 5% lineage" : "90% creator · 10% treasury";
   const agentId: bigint = d.agentId ?? 0n;
   const agentLabel = agentNameForId(agentId);
-  // 方案自带的 AI 生成器信息（provider · model）优先；无则回退到链上 agentId 标签
+  // Prefer the scheme's own AI generator info (provider · model); fall back to the on-chain agentId label otherwise
   const genLabel = generatorLabel(d.generator);
   const generatorLine = genLabel || agentLabel;
   const canAct = !isDemoMode && Boolean(isConnected && onApply) && (price > 0n || isDemoMode);
@@ -381,7 +381,7 @@ function DetailFrame(props: DetailFrameProps) {
       </nav>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        {/* 图纸 */}
+        {/* Blueprint */}
         <figure className="sheet grid-sheet relative overflow-hidden lg:col-span-3">
           <span
             aria-hidden
@@ -398,7 +398,7 @@ function DetailFrame(props: DetailFrameProps) {
           </figcaption>
         </figure>
 
-        {/* 信息面板 */}
+        {/* Info panel */}
         <div className="sheet flex flex-col p-6 lg:col-span-2">
           <div className="flex flex-wrap items-center gap-2">
             {d.parentId === 0n ? (
@@ -647,7 +647,7 @@ function namesFrom(
   return map;
 }
 
-/** 创作者定价面板：setPrice 上架 / 改价 / 下架（0 = 下架）；setPayout 指定收益去向。 */
+/** Creator pricing panel: setPrice to list / reprice / delist (0 = delist); setPayout to direct revenue. */
 function CreatorPricePanel({
   price,
   pending,

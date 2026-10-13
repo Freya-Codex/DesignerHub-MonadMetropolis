@@ -1,22 +1,22 @@
 /**
- * index-activity.ts —— 链上活动索引器（SchemeMinted / SchemeApplied 全量流水）
+  * index-activity.ts -- on-chain activity indexer (full SchemeMinted / SchemeApplied feed)
  *
- * 数据源（两选一，自动选择）：
- *   1) 首选 Envio HyperSync（配置了 ENVIO_API_TOKEN 时）——一次拉全量历史日志，
- *      直接覆盖部署块 → 最新块，无需分片，这正是 /trades 交易账本与 /mint 铸造流水
- *      依赖的数据。
- *   2) 回退公共 RPC 分片扫描（未配置 token 时）——Monad 公共 RPC 把 eth_getLogs
- *      限制在 100 个区块内，只能分片 + 指数退避。
+  * Data source (one of two, auto-selected):
+  *   1) prefer Envio HyperSync (when ENVIO_API_TOKEN is set) -- pulls the full history of logs in one pass,
+  *      covering the deploy block -> latest directly with no chunking; this is exactly the data the /trades ledger
+  *      and /mint mint feed rely on.
+  *   2) fall back to public-RPC chunked scanning (when no token is set) -- the Monad public RPC caps eth_getLogs
+  *      at 100 blocks, so chunking + exponential backoff is the only option.
  *
- * 两者都把结果落盘为 web/data/activity.json；前端通过 /api/activity 读取，
- * 得到一份完整、可核对的交易账本。
+  * Both persist the result to web/data/activity.json; the front end reads it via /api/activity,
+  * yielding a complete, verifiable trade ledger.
  *
- * 用法（在 web/ 目录下）：
- *   npm run index                              # 有 token → HyperSync 全量；否则头部/尾部窗口
- *   INDEX_FULL=1 npm run index                 # 回退路径下：部署块 → 最新块全量扫描（慢）
- *   ENVIO_API_TOKEN=xxx npm run index          # 显式走 HyperSync
+  * Usage (from the web/ dir):
+  *   npm run index                              # with a token -> full HyperSync; otherwise head/tail window
+  *   INDEX_FULL=1 npm run index                 # on the fallback path: full scan deploy block -> latest (slow)
+  *   ENVIO_API_TOKEN=xxx npm run index          # explicitly use HyperSync
  *
- * 脚本可安全重复执行（按 txHash+logIndex 去重，结果稳定）。
+  * The script is safe to re-run (deduplicated by txHash+logIndex; stable result).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -26,7 +26,7 @@ import { schemeMintedEvent, schemeAppliedEvent } from "../lib/abis";
 import { serverTransport, safeRpcLabel, usingAlchemy } from "../lib/serverRpc";
 import { fetchActivityViaHyperSync, usingHyperSync } from "../lib/hypersync";
 
-/** Next.js 会自动加载 .env.local，但 tsx 直接跑脚本不会。 */
+/** Next.js auto-loads .env.local, but running a script directly via tsx does not. */
 function loadEnvLocal(): void {
   const file = path.join(process.cwd(), ".env.local");
   if (!fs.existsSync(file)) return;
@@ -50,7 +50,7 @@ function loadEnvLocal(): void {
 loadEnvLocal();
 
 const env = process.env;
-// Alchemy 允许更大的 eth_getLogs 区间，未开通时回退公共 RPC（100 区块）。
+// Alchemy allows a larger eth_getLogs range; falls back to the public RPC (100 blocks) when not enabled.
 const CHUNK = BigInt(env.INDEX_CHUNK || (usingAlchemy() ? "2000" : "100"));
 const CONCURRENCY = Math.max(1, Number(env.INDEX_CONCURRENCY || "6"));
 const HEAD = BigInt(env.INDEX_HEAD || "20000");
@@ -76,7 +76,7 @@ function resolveAddress(envKey: string, jsonKey: string): Address | undefined {
       const addr = data[jsonKey];
       if (addr && addr.startsWith("0x")) return getAddress(addr);
     } catch {
-      /* 忽略 */
+      /* Ignore */
     }
   }
   return undefined;
@@ -84,7 +84,7 @@ function resolveAddress(envKey: string, jsonKey: string): Address | undefined {
 
 const client = createPublicClient({ chain: monadTestnet, transport: serverTransport() });
 
-/** 单个 100 区块分片的查询，遇到限流（429 / -32614）指数退避重试。 */
+/** Query a single 100-block chunk, retrying with exponential backoff on rate limit (429 / -32614). */
 async function getLogsWithRetry(
   address: Address,
   event: any,
@@ -143,7 +143,7 @@ async function main(): Promise<void> {
   console.log("🏪 SchemeMarket   :", market ?? "未配置");
   console.log("⛓️  部署块 / 最新块 :", deployBlock.toString(), "/", latest.toString());
 
-  // ---- 首选：Envio HyperSync 全量历史（一次拉完，无分片）----
+  // ---- Preferred: Envio HyperSync full history (one pass, no chunking) ----
   if (usingHyperSync()) {
     console.log("🔌 数据源         : Envio HyperSync（全量历史）");
     const hs = await fetchActivityViaHyperSync({
@@ -183,7 +183,7 @@ async function main(): Promise<void> {
     console.warn("⚠️  HyperSync 返回空，回退公共 RPC 分片扫描…");
   }
 
-  // ---- 回退：公共 RPC 分片扫描 ----
+  // ---- Fallback: public-RPC chunked scanning ----
   console.log("🔌 数据源         : 公共 RPC 分片扫描");
   console.log("🔌 RPC 提供方     :", usingAlchemy() ? `Alchemy (${safeRpcLabel()})` : "公共 RPC");
   console.log("📦 getLogs 分片    :", CHUNK.toString(), "区块");

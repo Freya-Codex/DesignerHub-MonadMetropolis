@@ -20,8 +20,8 @@ contract Reverter {
     }
 }
 
-/// @dev 用固定挑战公式覆盖真实派生（真实公式含部署后才能确定的账户地址，
-///      离线无法预签名）。固定公式与 fixtures.json 的派生约定一致。
+/// @dev Overrides the real derivation with a fixed-challenge formula (the real formula includes the account address,
+///      only known after deployment, so it cannot be pre-signed offline). The fixed formula matches fixtures.json's derivation convention.
 contract FixedChallengeAccount is P256PasskeyAccount {
     bytes32 public immutable fixedBase;
 
@@ -40,7 +40,7 @@ contract FixedChallengeAccount is P256PasskeyAccount {
     }
 }
 
-/// @title P256PasskeyAccountTest — passkey 账户 + CREATE2 工厂
+/// @title P256PasskeyAccountTest — passkey account + CREATE2 factory
 contract P256PasskeyAccountTest is Fixtures {
     FixedChallengeAccount internal account;
     Counter internal counter;
@@ -167,7 +167,7 @@ contract P256PasskeyAccountTest is Fixtures {
     }
 
     function test_AddKey_RecoveryFlow_NewDeviceCanAct() public {
-        // 第一步：旧设备（key1，nonce=0）签名授权追加新公钥 key2
+        // Step 1: the old device (key1, nonce=0) signs to authorize appending a new public key key2
         account.execute(
             address(account), 0, abi.encodeCall(P256PasskeyAccount.addKey, (x2, y2)), _fxAssertion("key1_single_n0")
         );
@@ -176,7 +176,7 @@ contract P256PasskeyAccountTest is Fixtures {
         assertEq(kx, x2);
         assertEq(ky, y2);
 
-        // 第二步：新设备（key2）在 nonce=1 直接发起交易
+        // Step 2: the new device (key2) sends a transaction directly at nonce=1
         account.execute(address(counter), 0, abi.encodeCall(Counter.hit, ()), _fxAssertion("key2_single_n1"));
         assertEq(counter.hits(), 1);
         assertEq(account.nonce(), 2);
@@ -184,15 +184,15 @@ contract P256PasskeyAccountTest is Fixtures {
 
     function test_AddKey_TooManyKeys() public {
         vm.startPrank(address(account));
-        account.addKey(x2, y2); // 第 2 把
-        account.addKey(P256.GX, P256.GY); // 第 3 把：生成元 G
-        account.addKey(P256.GX, P256.PP - P256.GY); // 第 4 把：−G（同在曲线上）
+        account.addKey(x2, y2); // key 2
+        account.addKey(P256.GX, P256.GY); // key 3: generator G
+        account.addKey(P256.GX, P256.PP - P256.GY); // key 4: -G (also on the curve)
         vm.expectRevert(P256PasskeyAccount.TooManyKeys.selector);
-        account.addKey(x2, y2); // 第 5 把 → 超限
+        account.addKey(x2, y2); // key 5 -> over the limit
         vm.stopPrank();
     }
 
-    // ------------------------------- 工厂 --------------------------------- //
+    // ------------------------------ Factory ------------------------------- //
 
     function test_Factory_Create2Deterministic() public {
         PasskeyAccountFactory factory = new PasskeyAccountFactory();
@@ -206,15 +206,15 @@ contract P256PasskeyAccountTest is Fixtures {
         assertEq(kx, x1);
         assertEq(ky, y1);
 
-        // 不同公钥 → 不同地址
+        // Different public keys -> different addresses
         assertTrue(factory.accountOf(x2, y2, fxRpIdHash, fxOriginHash) != predicted);
 
-        // 同一 passkey 重复部署 → AccountExists
+        // Redeploying the same passkey -> AccountExists
         vm.expectRevert(abi.encodeWithSelector(PasskeyAccountFactory.AccountExists.selector, predicted));
         factory.createAccount(x1, y1, fxRpIdHash, fxOriginHash);
     }
 
-    // --------------------------- 真实挑战公式 ------------------------------ //
+    // ------------------------ Real challenge formula ----------------------- //
 
     function test_ChallengePreview_MatchesSpecFormula() public {
         P256PasskeyAccount real = new P256PasskeyAccount(x1, y1, fxRpIdHash, fxOriginHash);
@@ -227,7 +227,7 @@ contract P256PasskeyAccountTest is Fixtures {
         assertEq(real.challengePreview(7, address(0xBEEF), 1 ether, dataHash), expected);
     }
 
-    // ------------------------------- 杂项 --------------------------------- //
+    // ------------------------------ Misc ---------------------------------- //
 
     function test_Constructor_OffCurveKeyRejected() public {
         vm.expectRevert(P256PasskeyAccount.InvalidPublicKey.selector);

@@ -13,22 +13,22 @@ import { setCurrentLang, type Lang } from "./langStore";
 export type { Lang } from "./langStore";
 
 export interface I18nValue {
-  /** 当前语言 / current language */
+  /** Current language */
   lang: Lang;
-  /** 设置语言 / set language */
+  /** Set language */
   setLang: (lang: Lang) => void;
-  /** 中英互换 / toggle zh <-> en */
+  /** Toggle zh <-> en */
   toggle: () => void;
   /**
-   * 取词：
-   *  - t("中文")            → 有字典时查字典，否则原样返回（英文模式下若缺翻译仍回退中文）
-   *  - t("中文", "English") → 显式双语对，按当前语言选择
-   *  - t(zh, en, { id })    → 支持 {name} 占位符插值
+    * Lookup:
+    *  - t("zh text")                  -> use the dictionary when available, otherwise return as-is (in English mode, a missing translation falls back to Chinese)
+    *  - t("zh text", "English text") -> explicit bilingual pair, selected by the current language
+    *  - t(zh, en, { id })    -> supports {name} placeholder interpolation
    */
   t: (zh: string, en?: string, vars?: Record<string, string | number>) => string;
-  /** 根据当前语言挑选（用于数据数组里的中英字段） */
+  /** Pick by the current language (for zh/en fields inside data arrays) */
   pick: <T>(zh: T, en: T | undefined) => T;
-  /** 供 toLocaleString / 日期格式化使用的 locale */
+  /** Locale used for toLocaleString / date formatting */
   locale: string;
 }
 
@@ -57,11 +57,11 @@ function persistLang(lang: Lang) {
 }
 
 /**
- * 轻量级站内中英双语 Provider（不改路由、不引入 next-intl）。
- * 语言状态保存在 localStorage，并同步到 <html lang>。
+  * Lightweight in-site zh/en provider (no routing changes, no next-intl).
+  * The language state is kept in localStorage and synced to <html lang>.
  */
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  // 初始为 zh，挂载后再读取本地存储，避免 SSR/CSR 水合不一致。
+  // Initialize to zh and read local storage after mount, to avoid SSR/CSR hydration mismatch.
   const [lang, setLangState] = useState<Lang>("zh");
 
   useEffect(() => {
@@ -130,17 +130,17 @@ export function useI18n(): I18nValue {
   return ctx;
 }
 
-/** 便捷 hook：只取 t */
+/** Convenience hook: returns only t */
 export function useT(): I18nValue["t"] {
   return useI18n().t;
 }
 
 /**
- * 非 React 环境下读取当前语言（如 global-error 这类没有 Provider 的根兜底）。
+  * Read the current language outside React (e.g. the global-error root fallback that has no provider).
  */
 export function storedLang(): Lang {
   return readStoredLang();
 }
 
-/** 供 lib 层纯函数读取当前语言。 */
+/** Lets lib-layer pure functions read the current language. */
 export { getLang, L } from "./langStore";

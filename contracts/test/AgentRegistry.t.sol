@@ -6,7 +6,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AgentRegistry} from "../src/AgentRegistry.sol";
 import {ProvenanceRegistry} from "../src/ProvenanceRegistry.sol";
 
-/// @title AgentRegistryTest — AI agent 注册与声誉账本
+/// @title AgentRegistryTest — AI agent registration and reputation ledger
 contract AgentRegistryTest is Test {
     AgentRegistry internal agents;
     address internal owner = makeAddr("owner");
@@ -17,7 +17,7 @@ contract AgentRegistryTest is Test {
         agents = new AgentRegistry(owner);
     }
 
-    // ------------------------------- 注册 --------------------------------- //
+    // ------------------------------ Register ------------------------------ //
 
     function test_Register_FirstAgentIdIsOne() public {
         vm.prank(alice);
@@ -59,7 +59,7 @@ contract AgentRegistryTest is Test {
         agents.reputationOf(42);
     }
 
-    // --------------------------- 声誉权限控制 ------------------------------ //
+    // ------------------------ Reputation access control ------------------- //
 
     function test_AddReputation_BeforeWiringRejected() public {
         vm.prank(alice);
@@ -73,12 +73,12 @@ contract AgentRegistryTest is Test {
         agents.registerAgent("ipfs://kimi");
         vm.prank(owner);
         agents.setProvenanceRegistry(address(0xBEEF));
-        // 即使接线后，非 ProvenanceRegistry 的调用者也被拒绝
+        // Even after wiring, callers other than ProvenanceRegistry are rejected
         vm.expectRevert(abi.encodeWithSelector(AgentRegistry.NotProvenanceRegistry.selector, address(this)));
         agents.addReputation(1);
     }
 
-    // ------------------------------- 接线 --------------------------------- //
+    // ------------------------------- Wiring -------------------------------- //
 
     function test_SetProvenanceRegistry_OnlyOwner() public {
         vm.prank(bob);
@@ -94,7 +94,7 @@ contract AgentRegistryTest is Test {
         agents.setProvenanceRegistry(address(0xCAFE));
     }
 
-    // --------------------------- 全链路声誉 ------------------------------- //
+    // ------------------------- End-to-end reputation ---------------------- //
 
     function test_Reputation_AccumulatesViaAttestation() public {
         ProvenanceRegistry provenance = new ProvenanceRegistry(agents);
@@ -112,7 +112,7 @@ contract AgentRegistryTest is Test {
         provenance.attest(keccak256("c2"), 1, "");
         assertEq(agents.reputationOf(1), 2);
 
-        // agentId = 0（无归因）的确权不累加声誉
+        // Attestations with agentId = 0 (no attribution) do not accrue reputation
         vm.prank(bob);
         provenance.attest(keccak256("c3"), 0, "");
         assertEq(agents.reputationOf(1), 2);

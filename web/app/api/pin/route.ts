@@ -10,8 +10,8 @@ export const maxDuration = 60;
 
 /**
  * POST /api/pin
- * 接收方案 JSON（+ 可选预览图），固定到 IPFS，返回 tokenUri / contentHash。
- * 支持 JSON body 与 multipart/form-data 两种格式：
+  * Accept scheme JSON (+ optional preview image), pin it to IPFS, and return tokenUri / contentHash.
+  * Supports both a JSON body and multipart/form-data:
  *   JSON:      { scheme: {...}, previewImage?: "data:image/...", name?, description? }
  *   FormData:  scheme=<JSON string>, preview=<File>, name?, description?
  */
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
     const design = scheme as DesignScheme;
 
-    // 内容哈希 = 固定方案 JSON 的 keccak256（唯一内容寻址 + 链上防篡改）
+    // Content hash = keccak256 of the pinned scheme JSON (unique content addressing + on-chain tamper resistance)
     const schemeJson = JSON.stringify(design);
     const contentHash = keccak256(toBytes(schemeJson));
 

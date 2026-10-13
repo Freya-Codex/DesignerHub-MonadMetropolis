@@ -112,7 +112,7 @@ export default function CreatePage() {
     return copy;
   }, [scheme, nameOverride]);
 
-  // 从收据日志里解析 SchemeMinted 的 tokenId
+  // Parse the tokenId of SchemeMinted from the receipt logs
   const tokenIdFromReceipt = useCallback(async (hash: Hex): Promise<bigint | null> => {
     try {
       const client = publicClientFor();
@@ -123,16 +123,16 @@ export default function CreatePage() {
           const decoded = decodeEventLog({ abi: dreamSchemeAbi, data: log.data, topics: log.topics });
           if (decoded.eventName === "SchemeMinted") return decoded.args.tokenId as bigint;
         } catch {
-          // 忽略其他合约日志
+          // Ignore logs from other contracts
         }
       }
     } catch {
-      /* 收据解析失败 */
+      /* Receipt parsing failed */
     }
     return null;
   }, []);
 
-  // 载入本机 passkey（用于免 MetaMask 铸造）
+  // Load the local passkey (for MetaMask-free minting)
   useEffect(() => {
     const c = loadStoredPasskey();
     if (!c) return;
@@ -145,7 +145,7 @@ export default function CreatePage() {
     })();
   }, []);
 
-  // MetaMask 路径：交易确认后从收据日志解析 tokenId
+  // MetaMask path: parse the tokenId from the receipt logs after the tx confirms
   useEffect(() => {
     if (!isConfirmed || !mintHash || tokenId !== null) return;
     void (async () => {
@@ -187,7 +187,7 @@ export default function CreatePage() {
     }
   };
 
-  // 方案码（base64url）→ 方案 JSON
+  // Scheme code (base64url) -> scheme JSON
   const handleDecode = async () => {
     setError(null);
     setCodeNote(null);
@@ -205,7 +205,7 @@ export default function CreatePage() {
     }
   };
 
-  // 当前方案 → 方案码（写入剪贴板）
+  // Current scheme -> scheme code (write to clipboard)
   const handleCopyCode = async () => {
     if (!displayScheme) return;
     setError(null);
@@ -240,8 +240,8 @@ export default function CreatePage() {
       return;
     }
 
-    // 内容唯一性守卫（仅原创路径 parentId = 0）：完全相同的方案 JSON / 方案码只能铸造一次。
-    // 先用本地哈希拦截，避免无谓的 IPFS 固定；remix 不受此限制。
+    // Content-uniqueness guard (original path only, parentId = 0): an identical scheme JSON / scheme code can be minted only once.
+    // Intercept with a local hash first to avoid pointless IPFS pinning; remix is exempt.
     const dup = await mintedTokenForContentHash(contentHashOfScheme(displayScheme));
     if (dup > 0n) {
       setDupId(dup);
@@ -257,7 +257,7 @@ export default function CreatePage() {
 
     setStep("pin");
     try {
-      // 1) 固定到 IPFS（两条路径共用）
+      // 1) Pin to IPFS (shared by both paths)
       const previewDataUri = svgToDataUri(schemeToPreviewSvg(displayScheme, lang));
       const res = await fetch("/api/pin", {
         method: "POST",
@@ -274,7 +274,7 @@ export default function CreatePage() {
       if (!res.ok) throw new Error(data?.error ?? t("固定到 IPFS 失败", "Failed to pin to IPFS"));
       setPinInfo(data);
 
-      // 二次校验：以服务端返回的 contentHash 为准（防止本地序列化差异）。
+      // Second check: trust the contentHash returned by the server (guards against local serialization differences).
       const serverDup = await mintedTokenForContentHash(data.contentHash as Hex);
       if (serverDup > 0n) {
         setDupId(serverDup);
@@ -282,12 +282,12 @@ export default function CreatePage() {
         return;
       }
 
-      // 按方案声明的 AI provider 分配 agentId（Kimi=1、Qwen=2、DeepSeek=3 …；未声明/未知则回退 Custom(12)）。
+      // Assign the agentId by the AI provider declared in the scheme (Kimi=1, Qwen=2, DeepSeek=3 ...; undeclared/unknown falls back to Custom(12)).
       const agentId = agentIdForScheme(displayScheme);
       const mintArgs = [0n, data.contentHash as Hex, agentId, data.tokenUri as string] as const;
 
       if (useMetaMask) {
-        // 2a) MetaMask（备选）
+        // 2a) MetaMask (alternative)
         setStep("mint");
         if (switchChainAsync) {
           await switchChainAsync({ chainId: monadTestnet.id }).catch(() => undefined);
@@ -296,7 +296,7 @@ export default function CreatePage() {
         return; // 收据确认后由 effect 解析 tokenId
       }
 
-      // 2b) Passkey 智能账户 + relayer 代付（无需 MetaMask、无需持有 MON）
+      // 2b) Passkey smart account + relayer sponsorship (no MetaMask, no MON needed)
       if (!pk) throw new Error(t("缺少本机 passkey 记录", "Missing local passkey record"));
       setStep("mint");
       let account: Address | null = pkAccount ?? (await passkeyAccountAddress(pk)) ?? null;

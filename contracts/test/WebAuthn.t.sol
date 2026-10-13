@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {WebAuthn} from "../src/lib/WebAuthn.sol";
 import {Fixtures} from "./utils/Fixtures.t.sol";
 
-/// @title WebAuthnTest — WebAuthn 断言校验回归
+/// @title WebAuthnTest — WebAuthn assertion verification regression
 contract WebAuthnTest is Fixtures {
     using WebAuthn for WebAuthn.Assertion;
 
@@ -22,7 +22,7 @@ contract WebAuthnTest is Fixtures {
         (x2, y2) = _fxKey(1);
     }
 
-    // ------------------------------- 正向 --------------------------------- //
+    // ------------------------------ Positive ------------------------------- //
 
     function test_Verify_Key1SingleN0() public view {
         WebAuthn.Assertion memory a = _fxAssertion("key1_single_n0");
@@ -34,7 +34,7 @@ contract WebAuthnTest is Fixtures {
         assertTrue(a.verify(_challengeSingle(1), fxRpIdHash, x2, y2));
     }
 
-    // ------------------------------- 反向 --------------------------------- //
+    // ------------------------------ Negative ------------------------------- //
 
     function test_Verify_WrongNonceChallenge() public view {
         WebAuthn.Assertion memory a = _fxAssertion("key1_single_n0");
@@ -42,7 +42,7 @@ contract WebAuthnTest is Fixtures {
     }
 
     function test_Verify_BatchChallengeOnSingle() public view {
-        // 域分离：single 断言不能通过 batch 挑战校验
+        // Domain separation: a single assertion cannot pass batch challenge verification
         WebAuthn.Assertion memory a = _fxAssertion("key1_single_n0");
         assertFalse(a.verify(sha256(abi.encodePacked(base, uint8(2), uint256(0))), fxRpIdHash, x1, y1));
     }
@@ -75,12 +75,12 @@ contract WebAuthnTest is Fixtures {
 
     function test_Verify_UserPresentFlagCleared() public view {
         WebAuthn.Assertion memory a = _fxAssertion("key1_single_n0");
-        // flags 字节清零（UP bit0 = 0）
+        // Clear the flags byte (UP bit0 = 0)
         a.authenticatorData = _withFlag(a.authenticatorData, 0x00);
         assertFalse(a.verify(_challengeSingle(0), fxRpIdHash, x1, y1));
     }
 
-    // --------------------------- JSON 提取 -------------------------------- //
+    // --------------------------- JSON extraction --------------------------- //
 
     function test_ExtractJsonString_Fields() public view {
         WebAuthn.Assertion memory a = _fxAssertion("key1_single_n0");
@@ -103,13 +103,13 @@ contract WebAuthnTest is Fixtures {
         assertFalse(ok);
     }
 
-    // ------------------------------- 内部 --------------------------------- //
+    // ------------------------------ Internal ------------------------------- //
 
     function _challengeSingle(uint256 n) internal view returns (bytes32) {
         return sha256(abi.encodePacked(base, uint8(1), n));
     }
 
-    /// @dev 截断 bytes（memory 数组不支持切片，用 mcopy）。
+    /// @dev Truncate bytes (memory arrays do not support slicing; use mcopy).
     function _truncate(bytes memory src, uint256 len) internal pure returns (bytes memory dst) {
         dst = new bytes(len);
         assembly {
@@ -117,7 +117,7 @@ contract WebAuthnTest is Fixtures {
         }
     }
 
-    /// @dev 改写 authenticatorData 的 flags 字节（data[32]）。
+    /// @dev Rewrite the flags byte of authenticatorData (data[32]).
     function _withFlag(bytes memory src, uint8 flag) internal pure returns (bytes memory dst) {
         dst = new bytes(src.length);
         assembly {

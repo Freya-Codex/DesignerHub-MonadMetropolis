@@ -5,11 +5,11 @@ import {Test} from "forge-std/Test.sol";
 import {P256} from "../src/lib/P256.sol";
 import {Fixtures} from "./utils/Fixtures.t.sol";
 
-/// @dev RIP-7212 P256VERIFY 预编译地址。
+/// @dev RIP-7212 P256VERIFY precompile address.
 address constant P256VERIFY = address(0x100);
 
-/// @title P256Test — P-256 验签库回归
-/// @notice 覆盖：随机向量回归（纯 Solidity 路径）、参数校验、0x100 预编译探测与自动选路。
+/// @title P256Test — P-256 verification library regression
+/// @notice Covers: random-vector regression (pure-Solidity path), parameter validation, 0x100 precompile detection and auto-routing.
 contract P256Test is Fixtures {
     function _vector(uint256 i) internal view returns (bytes32 h, uint256 x, uint256 y, uint256 r, uint256 s) {
         string memory base = string.concat(".p256vectors[", vm.toString(i), "]");
@@ -48,7 +48,7 @@ contract P256Test is Fixtures {
         (bytes32 h, uint256 x, uint256 y, uint256 r, uint256 s) = _vector(0);
         assertFalse(P256.verifySolidity(h, r + 1, s, x, y));
         assertFalse(P256.verifySolidity(h, r, s + 1, x, y));
-        assertFalse(P256.verifySolidity(h, r, s, x, y + 1)); // 离曲线公钥
+        assertFalse(P256.verifySolidity(h, r, s, x, y + 1)); // off-curve public key
     }
 
     function test_Verify_InvalidParams() public view {
@@ -59,7 +59,7 @@ contract P256Test is Fixtures {
         assertFalse(P256.verify(h, r, s, x, 0));
     }
 
-    // ------------------------------ 自动选路 ------------------------------ //
+    // --------------------------- Auto-routing ------------------------------ //
 
     function test_Verify_NoPrecompile_UsesSolidityPath() public view {
         (bytes32 h, uint256 x, uint256 y, uint256 r, uint256 s) = _vector(0);
@@ -69,11 +69,11 @@ contract P256Test is Fixtures {
     }
 
     function test_Precompile_MockTrue_RoutesToPrecompile() public {
-        // mock：任何输入都返回 32 字节的 1
+        // mock: any input returns 32 bytes of 1
         vm.etch(P256VERIFY, hex"600160005260206000f3");
         assertTrue(P256.precompileAvailable());
         (bytes32 h, uint256 x, uint256 y, uint256 r, uint256 s) = _vector(0);
-        // 垃圾签名也通过 —— 证明走的是 0x100 而非 Solidity 路径
+        // A junk signature also passes -- proves the 0x100 path was used, not the Solidity path
         assertTrue(P256.verify(h, r + 1, s, x, y));
     }
 
@@ -86,7 +86,7 @@ contract P256Test is Fixtures {
     }
 
     function test_Precompile_MockEmptyReturn_FallsBackToSolidity() public {
-        vm.etch(P256VERIFY, hex"00"); // STOP：staticcall 成功但返回空数据
+        vm.etch(P256VERIFY, hex"00"); // STOP: staticcall succeeds but returns empty data
         assertFalse(P256.precompileAvailable());
         (bytes32 h, uint256 x, uint256 y, uint256 r, uint256 s) = _vector(0);
         assertTrue(P256.verify(h, r, s, x, y));

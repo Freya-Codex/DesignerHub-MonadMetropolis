@@ -10,7 +10,7 @@ export interface Vec3 {
 export interface FurnitureItem {
   modelId: string;
   name?: string;
-  /** 英文名（可选，双语展示用） */
+  /** English name (optional, for bilingual display) */
   nameEn?: string;
   position: Vec3;
   rotation: Vec3;
@@ -20,39 +20,39 @@ export interface FurnitureItem {
 export interface DesignScheme {
   version: string;
   name: string;
-  /** 英文名（可选，双语展示用） */
+  /** English name (optional, for bilingual display) */
   nameEn?: string;
   description: string;
-  /** 英文描述（可选，双语展示用） */
+  /** English description (optional, for bilingual display) */
   descriptionEn?: string;
   room: {
     type: string;
-    /** 英文房间类型（可选） */
+    /** English room type (optional) */
     typeEn?: string;
     dimensions: { width: number; length: number; height: number; unit: string };
   };
   style: {
     theme: string;
-    /** 英文风格名（可选） */
+    /** English style name (optional) */
     themeEn?: string;
     palette: string[];
     mood?: string;
-    /** 英文氛围描述（可选） */
+    /** English vibe description (optional) */
     moodEn?: string;
   };
   furniture: FurnitureItem[];
   previewImage?: string;
   parentId?: number;
   license?: string;
-  /** 方案由哪个 AI 生成（随 JSON / 方案码导入）——provider + 模型名。 */
+  /** Which AI generated the scheme (imported with the JSON / scheme code) -- provider + model name. */
   generator?: GeneratorInfo;
 }
 
-/** 方案的 AI 生成器信息（provider 为 providerId，不记录 baseUrl / apiKey）。 */
+/** The scheme's AI generator info (provider is a providerId; baseUrl / apiKey are not recorded). */
 export interface GeneratorInfo {
   provider?: string;
   model?: string;
-  /** 生成时间（ISO 字符串）。 */
+  /** Generation time (ISO string). */
   at?: string;
 }
 
@@ -135,7 +135,7 @@ export interface RemixOptions {
   note?: string;
 }
 
-/** 基于原方案生成 remix 版本（不会修改原对象）。 */
+/** Generate a remix version from the original scheme (does not mutate the original object). */
 export function applyRemixStyle(base: DesignScheme, opts: RemixOptions, lang: "zh" | "en" = "zh"): DesignScheme {
   const en = lang === "en";
   const out: DesignScheme = JSON.parse(JSON.stringify(base));
@@ -194,8 +194,8 @@ const SVG_DISPLAY = "Archivo, PingFang SC, Hiragino Sans GB, Microsoft YaHei, sa
 const SVG_MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
 /**
- * 自动生成预览图：以「蓝图施工图」语言绘制房间平面。
- * 房间尺寸、家具数量、调色板全部来自方案数据，尺寸线标注真实尺寸。
+  * Auto-generate a preview image: draw the room plan in "blueprint construction drawing" language.
+  * Room dimensions, furniture count, and palette all come from the scheme data; dimension lines are annotated with real sizes.
  */
 export function schemeToPreviewSvg(s: DesignScheme, lang: "zh" | "en" = "zh"): string {
   const en = lang === "en";
@@ -205,19 +205,19 @@ export function schemeToPreviewSvg(s: DesignScheme, lang: "zh" | "en" = "zh"): s
   const muted = "#727285";
   const violet = "#6E54FF";
 
-  // 内容字段：按语言优先取英文（缺失时回落中文）
+  // Content fields: prefer English by language (fall back to Chinese when missing)
   const nm = en ? s.nameEn ?? s.name : s.name;
   const roomTypeLabel = en ? s.room.typeEn ?? s.room.type : s.room.type;
   const themeLabel = en ? s.style.themeEn ?? s.style.theme : s.style.theme;
   const moodLabel = en ? s.style.moodEn ?? s.style.mood ?? "" : s.style.mood ?? "";
 
-  // 图纸：房间平面范围
+  // Drawing: room plan extent
   const RX = 176;
   const RY = 252;
   const RW = 672;
   const RH = 336;
 
-  // 家具按网格排布，尺寸受 scale 影响（数据驱动）
+  // Furniture laid out on a grid; sizes driven by scale (data-driven)
   const items = s.furniture.slice(0, 12);
   const n = Math.max(items.length, 1);
   const cols = Math.max(2, Math.ceil(Math.sqrt(n * 1.5)));
@@ -316,14 +316,14 @@ export function formatWeiToMon(wei: bigint): string {
 }
 
 /**
- * 方案内容哈希 = keccak256(JSON 字符串)，与 /api/pin 服务端算法完全一致。
- * 用于铸造前检测「同一方案是否已被铸造」（仅原创路径去重；remix 允许重复）。
+  * Scheme content hash = keccak256(JSON string), exactly matching the /api/pin server-side algorithm.
+  * Used before minting to detect whether the same scheme was already minted (dedupes the original path only; remix allows duplicates).
  */
 export function contentHashOfScheme(scheme: DesignScheme): Hex {
   return keccak256(toBytes(JSON.stringify(scheme)));
 }
 
-/** 生成器展示名：优先 provider 展示名，后缀模型名。全空返回 ""。 */
+/** Generator display name: prefer the provider display name, suffixed with the model name. Returns "" when all empty. */
 export function generatorLabel(gen: GeneratorInfo | undefined): string {
   if (!gen) return "";
   const provider = gen.provider ? PROVIDER_LABELS[gen.provider.toLowerCase()] ?? gen.provider : "";

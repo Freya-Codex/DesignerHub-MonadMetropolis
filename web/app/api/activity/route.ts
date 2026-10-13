@@ -5,12 +5,12 @@ import path from "node:path";
 export const dynamic = "force-dynamic";
 
 /**
- * 返回链上活动索引（/mint 与 /trades 的流水）。
+  * Return the on-chain activity index (the /mint and /trades feed).
  *
- * 两路数据合并（按 txHash+logIndex / tokenId 去重，离线索引优先）：
- *  1) data/activity.json          —— 离线索引（scripts/index-activity.ts，服务端可走 Alchemy）
- *  2) data/activity-webhooks.json —— Alchemy Webhook 运行时增量（事件驱动）
- * 两者都不存在时返回 indexed:false，前端将退化为浏览器尾部窗口扫描。
+  * Two data sources are merged (deduplicated by txHash+logIndex / tokenId; offline index wins):
+  *  1) data/activity.json          -- offline index (scripts/index-activity.ts; the server may use Alchemy)
+  *  2) data/activity-webhooks.json -- Alchemy Webhook runtime increments (event-driven)
+  * When neither exists it returns indexed:false and the front end degrades to browser tail-window scanning.
  */
 
 function readJson(file: string): any | null {

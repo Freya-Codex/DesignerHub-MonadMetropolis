@@ -5,7 +5,7 @@ import { L, pickLang } from "@/lib/apiLang";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** POST /api/kimi：转发装修建议请求到 Kimi API（未配置密钥时使用本地规则引擎）。 */
+/** POST /api/kimi: forward the renovation-advice request to the Kimi API (uses the local rule engine when no key is configured). */
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as AdviceRequest & { lang?: string };

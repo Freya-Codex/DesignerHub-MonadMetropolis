@@ -1,7 +1,7 @@
 /**
- * ipfs:// 与 local:// 统一转成前端可加载的 URL。
- * - ipfs:// 走公开网关
- * - local:// 走本地演示模式（/api/cid，用于未配置 Pinata 密钥时的本地开发）
+  * Convert ipfs:// and local:// uniformly into a front-end-loadable URL.
+  * - ipfs:// goes through a public gateway
+  * - local:// goes through local demo mode (/api/cid, for local dev without a Pinata key)
  */
 export function ipfsGateway(): string {
   const g = process.env.NEXT_PUBLIC_IPFS_GATEWAY || "https://ipfs.io/ipfs/";

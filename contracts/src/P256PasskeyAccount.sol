@@ -4,55 +4,55 @@ pragma solidity ^0.8.24;
 import {P256} from "./lib/P256.sol";
 import {WebAuthn} from "./lib/WebAuthn.sol";
 
-/// @title P256PasskeyAccount — 无助记词的 WebAuthn/passkey 智能账户
+/// @title P256PasskeyAccount — seedless WebAuthn / passkey smart account
 ///
-/// @notice ## 密钥派生流程（Key Derivation）
+/// @notice ## Key derivation flow
 ///
-/// 本合约不生成、不存储、也永远接触不到任何私钥：
+/// This contract never generates, stores, or can ever touch any private key:
 ///
-///   1. 【设备侧生成】用户在网站上调用 `navigator.credentials.create()`，浏览器向
-///      平台认证器（iPhone 的 Secure Enclave / Android 的 StrongBox / 笔记本的 TPM）
-///      请求生成一对 **P-256 (secp256r1)** 非对称密钥。私钥在安全芯片内部生成，
-///      硬件保证其永不可导出（kSecAttrTokenIDSecureEnclave / TPM_NO_DA）。
-///   2. 【公钥上链】网站从注册响应的 `getPublicKey()` 取得公钥 (x, y)，通过
-///      PasskeyAccountFactory 以 CREATE2（salt = keccak256(x, y, rpIdHash, originHash)）
-///   部署本合约。账户地址在部署前即可确定（counterfactual），无需先转 ETH。
-///   3. 【签名授权】每笔交易，网站按
+///   1. [Generated on device] The user calls `navigator.credentials.create()` on the website; the browser asks the
+///      platform authenticator (iPhone Secure Enclave / Android StrongBox / laptop TPM)
+///      to generate a **P-256 (secp256r1)** asymmetric key pair. The private key is generated inside the
+///      secure chip, and hardware guarantees it is never exportable (kSecAttrTokenIDSecureEnclave / TPM_NO_DA).
+///   2. [Public key on-chain] The website reads the public key (x, y) from the registration response's `getPublicKey()`
+///      and deploys this contract through PasskeyAccountFactory via CREATE2 (salt = keccak256(x, y, rpIdHash, originHash)).
+///      The account address is known before deployment (counterfactual), so no ETH needs to be sent first.
+///   3. [Signature authorization] For every transaction, the website derives a 32-byte challenge as
 ///      `challenge = keccak256(account ‖ chainId ‖ nonce ‖ to ‖ value ‖ keccak256(data))`
-///      派生 32 字节挑战，调用 `navigator.credentials.get()` 触发 FaceID / TouchID /
-///      Windows Hello。认证器按 WebAuthn 规范对
-///      `sha256(authenticatorData ‖ sha256(clientDataJSON))` 做 P-256 签名。
-///   4. 【链上验证】本合约重算挑战 → 校验 authenticatorData（RP ID 绑定 + UP 标志）→
-///      校验 clientDataJSON（type / challenge 匹配）→ P-256 验签（公钥即合约存储的
-///      注册公钥）。全部通过才执行调用并递增 nonce（防重放）。
+///      and calls `navigator.credentials.get()` to trigger Face ID / Touch ID /
+///      Windows Hello. The authenticator signs `sha256(authenticatorData ‖ sha256(clientDataJSON))`
+///      with P-256 per the WebAuthn spec.
+///   4. [On-chain verification] This contract recomputes the challenge → checks authenticatorData (RP ID binding + UP flag) →
+///      checks clientDataJSON (type / challenge match) → verifies the P-256 signature (the public key being the
+///      registered key stored in the contract). Only if all pass does it execute the call and increment the nonce (replay protection).
 ///
-/// 全程：无私钥、无助记词、无 keystore 文件；用户身份 = 设备安全芯片里的硬件密钥。
-/// 多设备恢复：用旧 passkey 签名调用 addKey() 追加新公钥（上限 4 把）。
+/// Throughout: no private key, no seed phrase, no keystore file; the user's identity = the hardware key in the device secure chip.
+/// Multi-device recovery: sign with an old passkey to call addKey() and append a new public key (max 4).
 ///
-/// @notice ## Gas 免付（relayer 模式）
+/// @notice ## Gasless (relayer mode)
 ///
-/// `execute / executeBatch` 的调用者（relayer）不需要任何授权——授权完全来自
-/// WebAuthn 签名对「确切操作 + nonce」的覆盖。任何人（包括我们的 /api/relay）都可以
-/// 代为提交交易并代付 gas，且无法篡改操作内容（挑战覆盖 calldata 哈希）。
+/// The caller of `execute / executeBatch` (the relayer) needs no authorization whatsoever — authorization comes entirely from
+/// the WebAuthn signature covering "the exact operation + nonce". Anyone (including our /api/relay) can
+/// submit and pay for the transaction, and cannot tamper with the operation (the challenge covers the calldata hash).
 ///
-/// @dev 挑战派生函数 _challengeSingle / _challengeBatch 为 virtual，测试中用固定
-///      挑战的子类覆盖，以便使用离线生成的 WebAuthn 断言夹具做完整回路测试。
+/// @dev The challenge derivation functions _challengeSingle / _challengeBatch are virtual so tests can override
+///      them with a fixed-challenge subclass, enabling full round-trip tests using offline WebAuthn assertion fixtures.
 contract P256PasskeyAccount {
     using WebAuthn for WebAuthn.Assertion;
 
-    /// @notice 单账户最多注册的 passkey 数量（多设备恢复）。
+    /// @notice Max passkeys registered per account (multi-device recovery).
     uint256 public constant MAX_KEYS = 4;
 
-    /// @notice 交易序号，防重放。
+    /// @notice Transaction sequence number, for replay protection.
     uint256 public nonce;
 
-    /// @notice 期望的 sha256(RP ID)。RP ID 是网站的注册域，如 "designerhub.xyz"。
+    /// @notice Expected sha256(RP ID). The RP ID is the site's registration domain, e.g. "designerhub.xyz".
     bytes32 public immutable rpIdHash;
-    /// @notice 期望的 keccak256(origin URL)（如 "https://designerhub.xyz"）。
-    ///         设为 bytes32(0) 表示不校验 origin（本地开发）。
+    /// @notice Expected keccak256(origin URL) (e.g. "https://designerhub.xyz").
+    ///         Set to bytes32(0) to skip origin verification (local development).
     bytes32 public immutable originHash;
 
-    /// @notice 已注册的 passkey 公钥列表 (x, y)。
+    /// @notice The list of registered passkey public keys (x, y).
     uint256[2][] private _keys;
 
     event Executed(address indexed to, uint256 value, uint256 nonceAfter);
@@ -74,19 +74,19 @@ contract P256PasskeyAccount {
         originHash = _originHash;
     }
 
-    /// @notice 账户可直接收 ETH（relayer 代付模式下余额非必需，但保留自付能力）。
+    /// @notice The account can receive ETH directly (balance is not required in relayer mode, but self-paying ability is retained).
     receive() external payable {}
 
-    /// @notice 接收 ERC-721（方案 NFT 铸入本账户）：钱包合约标准回调，无状态副作用。
+    /// @notice Receive ERC-721 (scheme NFTs minted into this account): the wallet-contract standard callback, no state side effects.
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
         return this.onERC721Received.selector;
     }
 
     // ------------------------------------------------------------------ //
-    //                              执行入口                               //
+    //                        Execution entry                            //
     // ------------------------------------------------------------------ //
 
-    /// @notice 用一次 passkey 签名执行一笔调用（relayer 可代付 gas）。
+    /// @notice Execute one call with a single passkey signature (the relayer may pay gas).
     function execute(address to, uint256 value, bytes calldata data, WebAuthn.Assertion calldata assertion) external {
         bytes32 challenge = _challengeSingle(nonce, to, value, keccak256(data));
         _verify(challenge, assertion);
@@ -96,8 +96,8 @@ contract P256PasskeyAccount {
         emit Executed(to, value, nonce);
     }
 
-    /// @notice 用一次 passkey 签名原子地执行一批调用。
-    ///         Designer Hub 的「导入方案」流程用它一次签名完成 attest + mint。
+    /// @notice Atomically execute a batch of calls with a single passkey signature.
+    ///         Designer Hub's "import scheme" flow uses it to complete attest + mint with one signature.
     function executeBatch(
         address[] calldata to,
         uint256[] calldata value,
@@ -120,10 +120,10 @@ contract P256PasskeyAccount {
     }
 
     // ------------------------------------------------------------------ //
-    //                            密钥管理                                 //
+    //                          Key management                           //
     // ------------------------------------------------------------------ //
 
-    /// @notice 追加一把 passkey 公钥（多设备恢复）。仅可通过账户自身的 execute 调用。
+    /// @notice Append a passkey public key (multi-device recovery). Callable only via the account's own execute.
     function addKey(uint256 x, uint256 y) external {
         if (msg.sender != address(this)) revert InvalidSignature();
         if (_keys.length >= MAX_KEYS) revert TooManyKeys();
@@ -132,21 +132,21 @@ contract P256PasskeyAccount {
         emit KeyAdded(_keys.length - 1, x, y);
     }
 
-    /// @notice 已注册的公钥数量。
+    /// @notice Number of registered public keys.
     function keyCount() external view returns (uint256) {
         return _keys.length;
     }
 
-    /// @notice 第 index 把公钥。
+    /// @notice The public key at index.
     function keyAt(uint256 index) external view returns (uint256 x, uint256 y) {
         (x, y) = (_keys[index][0], _keys[index][1]);
     }
 
     // ------------------------------------------------------------------ //
-    //                        挑战派生（可覆盖）                           //
+    //                    Challenge derivation (overridable)              //
     // ------------------------------------------------------------------ //
 
-    /// @notice 挑战预览：web 端 / SDK 用相同公式离线计算，供浏览器发起签名。
+    /// @notice Challenge preview: the web app / SDK compute it offline with the same formula, for the browser to request a signature.
     function challengePreview(uint256 n, address to, uint256 value, bytes32 dataHash) external view returns (bytes32) {
         return _challengeSingle(n, to, value, dataHash);
     }
@@ -157,7 +157,7 @@ contract P256PasskeyAccount {
         virtual
         returns (bytes32)
     {
-        // 域分离前缀 + 账户地址 + 链 ID + nonce + 目标 + 金额 + calldata 哈希
+        // domain-separation prefix + account address + chain id + nonce + target + value + calldata hash
         return keccak256(abi.encodePacked("dh/passkey/tx", address(this), block.chainid, n, to, value, dataHash));
     }
 
@@ -166,11 +166,11 @@ contract P256PasskeyAccount {
     }
 
     // ------------------------------------------------------------------ //
-    //                             验签核心                                //
+    //                       Signature core                              //
     // ------------------------------------------------------------------ //
 
     function _verify(bytes32 challenge, WebAuthn.Assertion calldata assertion) internal view {
-        // origin 校验（可选：originHash 非零时启用）
+        // origin check (optional: enabled when originHash is non-zero)
         if (originHash != bytes32(0)) {
             (bytes memory origin, bool ok) = _originOf(assertion.clientDataJSON);
             if (!ok || keccak256(origin) != originHash) revert BadOrigin();
@@ -194,28 +194,28 @@ contract P256PasskeyAccount {
     }
 
     function _originOf(bytes calldata clientDataJSON) private pure returns (bytes memory, bool) {
-        // 借用 WebAuthn 库的 JSON 提取逻辑（calldata → memory 转换后查找 "origin" 字段）
+        // Reuse the WebAuthn library's JSON extraction logic (after converting calldata → memory, locate the "origin" field)
         bytes memory cd = abi.encodePacked(clientDataJSON);
         return WebAuthn.extractJsonString(cd, "origin");
     }
 }
 
-/// @title PasskeyAccountFactory — CREATE2 确定性部署 passkey 账户
-/// @notice salt = keccak256(abi.encode(x, y, rpIdHash, originHash))：
-///         同一 passkey 在同一站点配置下永远映射到同一地址（counterfactual），
-///         注册页可在部署前就把地址展示给用户。
+/// @title PasskeyAccountFactory — CREATE2 deterministic deployment of passkey accounts
+/// @notice salt = keccak256(abi.encode(x, y, rpIdHash, originHash)):
+///         the same passkey under the same site configuration always maps to the same address (counterfactual),
+///         so the registration page can show the address to the user before deployment.
 contract PasskeyAccountFactory {
     error CreateFailed();
     error AccountExists(address account);
 
     event AccountCreated(address indexed account, uint256 x, uint256 y);
 
-    /// @notice 预计算某公钥对应的账户地址（不部署）。
+    /// @notice Precompute the account address for a public key (without deploying).
     function accountOf(uint256 x, uint256 y, bytes32 rpIdHash, bytes32 originHash) external view returns (address) {
         return _compute(x, y, rpIdHash, originHash);
     }
 
-    /// @notice 部署账户。若已存在则直接 revert（调用方应先用 accountOf 判断）。
+    /// @notice Deploy an account. Reverts if it already exists (callers should check with accountOf first).
     function createAccount(uint256 x, uint256 y, bytes32 rpIdHash, bytes32 originHash)
         external
         returns (P256PasskeyAccount account)

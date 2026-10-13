@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 import type { SchemeSummary } from "./contracts";
 
-/** 示例创作者地址（仅演示数据）。 */
+/** Sample creator address (demo data only). */
 const DEMO_CREATOR: Address = "0x8Ba1f2D3A4B5c6D7E8f90123456789aBcDEf0123";
 
 export const DEMO_SCHEME_FILES: Record<number, string> = {

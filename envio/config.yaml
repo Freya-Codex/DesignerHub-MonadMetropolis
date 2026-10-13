@@ -1,11 +1,11 @@
 # Envio HyperIndex — Designer Hub · Monad
 #
-# 把五个合约的链上事件索引成实体，产出 GraphQL 端点，
-# 驱动前端的「交易账本 /trades」「方案详情与血缘 /scheme/[id]」「Agent 信誉榜 /board」。
+# Index the on-chain events of the five contracts into entities and expose a GraphQL endpoint that
+# drives the front end's "trade ledger /trades", "scheme detail & lineage /scheme/[id]", and "agent leaderboard /board".
 #
-# 为什么需要它：Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 区块内，
-# 从部署块(66892530)到最新块已有千万级区块，前端无法自己在浏览器里扫完全史。
-# Envio HyperSync 负责历史回填，HyperIndex 负责把事件整理成可查询实体。
+# Why it is needed: the Monad Testnet public RPC caps eth_getLogs at 100 blocks, and the
+# range from the deploy block (66892530) to the latest block spans tens of millions of blocks, which the browser cannot scan in full by itself.
+# Envio HyperSync backfills history; HyperIndex organizes events into queryable entities.
 #
 # yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: designer-hub-monad

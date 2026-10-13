@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { storedLang, type Lang } from "@/lib/i18n";
 
 /**
- * 全局错误兜底：捕获**根 layout**（含 Providers / Header / 连接钱包按钮）抛出的异常。
- * 生产构建下，若没有这个文件，layout 里抛错会退化成 Next.js 默认的纯白
- * “Application error: a client-side exception has occurred”，看不到任何原因。
+  * Global error boundary: catches exceptions thrown by the **root layout** (including Providers / Header / connect-wallet button).
+  * In a production build, without this file an error in the layout degrades to the Next.js default blank
+  * "Application error: a client-side exception has occurred", with no visible cause.
  *
- * 注意：global-error 会替换整个 <html>/<body>，不会加载 layout 里的全局 CSS，
- * 也不会被 <I18nProvider> 包裹，所以这里用内联样式，并直接从 localStorage 读取语言。
+  * Note: global-error replaces the entire <html>/<body>, does not load the layout's global CSS,
+  * and is not wrapped by <I18nProvider>, so inline styles are used here and the language is read directly from localStorage.
  */
 export default function GlobalError({
   error,

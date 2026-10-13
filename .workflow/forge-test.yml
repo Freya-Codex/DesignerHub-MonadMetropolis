@@ -1,9 +1,9 @@
-# Gitee Go 流水线（原生支持 Gitee 仓库）
-# 启用方式：Gitee 仓库 → 服务 → Gitee Go → 新建流水线 → 选择本文件（.workflow/forge-test.yml）
-# 说明：未配置任何密钥即可运行——合约依赖已内置（contracts/lib），前端构建使用默认配置。
+# Gitee Go pipeline (native support for Gitee repositories)
+# To enable: Gitee repo -> Services -> Gitee Go -> New pipeline -> select this file (.workflow/forge-test.yml)
+# Note: runs with no secrets configured -- contract deps are vendored (contracts/lib) and the front-end build uses default settings.
 version: 1.0
 name: forge-test-and-web-build
-displayName: 合约测试 + 前端构建
+displayName: Contract tests + front-end build
 triggers:
   push:
     branches:
@@ -16,7 +16,7 @@ triggers:
 stages:
   - stage:
       name: contracts
-      displayName: 合约测试（Foundry）
+      displayName: Contract tests (Foundry)
       steps:
         - step: build@nodejs
           name: forge-test
@@ -32,7 +32,7 @@ stages:
             - forge test -vv
   - stage:
       name: web
-      displayName: 前端构建（Next.js）
+      displayName: Front-end build (Next.js)
       steps:
         - step: build@nodejs
           name: web-build

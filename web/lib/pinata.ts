@@ -3,10 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * IPFS 固定服务。
- * - 配置了 PINATA_KEY/PINATA_SECRET（或 PINATA_JWT）时，走 Pinata 真实固定；
- * - 未配置时进入本地演示模式：内容写入 web/.local-pins，URI 为 local://<cid>，
- *   由 /api/cid/<cid> 提供读取，保证不配置外部密钥也能跑通全流程。
+  * IPFS pinning service.
+  * - when PINATA_KEY/PINATA_SECRET (or PINATA_JWT) is set, uses real Pinata pinning;
+  * - otherwise enters local demo mode: content is written to web/.local-pins, the URI is local://<cid>,
+  *   served for reading by /api/cid/<cid>, so the full flow runs without any external key.
  */
 
 export interface PinResult {

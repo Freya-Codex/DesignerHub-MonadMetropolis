@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// 生成 Foundry 测试用的 P-256 / WebAuthn 夹具（纯 node:crypto，无第三方依赖）。
-// 输出 contracts/test/fixtures/fixtures.json，由 test/*.t.sol 通过 vm.readFile + vm.parseJson 读取。
+// Generate P-256 / WebAuthn fixtures for Foundry tests (pure node:crypto, no third-party deps).
+// Outputs contracts/test/fixtures/fixtures.json, read by test/*.t.sol via vm.readFile + vm.parseJson.
 //
-// 挑战派生约定（与 test 中的 FixedChallengeAccount 一致）：
+// Challenge derivation convention (matches FixedChallengeAccount in the tests):
 //   single(n) = sha256(fixedBase ‖ 0x01 ‖ uint256be(n))
 //   batch(n)  = sha256(fixedBase ‖ 0x02 ‖ uint256be(n))
-// 其中 fixedBase = fixtures.challenge。测试账户覆盖真实挑战公式（真实公式含
-// 部署后才能确定的账户地址，离线无法预签名），但保留 nonce —— 重放保护仍可测。
+// where fixedBase = fixtures.challenge. Test accounts override the real challenge formula (the real formula includes
+// the account address only known after deployment, so it cannot be pre-signed offline), but keep the nonce -- replay protection is still testable.
 import { generateKeyPairSync, sign as cryptoSign, createHash } from "node:crypto";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -44,10 +44,10 @@ function p256Sign(privateKey, message) {
   return { r: "0x" + sig.subarray(0, 32).toString("hex"), s: "0x" + sig.subarray(32).toString("hex") };
 }
 
-/// 构造一条 WebAuthn 断言：clientDataJSON 内嵌 derivedChallenge。
-/// W3C 规范：签名覆盖 sha256(authenticatorData ‖ sha256(clientDataJSON))。
-/// 注意：node 的 crypto.sign('sha256', msg) 会对 msg 再做一次 sha256，
-/// 因此这里传入拼接原文（ad ‖ sha256(cd)），node 哈希后恰为规范消息哈希。
+/// Build a WebAuthn assertion: clientDataJSON embeds derivedChallenge.
+/// W3C spec: the signature covers sha256(authenticatorData ‖ sha256(clientDataJSON)).
+/// Note: node's crypto.sign('sha256', msg) hashes msg again with sha256,
+/// so we pass the concatenated raw data (ad ‖ sha256(cd)); after node's hash it is exactly the spec message hash.
 function buildAssertion(key, derivedChallenge, { rpId = RP_ID, type = "webauthn.get", signCount = 1 } = {}) {
   const rpIdHash = sha256(Buffer.from(rpId));
   const flags = Buffer.from([0x05]); // UP | UV
@@ -64,7 +64,7 @@ function buildAssertion(key, derivedChallenge, { rpId = RP_ID, type = "webauthn.
 }
 
 // ---------------------------------------------------------------- //
-//                              生成                                //
+//                            Generate                               //
 // ---------------------------------------------------------------- //
 
 const key1 = genKey();
@@ -76,7 +76,7 @@ const key2SingleN0 = buildAssertion(key2, challengeSingle(0));
 const key2SingleN1 = buildAssertion(key2, challengeSingle(1));
 const wrongRp = buildAssertion(key1, challengeSingle(0), { rpId: "evil.example" });
 const wrongType = buildAssertion(key1, challengeSingle(0), { type: "webauthn.create" });
-// 篡改签名：key1SingleN0 的 r 末字节翻转 1 bit
+// Tamper with the signature: flip 1 bit in the last byte of key1SingleN0's r
 const tamperedR =
   "0x" +
   Buffer.from(key1SingleN0.r.slice(2), "hex")
@@ -84,7 +84,7 @@ const tamperedR =
     .toString("hex");
 const tamperedSig = { ...key1SingleN0, r: tamperedR };
 
-// 纯 P-256 随机签名向量（verifySolidity 回归）
+// Pure P-256 random signature vectors (verifySolidity regression)
 const p256vectors = [];
 for (let i = 0; i < 8; i++) {
   const k = genKey();

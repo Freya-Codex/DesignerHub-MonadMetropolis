@@ -1,149 +1,160 @@
-# Designer Hub · Monad — 项目简介
+# Designer Hub · Monad — Project Brief
 
-> **把「生成式内容」变成链上可署名、可 Remix、可即时分账的创作资产——一套面向开发者的身份 / 溯源 / 数据所有权 / 代理信任原语。**
+> **Turning generative content into on-chain creative assets that are signable, remixable, and
+> instantly revenue-sharing — a developer-first set of identity / provenance / data-ownership /
+> agent-trust primitives.**
 
-- **赛道**：**Track 04 — Trust, Identity & AI Infrastructure**
-- **网络**：Monad Testnet（chainId `10143`）
-- **交付物**：5 份已部署合约 + 前端应用 + 类型化 SDK（`@designerhub/sdk`）+ 集成文档（Track 04 要求的「原语」形态）
-- **本简介按比赛评分标准（Technical 20% / Design 20% / Originality 15% / Market 25% / Traction 20%）逐项组织**
+- **Track**: **Track 04 — Trust, Identity & AI Infrastructure**
+- **Network**: Monad Testnet (chainId `10143`)
+- **Deliverables**: 5 deployed contracts + a front-end app + a typed SDK (`@designerhub/sdk`) + integration docs (the "primitive" form Track 04 asks for)
+- **This brief is organized per the hackathon's judging rubric (Technical 20% / Design 20% / Originality 15% / Market 25% / Traction 20%)**
 
 ---
 
-## 〇、为什么这属于 Track 04
+## 0. Why this belongs in Track 04
 
-官方对 Track 04 的定义：**「AI has made identity, provenance, data ownership, and agent trust urgent infrastructure problems」**，面向 **AI-native internet 的协议级原语**（proof of personhood / content passports / data lockers），适合「comfortable with cryptography, protocol design, or agent frameworks」的团队；并且明确要求这是**别的应用可以在其上构建的原语，而不是一个独立的消费级产品**。
+The official definition of Track 04: **"AI has made identity, provenance, data ownership, and agent
+trust urgent infrastructure problems"** — protocol-level primitives for the AI-native internet
+(proof of personhood / content passports / data lockers), best fit for teams "comfortable with
+cryptography, protocol design, or agent frameworks." It explicitly requires a **primitive other apps
+can build on, not a standalone consumer product**.
 
-Designer Hub 与这条赛道逐点对应，且**全部以「可被第三方集成的原语」形态交付**（含 SDK 与集成文档，而非只是一个 App）：
+Designer Hub maps to this track point by point, and **delivers everything in "third-party-integrable
+primitive" form** (SDK + integration docs, not just an app):
 
-| Track 04 关键词 | 本项目对应的原语 |
+| Track 04 keyword | The primitive we ship |
 | --- | --- |
-| **Identity（身份）** | `P256PasskeyAccount` + `PasskeyAccountFactory`——WebAuthn/P-256 无种子智能账户，私钥不出设备安全芯片 |
-| **Provenance（溯源）** | `ProvenanceRegistry`——只上链内容承诺 `keccak256(contentHash ‖ salt)`，内容本体永不上链；`DreamScheme` 记录链上谱系 |
-| **Data ownership（数据所有权）** | 谱系与分账在链上、不锁在单一平台数据库；无平台金库 |
-| **Agent trust（代理信任）** | `AgentRegistry`——AI 生成器注册 + 声誉 + 链上 `agentId` 归因 |
-| **「原语而非产品」** | 交付 `@designerhub/sdk` + `docs/INTEGRATING.md`，第三方可脱离我们的 UI 直接构建 |
-| **cryptography / protocol design / agent frameworks** | 真实 P-256 + WebAuthn 链上验签、CREATE2 账户协议、AI agent 注册表 |
+| **Identity** | `P256PasskeyAccount` + `PasskeyAccountFactory` — a seedless WebAuthn/P-256 smart account; the private key never leaves the device secure element |
+| **Provenance** | `ProvenanceRegistry` — only the content commitment `keccak256(contentHash ‖ salt)` goes on-chain; the content itself never does; `DreamScheme` records on-chain lineage |
+| **Data ownership** | Lineage and splits live on-chain, not locked in a single platform's database; no platform vault |
+| **Agent trust** | `AgentRegistry` — AI-generator registration + reputation + on-chain `agentId` attribution |
+| **"Primitive, not product"** | Ships `@designerhub/sdk` + `docs/INTEGRATING.md`; third parties can build on it without our UI |
+| **cryptography / protocol design / agent frameworks** | Real P-256 + WebAuthn on-chain verification, a CREATE2 account protocol, and an AI-agent registry |
 
 ---
 
-## 一、问题
+## 1. The problem
 
-生成式内容（设计稿、3D 资产、预设、AI 产出）在扩散和二次创作中，**署名、溯源、收益**三件事同时失灵：
+When generative content (design drafts, 3D assets, presets, AI output) spreads and gets remixed,
+**attribution, provenance, and revenue** all fail at once:
 
-1. 作品被 Remix / 复用后，原创者拿不到任何收益，也无法证明「谁先做的」；
-2. 归属记录锁在**单个平台的数据库**里——平台能改、能冻结、能清零，创作者被平台俘获；
-3. AI 参与生成后，**哪个模型产出了什么**没有中立、可审计的记录；
-4. 用户侧的「身份」要么是托管账号，要么是一串助记词——流失率高、责任重。
+1. Once a work is remixed / reused, the original creator earns nothing and cannot prove "who made it first";
+2. Attribution records are locked in a **single platform's database** — the platform can change, freeze, or erase them; the creator is captured by the platform;
+3. Once AI is involved in generation, there is **no neutral, auditable record of which model produced what**;
+4. On the user side, "identity" is either a custodial account or a string of seed words — high churn, heavy liability.
 
-现有做法只是把问题**换个地方中心化**：多一个平台金库、多一份私有数据库。
+Existing approaches just **re-centralize the problem elsewhere**: one more platform vault, one more private database.
 
 ---
 
-## 二、方案：三层可组合原语
+## 2. The solution: three composable layers of primitives
 
-Designer Hub 不是「一个 App」，而是一组**可被第三方集成**的链上原语，全部已在 Monad 测试网运行：
+Designer Hub is not "an app" — it is a set of **third-party-integrable on-chain primitives**, all
+already running on Monad Testnet:
 
-| 原语 | 合约 | 提供什么 |
+| Primitive | Contract | What it provides |
 | --- | --- | --- |
-| **Passkey 身份** | `P256PasskeyAccount` + `PasskeyAccountFactory` | 无助记词智能账户。地址 = `CREATE2(x, y, rpIdHash, originHash)`；私钥永驻设备安全芯片（Secure Enclave / StrongBox / TPM）；链上验证**真实 WebAuthn 断言**，challenge 绑定 `account ‖ chainId ‖ nonce ‖ to ‖ value ‖ keccak256(data)`，因此**任何 relayer 都能代付 gas 却无法篡改调用**。 |
-| **溯源 / 数据所有权** | `ProvenanceRegistry` | 只上链内容承诺 `keccak256(contentHash ‖ salt)`（**内容本体永不上链**），附时间戳与 AI agentId。隐私优先的存证。支持 EOA 直连 `attest` 或 `attestByRelayer`（EIP-712 授权）。 |
-| **可 Remix 的资产 + 谱系** | `DreamScheme` + `SchemeMarket` | ERC-721 资产，链上 `parentId` 记录谱系（v1→v2→v3 时间线）；创作者用 `setPrice` 自主定价；被「应用到我家」时**即时分账**——原创 **90/10**，衍生 **85/10/5**（创作者 / 平台 / 祖先谱系池），**无平台金库、无 `withdraw()`**；转售遵循 ERC-2981（5% 版税）。`AgentRegistry` 记录 AI 生成器（Kimi 预注册 `agentId = 1`）与声誉，使「方案 + 生成它的模型」公开可归因。 |
+| **Passkey identity** | `P256PasskeyAccount` + `PasskeyAccountFactory` | A mnemonic-free smart account. Address = `CREATE2(x, y, rpIdHash, originHash)`; the private key lives permanently in the device secure element (Secure Enclave / StrongBox / TPM); the chain verifies a **real WebAuthn assertion**, and the challenge binds `account ‖ chainId ‖ nonce ‖ to ‖ value ‖ keccak256(data)`, so **any relayer can pay gas yet cannot tamper with the call**. |
+| **Provenance / data ownership** | `ProvenanceRegistry` | Only the content commitment `keccak256(contentHash ‖ salt)` goes on-chain (**the content itself never does**), with a timestamp and AI agentId. Privacy-preserving attestation. Supports a direct EOA `attest` or `attestByRelayer` (EIP-712 authorization). |
+| **Remixable assets + lineage** | `DreamScheme` + `SchemeMarket` | ERC-721 assets with on-chain lineage via `parentId` (a v1→v2→v3 timeline); creators set their own price with `setPrice`; applying "to my home" splits **instantly** — original **90/10**, derivative **85/10/5** (creator / platform / ancestor lineage pool), **no platform vault, no `withdraw()`**; resale follows ERC-2981 (5% royalty). `AgentRegistry` records AI generators (Kimi pre-registered as `agentId = 1`) and reputation, making "the scheme **and** the model that generated it" publicly attributable. |
 
-主流程用 Passkey（指纹 / Face ID 登录，用户无需持有 MON，relayer 代付 gas）；MetaMask 保留为「高级模式」。
+The main flow uses Passkey (fingerprint / Face ID login; the user needs no MON, the relayer pays gas);
+MetaMask is kept as an "advanced mode".
 
 ---
 
-## 三、对照 Track 04 评分标准（What judges look for）
+## 3. Mapping to the Track 04 rubric (What judges look for)
 
-> 以下 5 项、权重 20 / 20 / 15 / 25 / 20，来自 Track 04 官方评分标准。每项列出「评委要看什么」→「我们的证据」。
+> The 5 criteria below, weighted 20 / 20 / 15 / 25 / 20, come from Track 04's official rubric. Each
+> lists "what judges look for" → "our evidence."
 
-### 评分速览
+### Scoring at a glance
 
-| 评分项 | 权重 | 一句话落点 | 状态 |
+| Criterion | Weight | One-line landing | Status |
 | --- | --- | --- | --- |
-| Technical Execution | 20% | 真实 WebAuthn/P256 链上验签、CREATE2 密钥派生、无密钥泄漏（96 测试 + 测试网 E2E） | ✅ 强 |
-| Design & Craft（DX） | 20% | 类型化 SDK + 集成指南 + 可运行示例，可脱离 UI 使用 | ✅ 强（新补） |
-| Originality & Track Insight | 15% | 内容本体不上链 + 无平台金库 + 无许可可替换 relayer | ✅ 强 |
-| Founder & Market Readiness | 25% | 四类具名采用方 + 「为什么不自己造」成本论证 + 第一方集成方 | ✅ 强（新补） |
-| Traction & Path Forward | 20% | 集成套件已就绪；**尚无第三方集成**（如实）+ 4 步赛后计划 | ⚠️ 部分（缺口在第三方） |
+| Technical Execution | 20% | real WebAuthn/P256 on-chain verification, CREATE2 key derivation, no leaked secrets (103 tests + testnet E2E) | ✅ strong |
+| Design & Craft (DX) | 20% | a typed SDK + integration guide + runnable examples, usable without our UI | ✅ strong (new) |
+| Originality & Track Insight | 15% | content never on-chain + no platform vault + permissionless, replaceable relayer | ✅ strong |
+| Founder & Market Readiness | 25% | four named adopter segments + "why not roll your own" cost argument + a first-party integrator | ✅ strong (new) |
+| Traction & Path Forward | 20% | integration kit shipped; **no third-party integration yet** (stated honestly) + a 4-step post-event plan | ⚠️ partial (gap is the third party) |
 
 ### 1. Technical Execution — 20%
-**要求**：信任 / 身份 / 数据原语实现正确且安全——WebAuthn/P256 使用正确、密钥派生合理、无密钥泄漏。
+**Asked**: trust / identity / data primitives implemented correctly and securely — correct WebAuthn/P256, sound key derivation, no leaked secrets.
 
-- 链上验证**真实 WebAuthn 断言**；纯 Solidity P-256 回退实现（探测 RIP-7212 `0x100` 预编译，缺失时回退 Jacobian 运算）→ 在 Monad 等无预编译链上同样可用。
-- **密钥派生**：`CREATE2(x, y, rpIdHash, originHash)`，反事实地址可在部署前展示；每账户最多 4 把 key（`addKey`）支持多设备恢复。
-- **防篡改**：challenge 绑定完整 calldata 摘要 + nonce，relayer 无法改参数、无法改收款人。
-- **无密钥泄漏**：仓库内只有公钥 / 测试夹具；`docs/SECURITY.md` 给出威胁模型与密钥处理与 secret 扫描说明。
-- **测试与实测**：Foundry **96 个用例全通过**；真实测试网 E2E 已跑通（部署 tx `0x5d5c3d9b…`、execute tx `0xd7ef914c…`，含 `Attested` 事件）。
+- The chain verifies a **real WebAuthn assertion**; a pure-Solidity P-256 fallback (probes the RIP-7212 `0x100` precompile, falls back to Jacobian math when absent) → works on chains without the precompile, **including Monad**.
+- **Key derivation**: `CREATE2(x, y, rpIdHash, originHash)` — the counterfactual address can be shown before deployment; up to 4 keys per account (`addKey`) for multi-device recovery.
+- **Tamper-proofing**: the challenge binds the full calldata digest + nonce; a relayer cannot change arguments or the recipient.
+- **No leaked secrets**: the repo contains only public keys / test fixtures; `docs/SECURITY.md` documents the threat model, key handling, and secret scanning.
+- **Tests & reality**: Foundry **103 cases all passing**; real testnet E2E has run (deploy tx `0x5d5c3d9b…`, execute tx `0xd7ef914c…`, including an `Attested` event).
 
-**证据**：`contracts/test/*`（96 cases）· `docs/SECURITY.md`
+**Evidence**: `contracts/test/*` (103 cases) · `docs/SECURITY.md`
 
-### 2. Design & Craft（开发者体验）— 20%
-**要求**：对「要基于它开发的开发者」可用——文档清晰、接口/API 干净，**即便没有面向终端用户的 UI**。
+### 2. Design & Craft (developer experience) — 20%
+**Asked**: usable by "the developers who'd build on it" — clear docs, a clean interface/API, **even without an end-user UI**.
 
-- 类型化 SDK **`@designerhub/sdk`**（可构建、已通过类型检查，challenge 向量与链上交叉校验），三档集成路径：
-  - **只读**（无钱包无密钥，2 分钟）；
-  - **标准钱包 EOA**（mint / setPrice / apply）；
-  - **Passkey 账户**（无助记词 + 可选 gas 代付）。
-- 文档：`docs/INTEGRATING.md`（集成指南 + 采用方 + 「为什么不自己造」+ gas 赞助边界 + 赛后计划）、`sdk/README.md`（API 参考 + 示例）、内置 `/docs` 页面。
-- 可直接运行：`npx tsx sdk/examples/read-schemes.ts`。
+- A typed SDK **`@designerhub/sdk`** (buildable, typechecked, challenge vectors cross-checked against the chain), with three integration paths:
+  - **Read-only** (no wallet, no keys, 2 minutes);
+  - **Standard EOA wallet** (mint / setPrice / apply);
+  - **Passkey account** (mnemonic-free + optional gas sponsorship).
+- Docs: `docs/INTEGRATING.md` (integration guide + adopters + "why not roll your own" + gas-sponsorship boundaries + post-event plan), `sdk/README.md` (API reference + examples), and the in-app `/docs` page.
+- Runnable: `npx tsx sdk/examples/read-schemes.ts`.
 
-**证据**：`sdk/`（typed、buildable）· `docs/INTEGRATING.md` · `sdk/README.md`
+**Evidence**: `sdk/` (typed, buildable) · `docs/INTEGRATING.md` · `sdk/README.md`
 
 ### 3. Originality & Track Insight — 15%
-**要求**：以**隐私优先、且不被单一平台俘获**的方式解决信任 / 溯源 / 数据所有权，而不是换个姿势中心化。（对应 Track 04 的 provenance / data ownership / AI-native 原语）
+**Asked**: solve trust / provenance / data ownership in a **privacy-preserving way that cannot be captured by a single platform**, rather than re-centralizing in a new shape.
 
-- **隐私优先**：`ProvenanceRegistry` 只存承诺哈希，内容本体永不上链。
-- **不被俘获**：
-  - **无平台金库**——收款在**同一笔交易内**直达创作者 / 平台 / 祖先，没有可冻结的余额；
-  - **谱系在链上，不在数据库**——归属不依赖任何单一 App；
-  - **relayer 是无许可、可替换的**——`execute(...)` 任何人都可调用，**签名才是授权**，demo relayer 只是便利，不是依赖；
-  - **身份属于用户**——密钥在用户设备安全芯片里，非托管。
+- **Privacy-preserving**: `ProvenanceRegistry` stores only the commitment hash; the content never goes on-chain.
+- **Not capturable**:
+  - **No platform vault** — payment goes **within the same transaction** straight to creator / platform / ancestors; there is no balance to freeze;
+  - **Lineage is on-chain, not in a database** — attribution does not depend on any single app;
+  - **The relayer is permissionless and replaceable** — `execute(...)` can be called by anyone, **the signature is the authorization**; our demo relayer is a convenience, not a dependency;
+  - **Identity belongs to the user** — the key lives in the user's device secure element, non-custodial.
 
-**证据**：`docs/INTEGRATING.md` §"Why it isn't capturable" · `docs/SECURITY.md`（relayer 信任模型）
+**Evidence**: `docs/INTEGRATING.md` §"Why it isn't capturable" · `docs/SECURITY.md` (relayer trust model)
 
-### 4. Founder & Market Readiness — 25%（最高权重）
-**要求**：清楚**哪些具体应用 / 开发者会采用**，以及**为什么不自己造**。
+### 4. Founder & Market Readiness — 25% (highest weight)
+**Asked**: know **which specific applications / developers** would adopt it, **and why** over rolling their own.
 
-**目标采用方**（`docs/INTEGRATING.md`）：
+**Target adopters** (`docs/INTEGRATING.md`):
 
-| 采用方 | 为什么用而不是自研 |
+| Adopter | Why use it instead of building it themselves |
 | --- | --- |
-| **生成式 / 设计工具**（如云筑家 App 本身） | 直接获得链上归因 + 收益分账，无需自己写 WebAuthn/P256 验证、CREATE2 账户与谱系分账逻辑。 |
-| **内容市场 / 资产库**（3D 资产、户型图、预设） | 即插即用 passkey 登录（无种子短语、转化率更高）+ 可执行的转售版税与 Remix 谱系。 |
-| **AI agent 平台 / 模型与数据方** | `AgentRegistry` + `ProvenanceRegistry` 提供「哪个模型产出了什么」的中立链上记录，用于审计、争议与声誉（Track 04 的 agent trust 场景）。 |
-| **身份 / 钱包 SDK** | P-256 WebAuthn 账户 + 纯 Solidity 验证器的参考实现（可在无 RIP-7212 预编译的链上跑）。 |
+| **Generative / design tools** (like the VirtuHome App itself) | Get on-chain attribution + revenue splitting without writing WebAuthn/P256 verification, CREATE2 accounts, or lineage math. |
+| **Content marketplaces / asset libraries** (3D assets, floor plans, presets) | Drop-in passkey login (no seed phrases, higher conversion) + enforceable resale royalty and remix lineage. |
+| **AI-agent platforms / model & data providers** | `AgentRegistry` + `ProvenanceRegistry` provide a neutral on-chain record of "which model produced what," for audit, disputes, and reputation (Track 04's agent-trust scenario). |
+| **Identity / wallet SDKs** | A reference implementation of a P-256 WebAuthn account + pure-Solidity verifier (works on chains without the RIP-7212 precompile). |
 
-**自己造意味着重写**：WebAuthn 断言解析 + P-256 验证（EC2 COSE key、DER→(r,s)、low-s/边界）、带重放安全 nonce 的 CREATE2 账户、防篡改 challenge 方案、存证注册表、谱系感知的分账器——约一周安全敏感工作；SDK 把它压缩成几个类型化调用。
+**Rolling your own means re-implementing**: WebAuthn assertion parsing + P-256 verification (EC2 COSE keys, DER→(r,s), low-s/edge cases), a CREATE2 account with replay-safe nonces, an anti-tamper challenge scheme, an attestation registry, and a lineage-aware splitter — about a week of security-sensitive work; the SDK compresses it into a few typed calls.
 
-**第一方集成方已就位**：云筑家 App（`virtu-home`）导出方案 JSON 即可接入。
+**The first-party integrator is already in place**: the VirtuHome App (`virtu-home`) can integrate by exporting a scheme JSON.
 
 ### 5. Traction & Path Forward — 20%
-**要求**：有开发者兴趣证据（哪怕黑客松期间**一个别的团队**接入），以及**具体的**赛后集成计划。
+**Asked**: evidence of developer interest (even **one other team** integrating during the hackathon), plus a **specific** post-event integration plan.
 
-- **现状（如实）**：目前**自用 E2E 已跑通，尚无第三方集成**；这一点不夸大。集成所需的「接口」已就绪（SDK + 指南 + 可运行示例）。
-- **赛后计划**（`docs/INTEGRATING.md` §Roadmap，具体可执行）：
-  1. **交付套件**（已完成）：发布 `@designerhub/sdk` + 指南 + 示例；
-  2. **赛事期间落地一个集成方**：云筑家 App 为第一方集成者；招募**一个外部团队**（设计工具 / 资产库 / AI agent 平台）通过 SDK 完成 mint/attest——**只读集成也算**；
-  3. **赛后**：开设小额集成赏金 / "built on Designer Hub" 赛道，新增 `builtWith` 注册表，并托管 Demo（Demo URL + 录制视频）；
-  4. **后续**：relayer 计量 / 付费中继、`AgentRegistry` 的按 agent 分析、为「承诺 + 谱系」模式提 EIP 草案。
+- **Status (honest)**: today **self-served E2E works, but there is no third-party integration yet**; we do not overstate this. The "interface" needed to integrate is ready (SDK + guide + runnable examples).
+- **Post-event plan** (`docs/INTEGRATING.md` §Roadmap, concrete and executable):
+  1. **Ship the kit** (done): publish `@designerhub/sdk` + guide + examples;
+  2. **Land one integrator during the event**: the VirtuHome App is the first-party integrator; recruit **one external team** (a design tool / asset library / AI-agent platform) to mint/attest through the SDK — **even a read-only integration counts**;
+  3. **Post-event**: open a small integration bounty / "built on Designer Hub" track, add a `builtWith` registry, and host the demo (Demo URL + recorded video);
+  4. **Follow-ups**: a metered / paid relayer, per-agent analytics on `AgentRegistry`, and an EIP draft for the "commitment + lineage" pattern.
 
 ---
 
-## 四、现状与诚实缺口（提交前优先项）
+## 4. Status & honest gaps (pre-submission priorities)
 
-| 项 | 状态 |
+| Item | Status |
 | --- | --- |
-| 5 份合约部署 + 96 测试 + 测试网 E2E | ✅ 完成 |
-| SDK / 集成文档 / 安全文档 | ✅ 完成 |
-| 第三方集成证据 | ⚠️ **未达成**——需招募第二个团队（最高优先） |
-| 线上 Demo URL / 演示视频 | ⚠️ **未完成**——README 仍为 `youtu.be/REPLACE_ME` |
+| 5 contracts deployed + 103 tests + testnet E2E | ✅ done |
+| SDK / integration docs / security docs | ✅ done |
+| Third-party integration evidence | ⚠️ **not achieved** — need to recruit a second team (top priority) |
+| Live demo URL / demo video | ⚠️ **not done** — README still has `youtu.be/REPLACE_ME` |
 
 ---
 
-## 五、部署信息（Monad Testnet · chainId 10143）
+## 5. Deployment info (Monad Testnet · chainId 10143)
 
-| 合约 | 地址 |
+| Contract | Address |
 | --- | --- |
 | `DreamScheme` | `0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB` |
 | `SchemeMarket` | `0x51DBCb43D2279e7d108753490794f97AA43877a9` |
@@ -151,17 +162,17 @@ Designer Hub 不是「一个 App」，而是一组**可被第三方集成**的�
 | `ProvenanceRegistry` | `0xCe41D2fa11fC3944662b783ac895D3380B8B09ED` |
 | `PasskeyAccountFactory` | `0x41E72cc140b30891b34Da45f3ed55a525c758C76` |
 
-- 部署块 `66892530` · Kimi `agentId = 1` · 平台 / 部署者 `0x33DD409d85115E300B4570EeB6D4DA7eF1605D08`
-- 浏览器 <https://testnet.monadexplorer.com> · RPC `https://testnet-rpc.monad.xyz` · 水龙头 <https://faucet.monad.xyz>
+- Deploy block `66892530` · Kimi `agentId = 1` · platform / deployer `0x33DD409d85115E300B4570EeB6D4DA7eF1605D08`
+- Explorer <https://testnet.monadexplorer.com> · RPC `https://testnet-rpc.monad.xyz` · Faucet <https://faucet.monad.xyz>
 
 ---
 
-## 六、延伸阅读
+## 6. Further reading
 
-| 文档 | 内容 |
+| Doc | Contents |
 | --- | --- |
-| [`README.md`](../README.md) | 架构、合约、路由、快速开始 |
-| [`docs/INTEGRATING.md`](./INTEGRATING.md) | 原语、采用方、「为什么不自己造」、集成路径、gas 代付、赛后计划 |
-| [`docs/SECURITY.md`](./SECURITY.md) | 威胁模型、P-256/WebAuthn 正确性、relayer 信任、密钥处理 |
-| [`docs/JUDGING-ALIGNMENT.md`](./JUDGING-ALIGNMENT.md) | 逐项对照评分标准（证据 / 缺口 / 行动） |
-| [`sdk/README.md`](../sdk/README.md) | SDK API 参考与示例 |
+| [`README.md`](../README.md) | architecture, contracts, routes, quick start |
+| [`docs/INTEGRATING.md`](./INTEGRATING.md) | primitives, adopters, "why not roll your own", integration paths, gas sponsorship, post-event plan |
+| [`docs/SECURITY.md`](./SECURITY.md) | threat model, P-256/WebAuthn correctness, relayer trust, key handling |
+| [`docs/JUDGING-ALIGNMENT.md`](./JUDGING-ALIGNMENT.md) | criterion-by-criterion mapping (evidence / gaps / actions) |
+| [`sdk/README.md`](../sdk/README.md) | SDK API reference and examples |

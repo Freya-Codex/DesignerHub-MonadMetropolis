@@ -1,49 +1,52 @@
 # Envio HyperIndex — Designer Hub · Monad
 
-把 Designer Hub 五个合约的链上事件索引成可查询的实体，产出 GraphQL 端点，
-**驱动前端的核心数据功能**（不是"装了不用"）。
+Indexes the on-chain events of Designer Hub's five contracts into queryable entities and exposes a
+GraphQL endpoint that **powers the front end's core data features** (not a "install it and forget it"
+dependency).
 
-## 它驱动什么
+## What it powers
 
-| 前端功能 | 数据来源 | 事件 |
+| Front-end feature | Data source | Events |
 |---|---|---|
-| `/trades` 交易账本 | `Trade` 实体 | `SchemeApplied` |
-| `/scheme/[id]` 方案详情 + 血缘 | `Scheme` 实体（按 `parentId`） | `SchemeMinted`、`RoyaltySet` |
-| 衍生分账凭据 | `AncestorPayout` | `AncestorPaid` |
-| `/board` Agent 信誉榜 | `Agent`、`ReputationEvent` | `AgentRegistered`、`ReputationAdded` |
-| 链上确权记录 | `Attestation` | `Attested` |
+| `/trades` trade ledger | `Trade` entity | `SchemeApplied` |
+| `/scheme/[id]` scheme detail + lineage | `Scheme` entity (by `parentId`) | `SchemeMinted`, `RoyaltySet` |
+| Derivative split receipts | `AncestorPayout` | `AncestorPaid` |
+| `/board` agent reputation board | `Agent`, `ReputationEvent` | `AgentRegistered`, `ReputationAdded` |
+| On-chain attestation records | `Attestation` | `Attested` |
 
-## 为什么需要它（而不是直接用 RPC）
+## Why it's needed (instead of querying RPC directly)
 
-Monad 测试网公共 RPC 把 `eth_getLogs` 限制在 **100 个区块**内，而从部署块
-`66892530` 到最新块之间已有**千万级区块**。前端/脚本若自己扫全史，需要上万次请求、
-既慢又易缺（现在的 `index-activity.ts` 离线分片正是为此）。Envio **HyperSync**
-负责历史回填，**HyperIndex** 把事件整理成实体，前端只查 GraphQL。
+Monad's public testnet RPC caps `eth_getLogs` at **100 blocks**, while the span from the deploy block
+`66892530` to the latest block is already **tens of millions of blocks**. If the front end or scripts
+scanned the full history themselves it would take tens of thousands of requests — slow and easy to miss
+(the current `index-activity.ts` offline sharding exists for exactly this reason). Envio **HyperSync**
+handles historical backfill and **HyperIndex** turns events into entities, so the front end only queries
+GraphQL.
 
-## 快速开始
+## Quick start
 
 ```bash
 cd envio
-pnpm install          # 或 npm install
-pnpm codegen          # 依据 config.yaml + schema.graphql 生成类型
-cp .env.example .env  # 填入 ENVIO_API_TOKEN（Envio Cloud 控制台获取）
-pnpm dev              # 本地起索引器 + GraphQL（默认 http://localhost:8080）
+pnpm install          # or npm install
+pnpm codegen          # generate types from config.yaml + schema.graphql
+cp .env.example .env  # set ENVIO_API_TOKEN (from the Envio Cloud console)
+pnpm dev              # run the local indexer + GraphQL (default http://localhost:8080)
 ```
 
-部署到 Envio Cloud（推荐，评审可访问托管端点）：
+Deploy to Envio Cloud (recommended — gives reviewers a hosted endpoint):
 
 ```bash
 pnpm dlx envio@latest deploy
 ```
 
-## 网络
+## Network
 
-- **Monad Testnet**，chainId `10143`，start_block `66892530`
-- 合约地址见 `config.yaml`（与 `contracts/deployments/monad-testnet.json` 一致）
+- **Monad Testnet**, chainId `10143`, start_block `66892530`
+- Contract addresses are in `config.yaml` (consistent with `contracts/deployments/monad-testnet.json`)
 
-## 与前端 / Alchemy 的关系
+## Relationship to the front end / Alchemy
 
-- **Envio** = 读路径 / 索引层：GraphQL 驱动 `/trades`、`/scheme/[id]`、`/board`。
-- **Alchemy**（`web/lib/serverRpc.ts`）= 写路径 / RPC 通道：relay 代付、fallback transport。
-- 前端保留公共 RPC 兜底：即使 Envio 未部署，站点也不会白屏。
-- 索引端点只读、无密钥，不违反仓库 "no secrets in repo" 约定。
+- **Envio** = read path / index layer: GraphQL drives `/trades`, `/scheme/[id]`, `/board`.
+- **Alchemy** (`web/lib/serverRpc.ts`) = write path / RPC channel: relay sponsorship, fallback transport.
+- The front end keeps a public-RPC fallback: even if Envio is not deployed, the site does not go blank.
+- The index endpoint is read-only and key-free, honoring the repo's "no secrets in repo" rule.

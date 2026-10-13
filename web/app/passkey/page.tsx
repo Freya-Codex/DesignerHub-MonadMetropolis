@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * /passkey —— Passkey 钱包（主流程入口）。
+  * /passkey -- Passkey wallet (main flow entry).
  *
- * 全流程无需助记词、无需持有 MON：
- *   1) 用设备安全芯片（Face ID / Touch ID / Windows Hello）创建 passkey；
- *   2) CREATE2 工厂推导出确定性账户地址（counterfactual，部署前即可用）；
- *   3) relayer 代付 gas 部署账户；
- *   4) 用一次 passkey 签名执行链上动作（此处演示：在 ProvenanceRegistry 留下一条确权记录）。
+  * The whole flow needs no seed phrase and no MON:
+  *   1) create a passkey with the device secure chip (Face ID / Touch ID / Windows Hello);
+  *   2) the CREATE2 factory derives a deterministic account address (counterfactual, usable before deployment);
+  *   3) the relayer pays the gas to deploy the account;
+  *   4) perform an on-chain action with a single passkey signature (here: leave an attestation record in ProvenanceRegistry).
  *
- * MetaMask 保留为「备选」（页内下方可连接），供习惯 EOA 的开发者使用。
+  * MetaMask is kept as an "alternative" (connectable lower on the page) for developers used to EOAs.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -106,10 +106,10 @@ export default function PasskeyPage() {
     [factory, refreshChain]
   );
 
-  // 载入本机已保存的 passkey
+  // Load the locally saved passkey
   useEffect(() => {
     setSupported(typeof window !== "undefined" && Boolean(window.PublicKeyCredential));
-    // WebAuthn 要求 RP ID 为合法域名，浏览器拒绝 IP 字面量（如 127.0.0.1）→ 提示改用 localhost
+    // WebAuthn requires RP ID to be a valid domain; browsers reject IP literals (e.g. 127.0.0.1) -> prompt to use localhost
     const ip = typeof window !== "undefined" && isIpLiteralHost(window.location.hostname);
     setHostIsIp(ip);
     if (ip && typeof window !== "undefined") {
@@ -177,7 +177,7 @@ export default function PasskeyPage() {
       const client = publicClientFor();
       if (!client) throw new Error(t("缺少只读客户端", "Missing read-only client"));
 
-      // commitment = keccak256(contentHash ‖ salt)，内容不入链（隐私模型）
+      // commitment = keccak256(contentHash ‖ salt); the content is not put on-chain (privacy model)
       const contentHash = keccak256(toHex(`designer-hub-demo-${Date.now()}`));
       const salt = crypto.getRandomValues(new Uint8Array(32));
       const commitment = keccak256(encodePacked(["bytes32", "bytes32"], [contentHash, toHex(salt)]));
@@ -185,7 +185,7 @@ export default function PasskeyPage() {
       const data = encodeFunctionData({
         abi: provenanceRegistryAbi,
         functionName: "attest",
-        // 通用演示存证：无具体方案 / provider，用默认 agent（Custom=12）。
+        // Generic demo attestation: no specific scheme / provider, so use the default agent (Custom=12).
         args: [commitment, DEFAULT_AGENT_ID, ""]
       });
 

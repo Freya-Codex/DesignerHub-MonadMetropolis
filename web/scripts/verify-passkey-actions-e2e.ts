@@ -1,14 +1,14 @@
 /**
- * verify-passkey-actions-e2e.ts —— 端到端：Passkey（无 MetaMask、免 gas）完成 Remix 铸造 + 创作者定价。
+  * verify-passkey-actions-e2e.ts -- end-to-end: a Passkey (no MetaMask, gas-free) completes a Remix mint + creator pricing.
  *
- * 覆盖：
- *   1) /passkey 新建 passkey；
- *   2) /mint/create 用 Passkey 铸造一个原创方案（得到 tokenId A，owner = passkey 账户）；
- *   3) /scheme/A 作为创作者用 Passkey 执行 setPrice（上架定价）；
- *   4) /remix/A 用 Passkey 执行 remix（衍生铸造），解析出 tokenId B。
+  * Covers:
+  *   1) create a new passkey at /passkey;
+  *   2) mint an original scheme with the Passkey at /mint/create (get tokenId A, owner = passkey account);
+  *   3) as the creator, run setPrice at /scheme/A with the Passkey (list & price);
+  *   4) run remix (derivative mint) with the Passkey at /remix/A, parsing out tokenId B.
  *
- * 用法：cd web && DH_CDP_PORT=9999 npx tsx scripts/verify-passkey-actions-e2e.ts
- * 前置：站点已在 http://localhost:3005 提供服务。默认自带全新 Chrome。
+  * Usage: cd web && DH_CDP_PORT=9999 npx tsx scripts/verify-passkey-actions-e2e.ts
+  * Prerequisite: the site is serving at http://localhost:3005. Spins up a fresh Chrome by default.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -146,7 +146,7 @@ async function main() {
     });
     console.log("虚拟认证器已注入");
 
-    // 1) 新建 passkey
+    // 1) Create a new passkey
     await goto("/passkey");
     await sleep(300);
     await ev(`localStorage.removeItem('dh.passkey.v1')`);
@@ -157,7 +157,7 @@ async function main() {
     check(hasPk, "创建 Passkey");
     if (!hasPk) throw new Error("passkey 创建失败");
 
-    // 2) 用 Passkey 铸造原创方案
+    // 2) Mint an original scheme with the Passkey
     await goto("/mint/create");
     await sleep(600);
     await clickWhenReady("/载入示例/");
@@ -169,7 +169,7 @@ async function main() {
     check(minted && !!tokenA, "Passkey 铸造原创方案", tokenA ? `tokenId #${tokenA}` : "未解析到 tokenId");
     if (!tokenA) throw new Error("未铸出 tokenId");
 
-    // 3) 创作者用 Passkey 定价（setPrice）
+    // 3) Creator sets the price with the Passkey (setPrice)
     await goto(`/scheme/${tokenA}`);
     const sellerPanel = await waitFor(`/创作者定价|SELLER/.test(document.body.innerText)`, 80);
     check(sellerPanel, "详情页出现「创作者定价」面板（passkey 即创作者）");
@@ -183,7 +183,7 @@ async function main() {
       check(priced, "Passkey setPrice（免 gas）", priceNote || "无回执文本");
     }
 
-    // 3.5) 创作者用 Passkey 设置收款地址（setPayout）
+    // 3.5) Creator sets the payout address with the Passkey (setPayout)
     if (sellerPanel) {
       const payoutAddr = "0x1111111111111111111111111111111111111111";
       const setOk = await setInput('[data-testid="creator-payout-input"]', payoutAddr);
@@ -198,7 +198,7 @@ async function main() {
       check(String(shown).toLowerCase() === payoutAddr, "面板回显创作者收款地址", String(shown));
     }
 
-    // 4) 用 Passkey 做 Remix 衍生铸造
+    // 4) Do a Remix derivative mint with the Passkey
     await goto(`/remix/${tokenA}`);
     const signerRow = await waitFor(`/SIGNER \\/ 签名/.test(document.body.innerText)`, 80);
     const showsPasskey = await ev(`/Passkey/.test(document.body.innerText)`);

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import subprocess, os, tempfile, re
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-ROOT = "/Users/freya/Desktop/VirtuHome/monad"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PUB = os.path.join(ROOT, "web/public")
 
 def read(p): return open(p, encoding="utf-8").read()

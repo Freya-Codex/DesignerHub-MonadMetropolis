@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * lib/schemeCodec.ts —— 方案码（base64url）编解码。
+  * lib/schemeCodec.ts -- scheme code (base64url) encode/decode.
  *
- * 与「云筑家 VirtuHome Web MVP」保持一致：JSON → deflate-raw 压缩 → base64url。
- * 使用浏览器原生 CompressionStream / DecompressionStream，无需第三方库。
+  * Consistent with the VirtuHome Web MVP: JSON -> deflate-raw compression -> base64url.
+  * Uses the browser-native CompressionStream / DecompressionStream; no third-party library.
  *
- * 解码时兼容两种来源：
- *   1) 本站方案（DesignScheme）；
- *   2) VirtuHome 的 HomePlan —— 自动转换为 DesignScheme（best-effort）。
+  * Decoding accepts two sources:
+  *   1) this site's scheme (DesignScheme);
+  *   2) VirtuHome's HomePlan -- auto-converted to DesignScheme (best-effort).
  */
 
 import { validateScheme, type DesignScheme, type FurnitureItem, type GeneratorInfo } from "@/lib/scheme";
@@ -41,7 +41,7 @@ function base64urlToBytes(s: string): Uint8Array {
   return out;
 }
 
-/** DesignScheme → 方案码（压缩 + base64url）。分享时可去掉体积大的 previewImage。 */
+/** DesignScheme -> scheme code (compress + base64url). The bulky previewImage may be dropped when sharing. */
 export async function encodeSchemeCode(scheme: DesignScheme, opts: { stripPreview?: boolean } = {}): Promise<string> {
   const clone: DesignScheme = JSON.parse(JSON.stringify(scheme));
   if (opts.stripPreview !== false) delete clone.previewImage;
@@ -56,7 +56,7 @@ export interface DecodedScheme {
   note: string;
 }
 
-/** 方案码 → DesignScheme（自动识别本站方案 / VirtuHome HomePlan）。 */
+/** Scheme code -> DesignScheme (auto-detects this site's scheme / VirtuHome HomePlan). */
 export async function decodeSchemeCode(code: string): Promise<DecodedScheme> {
   const cleaned = String(code || "").trim().replace(/\s+/g, "");
   if (!cleaned) throw new Error(L("方案码为空", "Scheme code is empty"));
@@ -72,7 +72,7 @@ export async function decodeSchemeCode(code: string): Promise<DecodedScheme> {
   try {
     json = td.decode(await through(bytes, new DecompressionStream("deflate-raw")));
   } catch {
-    // 兜底：也许码里是未压缩的 base64url JSON
+    // Fallback: the code may be uncompressed base64url JSON
     try {
       json = td.decode(bytes);
     } catch {
@@ -143,7 +143,7 @@ function slug(s: string): string {
 
 const DEFAULT_PALETTE = ["#F5F1E8", "#BEC9B3", "#D9C7A7", "#4A4A44", "#FFFFFF"];
 
-/** VirtuHome HomePlan → 本站 DesignScheme（best-effort，保证可通过 validateScheme）。 */
+/** VirtuHome HomePlan -> this site's DesignScheme (best-effort, guaranteed to pass validateScheme). */
 export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
   const brief = plan.brief ?? {};
   const modA = plan.moduleA ?? {};
@@ -170,7 +170,7 @@ export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
   const theme = (String(brief.style || (Array.isArray(modA.keywords) && modA.keywords[0]) || L("现代", "Modern")).trim() || L("现代", "Modern")).slice(0, 24);
   const mood = String(modA.styleSummary || (Array.isArray(modA.keywords) ? modA.keywords.join(" · ") : "")).slice(0, 24);
 
-  // 拍平 HomePlan 的房间家具清单，补上 DesignScheme 需要的几何占位（position/rotation/scale）
+  // Flatten HomePlan's room furniture list and fill in the geometry placeholders DesignScheme needs (position/rotation/scale)
   const flat: Array<{ category?: string; name?: string; brand?: string }> = [];
   const rooms = Array.isArray(plan.moduleB?.rooms) ? plan.moduleB.rooms : [];
   outer: for (const room of rooms) {
@@ -221,7 +221,7 @@ export function homePlanToScheme(plan: Record<string, any>): DesignScheme {
   };
 }
 
-/** HomePlan.meta.generator → DesignScheme.generator（只留 provider / model / at）。 */
+/** HomePlan.meta.generator -> DesignScheme.generator (keep only provider / model / at). */
 function normalizeGenerator(raw: any): GeneratorInfo | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const provider = typeof raw.provider === "string" && raw.provider.trim() ? raw.provider.trim() : undefined;

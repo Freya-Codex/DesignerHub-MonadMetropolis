@@ -1,8 +1,8 @@
 import { defineChain } from "viem";
 
 /**
- * Monad 测试网（Chain ID 10143），EVM 完全兼容。
- * 文档：https://testnet.monad.xyz
+  * Monad Testnet (Chain ID 10143), fully EVM-compatible.
+  * Docs: https://testnet.monad.xyz
  */
 export const monadTestnet = defineChain({
   id: 10143,
@@ -15,8 +15,8 @@ export const monadTestnet = defineChain({
   blockExplorers: {
     default: { name: "Monad Explorer", url: "https://testnet.monadexplorer.com" }
   },
-  // viem 内置链定义里没有 Monad 的 Multicall3，缺了它 client.multicall() 会直接报错。
-  // 该合约已按 canonical 地址部署在 Monad 测试网（codesize 3808，getBlockNumber() 可调用）。
+  // viem's built-in chain definition has no Multicall3 for Monad; without it client.multicall() errors out.
+  // That contract is deployed at the canonical address on Monad Testnet (codesize 3808, getBlockNumber() callable).
   contracts: {
     multicall3: {
       address: "0xcA11bde05977b3631167028862bE2a173976CA11"

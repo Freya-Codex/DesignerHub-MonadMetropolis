@@ -1,16 +1,16 @@
 /**
- * verify-passkey-parse.ts —— 回归测试：createPasskey 从 WebAuthn 注册响应中解析 P-256 公钥。
+  * verify-passkey-parse.ts -- regression test: createPasskey parses the P-256 public key from the WebAuthn registration response.
  *
- * 背景：真实浏览器的 `AuthenticatorAttestationResponse.getPublicKey()` 返回 **SPKI DER**（91B，首字节 0x30），
- * 而非原始非压缩点（0x04‖X‖Y）；`attestationObject` 又是 CBOR 包装对象（含 authData）。
- * 本测试用 Node crypto 生成真实 P-256 密钥，构造可信的 SPKI / attestationObject，验证两条解析路径都正确。
+  * Background: a real browser's `AuthenticatorAttestationResponse.getPublicKey()` returns **SPKI DER** (91B, first byte 0x30),
+  * not the raw uncompressed point (0x04‖X‖Y); and `attestationObject` is a CBOR wrapper object (containing authData).
+  * This test uses Node crypto to generate a real P-256 key, builds a trustworthy SPKI / attestationObject, and verifies both parse paths.
  *
- * 运行：cd web && npx tsx scripts/verify-passkey-parse.ts
+  * Run: cd web && npx tsx scripts/verify-passkey-parse.ts
  */
 import { generateKeyPairSync, type KeyObject } from "node:crypto";
 import { createPasskey } from "../lib/passkey";
 
-// ---------- 最小 CBOR 编码（仅测试构造用） ----------
+// ---------- minimal CBOR encoding (for test construction only) ----------
 function cborInt(n: number): number[] {
   if (n >= 0 && n < 24) return [n];
   if (n >= 0 && n < 256) return [0x18, n];
@@ -30,7 +30,7 @@ function cborMap(entries: Array<[number[], number[]]>): number[] {
   return [0xa0 | entries.length, ...entries.flatMap(([k, v]) => [...k, ...v])];
 }
 
-// ---------- 构造真实 P-256 密钥材料 ----------
+// ---------- build real P-256 key material ----------
 const { publicKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
 const jwk = publicKey.export({ format: "jwk" }) as { x: string; y: string };
 const b64u = (s: string) => Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/"), "base64");
@@ -43,7 +43,7 @@ const expectedX = "0x" + Buffer.from(xBytes).toString("hex");
 const expectedY = "0x" + Buffer.from(yBytes).toString("hex");
 const credId = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 
-// ---------- 构造 authData ----------
+// ---------- build authData ----------
 const rpIdHash = new Uint8Array(32).fill(0xab);
 const flags = 0x41; // UP + AT
 const signCount = new Uint8Array([0, 0, 0, 0]);

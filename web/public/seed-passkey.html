@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Seed Passkey · 测试用通行密钥</title>
+    <title>Seed Passkey · test passkey</title>
     <style>
       body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
         background:#0d0d12;color:#e9e9f2;display:grid;place-items:center;min-height:100vh}
@@ -20,27 +20,27 @@
   </head>
   <body>
     <div class="card">
-      <h1>Passkey 测试种子 · Passkey test seed</h1>
+      <h1>Passkey test seed</h1>
       <p>
-        本页仅用于本地测试：把一个<b>伪造的</b> passkey 记录写入浏览器
-        <code>localStorage["dh.passkey.v1"]</code>，让「铸造中心 / 交易 / 顶部 Passkey 控件」按
-        <b>Passkey 已创建</b>的状态渲染。<b>不代表真实身份、不能签名、不能铸造。</b>
+        This page is for local testing only: it writes a<b>fake</b> passkey record into the browser's
+        <code>localStorage["dh.passkey.v1"]</code>, so the mint center / trades / top Passkey control render as if
+        <b>a Passkey has been created</b>. <b>It is not a real identity, cannot sign, and cannot mint.</b>
       </p>
       <p>
         Test-only page: writes a <b>fake</b> passkey record into
         <code>localStorage["dh.passkey.v1"]</code> so pages render as if a passkey exists.
         It is <b>not a real credential</b>, cannot sign, and cannot mint.
       </p>
-      <p>种子 x / y：<code id="xy"></code></p>
+      <p>Seed x / y: <code id="xy"></code></p>
       <div class="row">
-        <button class="primary" id="go">写入并前往 /mint</button>
-        <button id="goTrades">写入并前往 /trades</button>
-        <button id="clear">清除并刷新</button>
+        <button class="primary" id="go">Write and go to /mint</button>
+        <button id="goTrades">Write and go to /trades</button>
+        <button id="clear">Clear and reload</button>
       </div>
       <p id="msg" style="color:#8be28b;display:none;margin-top:14px"></p>
     </div>
     <script>
-      // 任意 32 字节坐标即可（工厂 accountOf 仅做 CREATE2 计算，不校验曲线点）。
+      // Any 32-byte coordinates suffice (the factory's accountOf only does a CREATE2 computation; it does not validate curve points).
       var CRED = {
         credentialIdB64: "dGVzdC1jcmVkZW50aWFsLWlk",
         x: "0x7a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff0",
@@ -57,7 +57,7 @@
         location.reload();
       };
 
-      // 自动化：/seed-passkey.html?auto=1&to=/mint → 写入后直接跳转（供截图/回归测试）。
+      // Automation: /seed-passkey.html?auto=1&to=/mint -> write then redirect immediately (for screenshots/regression tests).
       (function () {
         var q = new URLSearchParams(location.search);
         if (q.get("auto") === "1") {

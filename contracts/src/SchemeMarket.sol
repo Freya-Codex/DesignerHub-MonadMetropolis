@@ -4,39 +4,39 @@ pragma solidity ^0.8.24;
 import {DreamScheme} from "./DreamScheme.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @title SchemeMarket — 方案「使用权」交易与谱系分账
+/// @title SchemeMarket — scheme "usage rights" trading and lineage-aware splits
 ///
-/// @notice 价格由**创作者**为每个方案单独设定（setPrice）；购买使用权
-///         （applyScheme）时按谱系自动分流：
+/// @notice The price is set by the **creator** for each scheme individually (setPrice); when usage rights are
+///         purchased (applyScheme) the payment is routed automatically along the lineage:
 ///
-///   - 原创方案被应用：创作者 90% / 平台 10%；
-///   - 衍生方案被应用：二创作者 85% / 平台 10% / 原作谱系共享 5%
-///     （多个祖先去重后均分；若某祖先就是二创作者本人，其份额并入 85% 主体）。
+///   - an original scheme is applied: creator 90% / platform 10%;
+///   - a derivative scheme is applied: remixer 85% / platform 10% / original lineage pool 5%
+///     (deduplicated ancestors split evenly; if an ancestor is the remixer themselves, their share folds into the 85% main portion).
 ///
-///         谱系回溯上限 16 层；取整余数归平台，保证无悬浮资金。
-/// @dev 合约不可升级；平台地址在构造时固化。收款失败直接 revert（原子性优先）。
+///         Lineage backtracking is capped at 16 levels; rounding remainders go to the platform, so no funds are left floating.
+/// @dev Non-upgradeable; the platform address is fixed at construction. A failed payment reverts directly (atomicity first).
 contract SchemeMarket is ReentrancyGuard {
     uint256 public constant MAX_BPS = 10_000;
-    uint256 public constant CREATOR_BPS_ORIGINAL = 9_000; // 原创被应用：创作者 90%
-    uint256 public constant CREATOR_BPS_REMIX = 8_500; // 衍生被应用：二创作者 85%
-    uint256 public constant PLATFORM_BPS = 1_000; // 平台 10%
-    /// @notice 谱系回溯最大深度。
+    uint256 public constant CREATOR_BPS_ORIGINAL = 9_000; // original applied: creator 90%
+    uint256 public constant CREATOR_BPS_REMIX = 8_500; // derivative applied: remixer 85%
+    uint256 public constant PLATFORM_BPS = 1_000; // platform 10%
+    /// @notice Maximum lineage backtracking depth.
     uint256 public constant MAX_LINEAGE_DEPTH = 16;
 
     DreamScheme public immutable scheme;
-    /// @notice 平台收益地址（构造时固化，不可变 = 抗单点捕获的一部分）。
+    /// @notice Platform revenue address (fixed at construction, immutable = part of the resistance to single-point capture).
     address payable public immutable platform;
 
-    /// @notice 每个方案的使用权价格（wei）；0 = 未上架。
+    /// @notice Usage-rights price of each scheme (wei); 0 = not listed.
     mapping(uint256 tokenId => uint256 price) public priceOf;
 
-    /// @notice 每个方案可选的**收款地址**（0 = 默认，直接付给 creatorOf）。
-    ///         让 passkey 智能账户保持「身份」，收益可选地直达外部钱包。
+    /// @notice Optional **payout address** per scheme (0 = default, pay creatorOf directly).
+    ///         Lets a passkey smart account keep its "identity" while revenue optionally goes straight to an external wallet.
     mapping(uint256 tokenId => address payout) public payoutOf;
 
-    /// @notice 累计成功应用次数（全局）。
+    /// @notice Cumulative successful applies (global).
     uint256 public totalApplied;
-    /// @notice 每个方案被应用的次数（排行榜）。
+    /// @notice Per-scheme apply count (leaderboard).
     mapping(uint256 tokenId => uint256 count) public appliedCount;
 
     event PriceSet(uint256 indexed tokenId, address indexed creator, uint256 price);
@@ -48,9 +48,9 @@ contract SchemeMarket is ReentrancyGuard {
         uint256 creatorCut,
         uint256 platformCut
     );
-    /// @notice 衍生方案被应用时，按谱系付给祖先创作者的份额。
+    /// @notice When a derivative scheme is applied, the share paid to ancestor creators along the lineage.
     event AncestorPaid(uint256 indexed tokenId, address indexed ancestor, uint256 amount);
-    /// @notice 创作者更新某方案的收款地址。
+    /// @notice The creator updates a scheme's payout address.
     event PayoutSet(uint256 indexed tokenId, address indexed creator, address payout);
 
     error SchemeNotMinted(uint256 tokenId);
@@ -65,10 +65,10 @@ contract SchemeMarket is ReentrancyGuard {
     }
 
     // ------------------------------------------------------------------ //
-    //                            定价                                     //
+    //                           Pricing                                  //
     // ------------------------------------------------------------------ //
 
-    /// @notice 创作者为自己的方案设定使用权价格；价格 > 0 即上架，0 即下架。
+    /// @notice A creator sets the usage-rights price of their own scheme; price > 0 lists it, 0 delists it.
     function setPrice(uint256 tokenId, uint256 price) external {
         address creator = scheme.creatorOf(tokenId);
         if (creator == address(0)) revert SchemeNotMinted(tokenId);
@@ -77,9 +77,9 @@ contract SchemeMarket is ReentrancyGuard {
         emit PriceSet(tokenId, creator, price);
     }
 
-    /// @notice 创作者设定某方案的收款地址（0 = 恢复默认，直接收给创作者地址）。
-    /// @dev 收款地址只影响「钱去哪」，不影响身份 / 所有权 / 谱系归因；
-    ///      passkey 创作者可把它指向自己的外部钱包，从而不把资金留在智能账户。
+    /// @notice A creator sets a scheme's payout address (0 = restore default, pay the creator address directly).
+    /// @dev The payout address affects only "where the money goes", not identity / ownership / lineage attribution;
+    ///      a passkey creator can point it at their external wallet so funds do not sit in the smart account.
     function setPayout(uint256 tokenId, address payout) external {
         address creator = scheme.creatorOf(tokenId);
         if (creator == address(0)) revert SchemeNotMinted(tokenId);
@@ -89,11 +89,11 @@ contract SchemeMarket is ReentrancyGuard {
     }
 
     // ------------------------------------------------------------------ //
-    //                          购买使用权                                 //
+    //                      Purchase usage rights                       //
     // ------------------------------------------------------------------ //
 
-    /// @notice 支付创作者定价购买一份方案的使用权，金额按谱系自动分账。
-    /// @dev 多付部分自动退回 msg.sender。
+    /// @notice Pay the creator's price to purchase usage rights for a scheme; the amount is split along the lineage automatically.
+    /// @dev Any overpayment is automatically refunded to msg.sender.
     function applyScheme(uint256 tokenId)
         external
         payable
@@ -111,28 +111,28 @@ contract SchemeMarket is ReentrancyGuard {
 
         uint256 ancestorPool;
         if (scheme.parentOf(tokenId) == 0) {
-            // —— 原创方案：90 / 10 ——
+            // —— Original scheme: 90 / 10 ——
             creatorCut = (price * CREATOR_BPS_ORIGINAL) / MAX_BPS;
             platformCut = price - creatorCut;
             _pay(_payee(tokenId), creatorCut);
         } else {
-            // —— 衍生方案：85（二创作者）/ 10（平台）/ 5（原作谱系，均分） ——
+            // —— Derivative scheme: 85 (remixer) / 10 (platform) / 5 (original lineage, split evenly) ——
             creatorCut = (price * CREATOR_BPS_REMIX) / MAX_BPS;
             platformCut = (price * PLATFORM_BPS) / MAX_BPS;
-            ancestorPool = price - creatorCut - platformCut; // ≈5%，吸收取整误差
+            ancestorPool = price - creatorCut - platformCut; // ≈5%, absorbs rounding error
 
             address creatorPayee = _payee(tokenId);
             address[] memory payees = _uniqueAncestorPayees(tokenId);
             if (payees.length == 0) {
-                // 谱系回溯为空（理论不可达）：并入平台，避免悬浮资金
+                // Lineage backtracking is empty (theoretically unreachable): fold into the platform to avoid floating funds
                 platformCut += ancestorPool;
             } else {
                 uint256 each = ancestorPool / payees.length;
-                platformCut += ancestorPool - each * payees.length; // 取整余数归平台
+                platformCut += ancestorPool - each * payees.length; // rounding remainder goes to the platform
                 uint256 extraToCreator = 0;
                 for (uint256 i = 0; i < payees.length; i++) {
                     if (payees[i] == creatorPayee) {
-                        // 祖先收款地址即二创作者本人：并入其主体份额
+                        // The ancestor's payout address is the remixer themselves: fold into their main share
                         extraToCreator += each;
                     } else {
                         _pay(payees[i], each);
@@ -145,7 +145,7 @@ contract SchemeMarket is ReentrancyGuard {
         }
         _pay(platform, platformCut);
 
-        // 多付部分退款
+        // Refund overpayment
         if (msg.value > price) {
             _pay(msg.sender, msg.value - price);
         }
@@ -154,11 +154,11 @@ contract SchemeMarket is ReentrancyGuard {
     }
 
     // ------------------------------------------------------------------ //
-    //                            查询                                     //
+    //                            Queries                                //
     // ------------------------------------------------------------------ //
 
-    /// @notice 预览某价格下的分账（原创 90/10 或按谱系 85/10/5）。
-    /// @dev 第三个返回值为「祖先收款地址」（去重后）；未设 payout 时即祖先创作者地址。
+    /// @notice Preview the split for a given price (90/10 for originals, or 85/10/5 along the lineage).
+    /// @dev The third return value is the "ancestor payout addresses" (deduplicated); when payout is unset it is the ancestor creator address.
     function splitPreview(uint256 tokenId, uint256 amount)
         external
         view
@@ -177,16 +177,16 @@ contract SchemeMarket is ReentrancyGuard {
     }
 
     // ------------------------------------------------------------------ //
-    //                            内部                                     //
+    //                           Internal                                //
     // ------------------------------------------------------------------ //
 
-    /// @dev 方案的收款地址：payoutOf 非零则用之，否则回退到创作者地址。
+    /// @dev A scheme's payout address: use payoutOf if non-zero, otherwise fall back to the creator address.
     function _payee(uint256 tokenId) private view returns (address) {
         address p = payoutOf[tokenId];
         return p == address(0) ? scheme.creatorOf(tokenId) : p;
     }
 
-    /// @dev 沿 parentId 收集去重后的祖先**收款地址**（≤16 层）。未设 payout 时即祖先创作者。
+    /// @dev Walk parentId to collect the deduplicated ancestor **payout addresses** (≤16 levels). When payout is unset it is the ancestor creator.
     function _uniqueAncestorPayees(uint256 tokenId) private view returns (address[] memory payees) {
         uint256 depth = 0;
         uint256 cursor = scheme.parentOf(tokenId);

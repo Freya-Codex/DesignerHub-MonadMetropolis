@@ -13,28 +13,29 @@ web/node_modules/
 web/.next/
 web/out/
 web/.local-pins/
-# 链上活动索引（离线生成，activity.json 随仓库提交以便线上直接读取）
+# On-chain activity index (generated offline; activity.json is committed so the live site can read it)
 web/data/*
 !web/data/activity.json
 web/next-env.d.ts
 web/*.tsbuildinfo
 
-# 环境变量
+# Environment variables
 .env
 .env.*
 !.env.example
 web/.env.local
 web/.env.*.local
 
-# ClawHive agent 本地工作记忆（非项目文件）
-/memory/
-
-# SDK (@yunzhujia/sdk)
+# SDK (@designerhub/sdk)
 sdk/node_modules/
 sdk/dist/
 
-# ClawHive Agent 本地文件（非项目文件，不入库）
-/.openclaw/
+# Sub-project dependencies
+/brand/node_modules/
+/pitch/node_modules/
+
+# Local scratch / assistant workspace files (never part of the project source)
+/memory/
 /AGENTS.md
 /SOUL.md
 /TOOLS.md
@@ -44,6 +45,9 @@ sdk/dist/
 /MEMORY.md
 /BOOTSTRAP.md
 
-# 子项目依赖
-/brand/node_modules/
-/pitch/node_modules/
+# Root-level dotfiles & dot-dirs used for local tooling only (explicit allow-list below)
+/.[A-Za-z]*
+!/.env.example
+!/.github/
+!/.workflow/
+!/.gitignore

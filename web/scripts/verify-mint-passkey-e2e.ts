@@ -1,11 +1,11 @@
 /**
- * verify-mint-passkey-e2e.ts —— 端到端：用 Passkey（无 MetaMask、免 gas）完成一次「固定 + 铸造」。
+  * verify-mint-passkey-e2e.ts -- end-to-end: complete a "pin + mint" with a Passkey (no MetaMask, gas-free).
  *
- * 覆盖：/passkey 创建 passkey → /mint/create 载入示例 JSON → 固定到 IPFS → passkey 账户自动部署
- * → 用 passkey 签名经 relayer 提交 DreamScheme.mint → 解析出 tokenId。
+  * Covers: create a passkey at /passkey -> load sample JSON at /mint/create -> pin to IPFS -> auto-deploy the passkey account
+  * -> submit DreamScheme.mint via the relayer with a passkey signature -> parse out the tokenId.
  *
- * 用法：cd web && npx tsx scripts/verify-mint-passkey-e2e.ts
- * 前置：站点已在 http://localhost:3005 提供服务。复用 OpenClaw Chrome（DH_CDP_PORT，默认 38800）。
+  * Usage: cd web && npx tsx scripts/verify-mint-passkey-e2e.ts
+  * Prerequisite: the site is serving at http://localhost:3005. Reuses an existing debug-port Chrome (DH_CDP_PORT, default 38800).
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -170,7 +170,7 @@ async function main() {
     });
     console.log("虚拟认证器已注入");
 
-    // 1) 每次都用当前虚拟认证器新建一个 passkey（避免复用上一轮的陈旧凭证）
+    // 1) Always create a fresh passkey with the current virtual authenticator (avoid reusing the previous round's stale credential)
     await goto("/passkey");
     await sleep(400);
     await ev(`localStorage.removeItem('dh.passkey.v1')`);
@@ -181,7 +181,7 @@ async function main() {
     const ok = await waitFor(`!!localStorage.getItem('dh.passkey.v1')`);
     if (!ok) throw new Error("passkey 创建失败");
 
-    // 2) 铸造页
+    // 2) Mint page
     await goto("/mint/create");
     await sleep(600);
     const viaCode = process.env.DH_MINT_VIA === "code";
@@ -222,7 +222,7 @@ async function main() {
     console.log("\n=== console / exceptions ===");
     for (const e of cdp.events.slice(-30)) console.log("  " + e);
 
-    // 读铸造结果
+    // Read the mint result
     const success = await ev(`(()=>{const m=document.body.innerText.match(/铸造成功！你的原创方案是\\s*#(\\d+)/);return m?m[1]:null;})()`);
     const err = await ev(`(()=>{const els=[...document.querySelectorAll('div')].map(d=>d.innerText).filter(t=>/铸造失败|失败：|请先/.test(t));return els[0]||null;})()`);
 

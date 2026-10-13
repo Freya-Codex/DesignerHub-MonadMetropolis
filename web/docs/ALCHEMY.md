@@ -1,55 +1,59 @@
-# Alchemy 集成说明（服务端数据层）
+# Alchemy integration notes (server-side data layer)
 
-Designer Hub 把 Alchemy 作为 **服务端数据层**：RPC（读链/索引）与 Webhooks（事件推送）。
-**前端保持零密钥**——所有 Alchemy 访问都发生在 Next.js 服务端路由/脚本里。
+Designer Hub uses Alchemy as a **server-side data layer**: RPC (chain reads / indexing) and Webhooks
+(event push). **The front end stays key-free** — all Alchemy access happens in Next.js server routes or
+scripts.
 
-## 为什么放在服务端
+## Why it lives on the server
 
-- `NEXT_PUBLIC_*` 会被内联进前端 bundle → 等于公开。因此 Alchemy Key **只用 `ALCHEMY_API_KEY`**（无前缀）。
-- 前端（wagmi / `publicClientFor` / 浏览器尾部扫描）继续走公共 RPC `https://testnet-rpc.monad.xyz`，
-  维持「单文件、无依赖、零密钥」的公开叙事。
-- 服务端统一通过 `web/lib/serverRpc.ts` 取得 transport：**Alchemy 优先，公共 RPC 自动回退**
-  （viem `fallback`），因此即使 Alchemy 未开通该网络或临时限流，站点也不会整体挂掉。
+- `NEXT_PUBLIC_*` is inlined into the front-end bundle → effectively public. So the Alchemy key is used
+  **only as `ALCHEMY_API_KEY`** (no prefix).
+- The front end (wagmi / `publicClientFor` / browser tail scan) continues to use the public RPC
+  `https://testnet-rpc.monad.xyz`, keeping the "single file, dependency-free, zero key" public story.
+- The server obtains its transport uniformly through `web/lib/serverRpc.ts`: **Alchemy first, public RPC
+  auto-fallback** (viem `fallback`), so the site does not go down even if Alchemy has not enabled the
+  network or is temporarily rate-limited.
 
-## 环境变量（`web/.env.example`）
+## Environment variables (`web/.env.example`)
 
-| 变量 | 作用 |
+| Variable | Purpose |
 | --- | --- |
-| `ALCHEMY_API_KEY` | Alchemy API Key（**服务端专用**，勿加 `NEXT_PUBLIC_`）：`https://monad-testnet.g.alchemy.com/v2/<key>` |
-| `ALCHEMY_RPC_URL` | 可选，直接指定 RPC URL（优先于上面的 Key 拼接） |
-| `ALCHEMY_MONAD_HOST` | 可选，覆盖主机前缀（默认 `https://monad-testnet.g.alchemy.com/v2`） |
-| `ALCHEMY_WEBHOOK_SIGNING_KEY` | 可选，Alchemy Webhook 签名密钥（配置后强制校验回调签名） |
+| `ALCHEMY_API_KEY` | Alchemy API key (**server-side only**, do not add `NEXT_PUBLIC_`): `https://monad-testnet.g.alchemy.com/v2/<key>` |
+| `ALCHEMY_RPC_URL` | Optional, set the RPC URL directly (takes precedence over the key concatenation above) |
+| `ALCHEMY_MONAD_HOST` | Optional, override the host prefix (default `https://monad-testnet.g.alchemy.com/v2`) |
+| `ALCHEMY_WEBHOOK_SIGNING_KEY` | Optional, Alchemy webhook signing key (when set, callback signatures are enforced) |
 
-> ⚠️ 首次使用需在 Alchemy Dashboard 的对应 App 里 **启用 MONAD_TESTNET 网络**，否则会返回
-> `MONAD_TESTNET is not enabled for this app`（此时会自动回退公共 RPC）。
+> ⚠️ On first use you must **enable the MONAD_TESTNET network** in the corresponding App in the Alchemy
+> Dashboard, otherwise it returns `MONAD_TESTNET is not enabled for this app` (in which case it falls back
+> to the public RPC automatically).
 
-## 代码落点
+## Code points
 
-- `web/lib/serverRpc.ts` — `serverRpcUrl() / serverTransport() / serverPublicClient() / usingAlchemy()`；Key 只在此读取。
-- `web/app/api/relay/route.ts` — 代付 relayer 的服务端节点改走 `serverTransport()`；`GET` 会返回 `rpcProvider / rpcLabel`。
-- `web/scripts/index-activity.ts` — 离线索引器改走 `serverTransport()`；有 Alchemy 时分片自适应放大（默认 2000 区块，公共 RPC 为 100）。
-- `web/app/api/alchemy/webhook/route.ts` — Alchemy Address Activity 接收端：校验 `X-Alchemy-Signature`（HMAC-SHA256），
-  解码 `SchemeMinted` / `SchemeApplied`，增量落盘到 `data/activity-webhooks.json`（运行时，已忽略入库）。
-- `web/app/api/activity/route.ts` — 合并离线索引 `data/activity.json` 与 Webhook 增量 `data/activity-webhooks.json`。
+- `web/lib/serverRpc.ts` — `serverRpcUrl() / serverTransport() / serverPublicClient() / usingAlchemy()`; the key is read only here.
+- `web/app/api/relay/route.ts` — the sponsoring relayer's server node goes through `serverTransport()`; `GET` returns `rpcProvider / rpcLabel`.
+- `web/scripts/index-activity.ts` — the offline indexer goes through `serverTransport()`; with Alchemy the shard size scales up automatically (default 2000 blocks vs. 100 for the public RPC).
+- `web/app/api/alchemy/webhook/route.ts` — Alchemy Address Activity receiver: verifies `X-Alchemy-Signature` (HMAC-SHA256),
+  decodes `SchemeMinted` / `SchemeApplied`, and appends incrementally to `data/activity-webhooks.json` (runtime, gitignored).
+- `web/app/api/activity/route.ts` — merges the offline index `data/activity.json` with the webhook increment `data/activity-webhooks.json`.
 
-## Webhook 配置
+## Webhook setup
 
-1. Alchemy Dashboard → Webhooks → 新建 **Address Activity** Webhook，网络选 Monad Testnet，
-   地址填五个合约（DreamScheme / SchemeMarket / AgentRegistry / ProvenanceRegistry / PasskeyAccountFactory）。
-2. 回调 URL 填 `https://<你的域名>/api/alchemy/webhook`。
-3. 复制 Signing Key 填入 `ALCHEMY_WEBHOOK_SIGNING_KEY`（不填则不校验签名，仅用于联调）。
+1. Alchemy Dashboard → Webhooks → create an **Address Activity** webhook, network Monad Testnet,
+   addresses = the five contracts (DreamScheme / SchemeMarket / AgentRegistry / ProvenanceRegistry / PasskeyAccountFactory).
+2. Callback URL: `https://<your-domain>/api/alchemy/webhook`.
+3. Copy the Signing Key into `ALCHEMY_WEBHOOK_SIGNING_KEY` (if left empty, signatures are not verified — for local testing only).
 
-## 离线索引（可选）
+## Offline indexing (optional)
 
 ```bash
 cd web
-npm run index                 # 头部 20000 + 尾部 20000 区块
-INDEX_FULL=1 npm run index    # 部署块 → 最新块（最完整）
+npm run index                 # head 20000 + tail 20000 blocks
+INDEX_FULL=1 npm run index    # deploy block → latest block (most complete)
 ```
 
-有 Alchemy 时会自动使用更大的 `eth_getLogs` 区间，请求数与耗时显著下降。
+With Alchemy it automatically uses a larger `eth_getLogs` range, cutting request count and time significantly.
 
-## 安全边界
+## Security boundary
 
-- Alchemy Key 只存在于 `web/.env.local`（`.gitignore` 已忽略），**不入库、不进前端**。
-- Webhook 接收端在配置签名密钥后，未签名/错误签名的请求一律 `401`。
+- The Alchemy key lives only in `web/.env.local` (gitignored), **never committed and never shipped to the front end**.
+- Once the signing key is configured, unsigned or incorrectly-signed requests to the webhook receiver are always `401`.

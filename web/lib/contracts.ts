@@ -34,15 +34,15 @@ export function schemeMarketAddress(): Address | undefined {
   }
 }
 
-/** 单次「应用到我家」的默认展示价（wei）。真实价格以链上 priceOf(tokenId) 为准。 */
+/** Default display price (wei) for a single "apply to my home". The real price comes from on-chain priceOf(tokenId). */
 export const APPLY_PRICE: bigint = parseEther(
   process.env.NEXT_PUBLIC_APPLY_PRICE_ETH || "0.01"
 );
 
 /**
- * 内容唯一性守卫：查询某内容哈希是否已被铸造。
- * 返回首个铸造该内容的 tokenId（0n = 尚未铸造）。链上读取失败时容错返回 0n。
- * 仅用于原创路径（parentId = 0）的去重；remix 允许内容重复。
+  * Content-uniqueness guard: check whether a content hash has already been minted.
+  * Returns the first tokenId that minted the content (0n = not yet minted). Tolerantly returns 0n when the chain read fails.
+  * Used only to dedupe the original path (parentId = 0); remix allows duplicate content.
  */
 export async function mintedTokenForContentHash(contentHash: Hex): Promise<bigint> {
   const addr = dreamSchemeAddress();
@@ -61,19 +61,19 @@ export async function mintedTokenForContentHash(contentHash: Hex): Promise<bigin
   }
 }
 
-/** AgentRegistry 地址（可选，用于 AI 署名展示）。 */
+/** AgentRegistry address (optional, for AI attribution display). */
 export function agentRegistryAddress(): Address | undefined {
   const raw = process.env.NEXT_PUBLIC_AGENT_REGISTRY_ADDRESS;
   return raw ? maybeAddress(raw) : undefined;
 }
 
-/** ProvenanceRegistry 地址（可选，生成过程存证）。 */
+/** ProvenanceRegistry address (optional, attestation of the generation process). */
 export function provenanceRegistryAddress(): Address | undefined {
   const raw = process.env.NEXT_PUBLIC_PROVENANCE_REGISTRY_ADDRESS;
   return raw ? maybeAddress(raw) : undefined;
 }
 
-/** PasskeyAccountFactory 地址（可选，无助记词账户）。 */
+/** PasskeyAccountFactory address (optional, seedless accounts). */
 export function passkeyFactoryAddress(): Address | undefined {
   const raw = process.env.NEXT_PUBLIC_PASSKEY_FACTORY_ADDRESS;
   return raw ? maybeAddress(raw) : undefined;
@@ -106,9 +106,9 @@ export interface SchemeSummary {
   roomType: string;
   furnitureCount: number;
   createdAt: number;
-  /** 方案的 AI 生成器（provider + 模型名），随方案 JSON 导入；旧数据可能为空。 */
+  /** The scheme's AI generator (provider + model name), imported with the scheme JSON; may be empty on old data. */
   generator?: { provider?: string; model?: string; at?: string };
-  // 双语展示用（仅站点自带示例数据提供；链上/IPFS 内容仍以原语言为准）
+  // For bilingual display (provided only by the site's sample data; on-chain/IPFS content stays in its original language)
   nameEn?: string;
   descriptionEn?: string;
   themeEn?: string;
@@ -131,7 +131,7 @@ interface SchemeOnChain {
 
 let _publicClient: PublicClient | undefined;
 
-/** 独立的只读 viem 客户端（不依赖 wagmi 配置，供页面与 seed 共用）。 */
+/** Standalone read-only viem client (independent of the wagmi config; shared by pages and seed). */
 export function publicClientFor(): PublicClient | undefined {
   try {
     if (!_publicClient) {
@@ -246,13 +246,13 @@ async function attachMetadata(state: SchemeOnChain): Promise<SchemeSummary> {
 }
 
 /**
- * 读取全部方案（链上状态 + IPFS 元数据）。
+  * Read all schemes (on-chain state + IPFS metadata).
  *
- * 注意：Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 个区块内，
- * 无法用它扫描「从 0 到 latest」的全部铸造事件。由于 DreamScheme 的
- * tokenId 由 `++_nextTokenId` 连续自增、`totalSupply()` 即当前最大 id，
- * 这里改为按 totalSupply() 枚举 tokenId 逐个读取状态，既不受区块范围限制，
- * 也避免了海量日志扫描。
+  * Note: the Monad Testnet public RPC caps eth_getLogs at 100 blocks, so it cannot be used to scan
+  * all mint events "from 0 to latest". Because DreamScheme's tokenId increments
+  * consecutively via `++_nextTokenId`, and `totalSupply()` is the current max id,
+  * this instead enumerates tokenIds via totalSupply() and reads state one by one -- free of block-range limits
+  * and avoiding a massive log scan.
  */
 export async function fetchAllSchemes(client: PublicClient): Promise<SchemeSummary[]> {
   const addr = dreamSchemeAddress();

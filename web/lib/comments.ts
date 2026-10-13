@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * 链下评论存储：按 tokenId 存到本地 JSON 文件（web/data/comments/<tokenId>.json）。
- * 发布前由前端用 MetaMask 对评论文本签名，后端 verifyMessage 校验，全程不消耗 gas。
+  * Off-chain comment storage: kept per tokenId in local JSON files (web/data/comments/<tokenId>.json).
+  * Before posting, the front end signs the comment text with MetaMask and the backend verifies it with verifyMessage; no gas is consumed.
  */
 
 export interface CommentItem {
@@ -64,7 +64,7 @@ export function appendComment(input: {
   return item;
 }
 
-/** 与前端约定的签名文本（SIWE 风格，包含方案号、地址与时间戳）。 */
+/** Signed text agreed with the front end (SIWE-style, including the scheme id, address, and timestamp). */
 export function buildCommentMessage(params: { tokenId: number; address: string; issuedAt: string }): string {
   return [
     "Designer Hub · Monad 评论签名",

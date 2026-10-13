@@ -1,16 +1,16 @@
 /**
- * verify-passkey-e2e.ts —— 端到端：用 Chrome「虚拟认证器」跑通 /passkey 全流程。
+  * verify-passkey-e2e.ts -- end-to-end: run the full /passkey flow with a Chrome "virtual authenticator".
  *
- * 覆盖：创建 Passkey → 推导 CREATE2 账户 → relayer 代付部署 → Passkey 签名确权。
- * 通过 CDP WebAuthn 域注入虚拟认证器（自动确认 presence、已校验用户），无需人工点 Touch ID。
+  * Covers: create a Passkey -> derive the CREATE2 account -> relayer-sponsored deploy -> Passkey-signed attestation.
+  * Injects a virtual authenticator via the CDP WebAuthn domain (auto presence + user-verified), so no manual Touch ID.
  *
- * 用法：
+  * Usage:
  *   cd web && npm run verify:passkey-e2e
- * 前置：站点已在 http://localhost:3005 提供服务（生产模式需先 `npm run build`）。
+  * Prerequisite: the site is serving at http://localhost:3005 (production mode requires `npm run build` first).
  *
- * 连接策略：
- *   1) 若 DH_CDP_PORT（默认 38800，即 OpenClaw 托管的 Chrome）可连，则复用它；
- *   2) 否则自行拉起一个 headless Chrome（--headless=new）。
+  * Connection strategy:
+ *   1) if DH_CDP_PORT (default 38800) is reachable, reuse that Chrome instance;
+  *   2) otherwise spin up a headless Chrome (--headless=new).
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -172,7 +172,7 @@ async function main() {
     await sleep(800);
     await ev(`localStorage.removeItem('dh.passkey.v1')`);
 
-    // Step 1–2: 创建 + 推导
+    // Step 1-2: create + derive
     console.log("点击「创建 Passkey」…");
     if ((await clickWhenReady("/创建 Passkey|重新创建 Passkey/")) !== "OK") throw new Error("未找到创建按钮");
     let logText = await waitLog(/已推导确定性账户地址|创建失败/);
@@ -183,14 +183,14 @@ async function main() {
     const cred = JSON.parse(stored);
     console.log("凭证:", cred.credentialIdB64.slice(0, 16) + "…", "\n  x:", cred.x, "\n  y:", cred.y);
 
-    // Step 3: relayer 部署
+    // Step 3: relayer deploy
     console.log("\n点击「relayer 代付部署账户」…");
     if ((await clickWhenReady("/relayer 代付部署账户/")) !== "OK") throw new Error("未找到部署按钮");
     logText = await waitLog(/账户已部署|账户已存在|部署失败/, 120);
     console.log(logText.trim());
     if (/部署失败/.test(logText)) throw new Error("部署失败");
 
-    // Step 4: passkey 签名确权
+    // Step 4: passkey-signed attestation
     console.log("\n点击「用 Passkey 确权」…");
     if ((await clickWhenReady("/用 Passkey 确权/")) !== "OK") throw new Error("未找到确权按钮");
     logText = await waitLog(/确权成功|失败/, 140);

@@ -1,11 +1,11 @@
 import { parseAbi } from "viem";
 
 /**
- * DreamScheme —— 方案 NFT（谱系 remix + ERC-2981 版税 + AI Agent 署名）。
- * mint/remix 携带 agentId（AI 生成器，来自 AgentRegistry）；agentId 按 provider
- * 分配（见 lib/agents.ts：Kimi=1、Qwen=2、DeepSeek=3 …），不再一律写死 1。
- * 注意：条目需精简——parseAbi 条目过多会让 viem 的 readContract 泛型推断退化成 unknown。
- * 未用到的 schemeOf/setRoyalty/RoyaltySet/hashToTokenId/royaltyInfo/supportsInterface 不在此处声明。
+  * DreamScheme -- scheme NFT (lineage remix + ERC-2981 royalties + AI Agent attribution).
+  * mint/remix carry an agentId (the AI generator, from AgentRegistry); the agentId is assigned by provider
+  * (see lib/agents.ts: Kimi=1, Qwen=2, DeepSeek=3 ...), no longer hardcoded to 1.
+  * Note: keep the entries minimal -- too many parseAbi entries degrade viem's readContract generic inference to unknown.
+  * Unused schemeOf/setRoyalty/RoyaltySet/hashToTokenId/royaltyInfo/supportsInterface are not declared here.
  */
 export const dreamSchemeAbi = parseAbi([
   "function mint(uint256 parentId, bytes32 contentHash, uint256 agentId, string calldata metadataURI) external returns (uint256)",
@@ -25,17 +25,17 @@ export const dreamSchemeAbi = parseAbi([
 ]);
 
 /**
- * DreamScheme 内容唯一性守卫 —— 内容哈希 → 已铸造的 tokenId（0 = 尚未铸造）。
- * 单独声明：并入 dreamSchemeAbi 会让条目数过多，导致 viem 泛型推断退化。
+  * DreamScheme content-uniqueness guard -- content hash -> minted tokenId (0 = not yet minted).
+  * Declared separately: merging into dreamSchemeAbi would add too many entries and degrade viem's generic inference.
  */
 export const dreamSchemeDupAbi = parseAbi([
   "function hashToTokenId(bytes32 contentHash) external view returns (uint256)"
 ]);
 
 /**
- * SchemeMarket —— 使用权交易市场（创作者自主定价 + 谱系自动分账）。
- * 旧版固定 applyPrice + withdraw 提现模式已移除：现在创作者 setPrice 上架，
- * 买家按定价支付，85/10/5（衍生）或 90/10（原创）实时分账到账。
+  * SchemeMarket -- usage-rights marketplace (creator-set pricing + automatic lineage splits).
+  * The old fixed applyPrice + withdraw model was removed: creators now list via setPrice,
+  * buyers pay the listed price, and 85/10/5 (derivative) or 90/10 (original) is split in real time.
  */
 export const schemeMarketAbi = parseAbi([
   "function setPrice(uint256 tokenId, uint256 price) external",
@@ -54,7 +54,7 @@ export const schemeMarketAbi = parseAbi([
   "event AncestorPaid(uint256 indexed tokenId, address indexed ancestor, uint256 amount)"
 ]);
 
-/** AgentRegistry —— AI 生成器注册表（agentId 从 1 自增；Kimi 预注册为 1）。 */
+/** AgentRegistry -- AI generator registry (agentId auto-increments from 1; Kimi is pre-registered as 1). */
 export const agentRegistryAbi = parseAbi([
   "function registerAgent(string calldata metadataURI) external returns (uint256 agentId)",
   "function isRegistered(uint256 agentId) external view returns (bool)",
@@ -63,7 +63,7 @@ export const agentRegistryAbi = parseAbi([
   "event ReputationAdded(uint256 indexed agentId, uint256 newReputation, uint256 delta)"
 ]);
 
-/** ProvenanceRegistry —— 方案生成过程存证（EIP-712 签名 + relayer 代付）。 */
+/** ProvenanceRegistry -- attestation of the scheme generation process (EIP-712 signature + relayer sponsorship). */
 export const provenanceRegistryAbi = parseAbi([
   "function attest(bytes32 commitment, uint256 agentId, string calldata metadataURI) external",
   "function verify(bytes32 commitment) external view returns (bool exists, address attestor, uint256 agentId, uint64 attestedAt)",
@@ -78,13 +78,13 @@ export const schemeAppliedEvent = parseAbi([
   "event SchemeApplied(uint256 indexed tokenId, address indexed applier, address indexed creator, uint256 price, uint256 creatorCut, uint256 platformCut)"
 ])[0];
 
-/** Kimi 在 AgentRegistry 的预注册 ID（= 1）。定义在 lib/agents.ts，这里再导出以兼容既有导入。 */
+/** Kimi's pre-registered ID in AgentRegistry (= 1). Defined in lib/agents.ts and re-exported here for backward-compatible imports. */
 export { KIMI_AGENT_ID } from "./agents";
 
 // ------------------------------------------------------------------ //
-//  Passkey（无助记词智能账户）—— 含 tuple 形参，用 JSON ABI            //
-//  abitype 的 parseAbi 不支持 human-readable 里的 struct/tuple，        //
-//  execute/executeBatch 的 assertion 形参是 struct，故此处直接写 JSON。 //
+//  Passkey (seedless smart account) -- contains tuple params, so use a JSON ABI   //
+//  abitype's parseAbi does not support struct/tuple in human-readable ABIs,     //
+//  the assertion param of execute/executeBatch is a struct, so JSON is written directly here. //
 // ------------------------------------------------------------------ //
 
 const ASSERTION_COMPONENTS = [
@@ -94,7 +94,7 @@ const ASSERTION_COMPONENTS = [
   { name: "s", type: "uint256" }
 ] as const;
 
-/** P256PasskeyAccount —— WebAuthn/passkey 智能账户（免 gas 由 relayer 代付）。 */
+/** P256PasskeyAccount -- WebAuthn/passkey smart account (gas sponsored by the relayer). */
 export const passkeyAccountAbi = [
   { type: "function", name: "nonce", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "keyCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
@@ -159,7 +159,7 @@ export const passkeyAccountAbi = [
   { type: "error", name: "BadOrigin", inputs: [] }
 ] as const;
 
-/** PasskeyAccountFactory —— CREATE2 确定性部署 passkey 账户。 */
+/** PasskeyAccountFactory -- CREATE2 deterministic deployment of passkey accounts. */
 export const passkeyFactoryAbi = [
   {
     type: "function",

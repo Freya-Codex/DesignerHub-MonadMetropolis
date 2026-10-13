@@ -26,7 +26,7 @@ export default function HomePage() {
 
   return (
     <div className="space-y-14">
-      {/* ── HERO：品牌定位 ───────────────────────────── */}
+      {/* -- HERO: brand positioning ------------------------- */}
       <section className="sheet-dark grid-sheet-dark rise relative overflow-hidden px-5 py-10 sm:px-10 sm:py-16">
         <span
           aria-hidden
@@ -59,7 +59,7 @@ export default function HomePage() {
             )}
           </p>
 
-          {/* 签名元素：蓝图标注线 */}
+          {/* Signature element: blueprint annotation lines */}
           <div className="mt-7 flex max-w-xl items-center gap-3">
             <span className="dim-tick !top-0 !bg-white/50" />
             <span className="dim-line dim-line-dark flex-1" />
@@ -96,7 +96,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 三大能力 ─────────────────────────────────── */}
+      {/* -- Three core capabilities -------------------------- */}
       <section className="rise">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -146,7 +146,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 精选方案 ─────────────────────────────────── */}
+      {/* -- Featured schemes --------------------------------- */}
       {featured.length > 0 && (
         <section className="rise">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -169,7 +169,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── 工作流 ───────────────────────────────────── */}
+      {/* -- Workflow ----------------------------------------- */}
       <section className="rise">
         <p className="eyebrow">{t("How it works · 使用流程", "How it works")}</p>
         <h2 className="display-sm mt-2 text-2xl text-ink sm:text-3xl">
@@ -195,7 +195,7 @@ export default function HomePage() {
         </ol>
       </section>
 
-      {/* ── 结尾 CTA ─────────────────────────────────── */}
+      {/* -- Closing CTA -------------------------------------- */}
       <section className="sheet-dark grid-sheet-dark rise flex flex-wrap items-center justify-between gap-6 px-6 py-9 sm:px-10">
         <div>
           <h2 className="display text-2xl text-white sm:text-3xl">

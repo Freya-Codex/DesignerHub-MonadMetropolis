@@ -1,13 +1,13 @@
 /**
- * verify-scheme-code-e2e.ts —— 端到端验证 /mint/create 的「方案码（base64url）」导入。
+  * verify-scheme-code-e2e.ts -- end-to-end verification of /mint/create's "scheme code (base64url)" import.
  *
- * 覆盖：
- *   1) 本站 DesignScheme 方案码 → 解码 → 通过校验；
- *   2) VirtuHome HomePlan 方案码 → 自动转换为 DesignScheme → 通过校验；
- *   3) 非法方案码 → 明确报错。
+  * Covers:
+  *   1) this site's DesignScheme code -> decode -> passes validation;
+  *   2) VirtuHome HomePlan code -> auto-converted to DesignScheme -> passes validation;
+  *   3) an invalid scheme code -> a clear error.
  *
- * 用法：cd web && npx tsx scripts/verify-scheme-code-e2e.ts
- * 前置：站点已在 http://localhost:3005 提供服务。默认自带一个全新 Chrome（避免复用浏览器的陈旧 DNS）。
+  * Usage: cd web && npx tsx scripts/verify-scheme-code-e2e.ts
+  * Prerequisite: the site is serving at http://localhost:3005. Spins up a fresh Chrome by default (avoiding the reused browser's stale DNS).
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -107,11 +107,11 @@ async function main() {
 
   const tests: Array<{ name: string; code: string; expectErr?: boolean; expectName?: string }> = [];
 
-  // 1) 本站 DesignScheme 方案码（取自 /api/demo/1）
+  // 1) this site's DesignScheme code (taken from /api/demo/1)
   const demo = await (await fetch(`${SITE}/api/demo/1`)).json();
   tests.push({ name: "DesignScheme 方案码", code: makeCode(demo), expectName: demo.name });
 
-  // 2) VirtuHome HomePlan 方案码
+  // 2) VirtuHome HomePlan code
   const homePlan = {
     version: 1,
     meta: { id: "p1", title: "小户型奶油客厅改造", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
@@ -130,7 +130,7 @@ async function main() {
   };
   tests.push({ name: "VirtuHome HomePlan 方案码", code: makeCode(homePlan), expectName: "小户型奶油客厅改造" });
 
-  // 3) 非法方案码
+  // 3) invalid scheme code
   tests.push({ name: "非法方案码", code: "!!!not-a-valid-code!!!", expectErr: true });
 
   let pass = 0;
@@ -146,7 +146,7 @@ async function main() {
     }
 
     for (const t of tests) {
-      // 切到「方案码」模式（重试直到 React 已挂载）
+      // Switch to "scheme code" mode (retrying until React has mounted)
       let switched = false;
       for (let i = 0; i < 30; i++) {
         const has = await ev(`[...document.querySelectorAll('button')].some(b=>/解析方案码/.test(b.textContent||''))`);
@@ -165,7 +165,7 @@ async function main() {
       }
       if (!clicked) throw new Error("找不到「解析方案码」按钮");
 
-      // 等待结果
+      // Wait for the result
       let outcome: { kind: string; name?: string; err?: string } | null = null;
       for (let i = 0; i < 60; i++) {
         outcome = await ev(`(()=>{
@@ -188,7 +188,7 @@ async function main() {
       console.log(`${ok ? "✅" : "❌"} ${t.name} → ${JSON.stringify(outcome)}`);
       ok ? pass++ : fail++;
 
-      // 重置到初始（回 JSON 模式再回方案码模式），避免状态残留：刷新页面
+      // Reset to initial (back to JSON mode then back to scheme-code mode) to avoid leftover state: reload the page
       await S("Page.navigate", { url: `${SITE}/mint/create` });
       await sleep(600);
     }

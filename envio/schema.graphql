@@ -1,30 +1,30 @@
-# Envio HyperIndex 数据模型 — Designer Hub · Monad
+# Envio HyperIndex data model -- Designer Hub · Monad
 #
-# 这些实体由 src/EventHandlers.ts 写入，前端通过 GraphQL 查询它们，
-# 也就是 /trades、/scheme/[id]、/board 三个页面背后真正的数据来源。
+# These entities are written by src/EventHandlers.ts and queried by the front end over GraphQL --
+# they are the real data source behind the /trades, /scheme/[id], and /board pages.
 
-"""一个已铸造的设计方案（DreamScheme 的 ERC-721）。"""
+"""A minted design scheme (DreamScheme's ERC-721)."""
 type Scheme {
-  "tokenId（十进制字符串）"
+  "tokenId (decimal string)"
   id: ID!
   creator: String!
-  "父方案 tokenId；根方案为 0"
+  "Parent scheme tokenId; 0 for a root scheme"
   parentId: BigInt!
-  "方案内容承诺 keccak256(contentHash + salt)"
+  "Scheme content commitment keccak256(contentHash + salt)"
   contentHash: String!
-  "铸造时归因的 AI provider（AgentRegistry.agentId）"
+  "AI provider attributed at mint time (AgentRegistry.agentId)"
   agentId: BigInt!
   mintedBlock: BigInt!
   mintedTx: String!
-  "被应用的累计次数（由 SchemeApplied 累加）"
+  "Cumulative apply count (incremented by SchemeApplied)"
   appliedCount: Int!
-  "创作者设置的版税接收人"
+  "Royalty receiver set by the creator"
   royaltyReceiver: String
-  "版税 bps（例如 500 = 5%）"
+  "Royalty bps (e.g. 500 = 5%)"
   royaltyBps: BigInt
 }
 
-"""一次方案应用（SchemeMarket.SchemeApplied），即一笔交易账本记录。"""
+"""A single scheme apply (SchemeMarket.SchemeApplied), i.e. one trade-ledger record."""
 type Trade {
   id: ID!
   scheme: Scheme!
@@ -39,7 +39,7 @@ type Trade {
   logIndex: Int!
 }
 
-"""衍生方案被应用时，按血缘付给祖先创作者的份额。"""
+"""The share paid to ancestor creators by lineage when a derivative scheme is applied."""
 type AncestorPayout {
   id: ID!
   tokenId: BigInt!
@@ -49,7 +49,7 @@ type AncestorPayout {
   txHash: String!
 }
 
-"""一个已注册的 AI agent（AgentRegistry）及其声誉。"""
+"""A registered AI agent (AgentRegistry) and its reputation."""
 type Agent {
   id: ID!
   owner: String!
@@ -58,7 +58,7 @@ type Agent {
   registeredBlock: BigInt!
 }
 
-"""声誉变更事件（AgentRegistry.ReputationAdded）。"""
+"""A reputation-change event (AgentRegistry.ReputationAdded)."""
 type ReputationEvent {
   id: ID!
   agent: Agent!
@@ -68,7 +68,7 @@ type ReputationEvent {
   txHash: String!
 }
 
-"""一条链上确权证明（ProvenanceRegistry.Attested），不含内容本体。"""
+"""An on-chain attestation proof (ProvenanceRegistry.Attested), without the content body."""
 type Attestation {
   id: ID!
   commitment: String!

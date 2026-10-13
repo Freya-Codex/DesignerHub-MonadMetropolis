@@ -21,7 +21,7 @@ Founder & Market Readiness 25% · Traction & Path Forward 20%.**
 | | |
 | --- | --- |
 | **Rubric asks** | trust/identity/data primitive implemented correctly & securely — correct WebAuthn/P256, sound key derivation, **no leaked secrets** |
-| **Evidence (have)** | `P256PasskeyAccount` verifies a real WebAuthn assertion on-chain; pure-Solidity P-256 fallback (probes RIP-7212 `0x100`, falls back to Jacobian math); CREATE2 address from `(x, y, rpIdHash, originHash)`; challenge binds `account ‖ chainId ‖ nonce ‖ to ‖ value ‖ keccak256(data)` so a relayer cannot tamper; 96 Foundry tests; **real testnet E2E** (deploy tx `0x5d5c3d9b…`, execute tx `0xd7ef914c…` with an `Attested` event); no secret committed (only public keys/fixtures in repo) |
+| **Evidence (have)** | `P256PasskeyAccount` verifies a real WebAuthn assertion on-chain; pure-Solidity P-256 fallback (probes RIP-7212 `0x100`, falls back to Jacobian math); CREATE2 address from `(x, y, rpIdHash, originHash)`; challenge binds `account ‖ chainId ‖ nonce ‖ to ‖ value ‖ keccak256(data)` so a relayer cannot tamper; 103 Foundry tests; **real testnet E2E** (deploy tx `0x5d5c3d9b…`, execute tx `0xd7ef914c…` with an `Attested` event); no secret committed (only public keys/fixtures in repo) |
 | **Gap** | No written threat model; `.env.example` files referenced the **old** variable names (an integrator following docs got an empty address); no "no-leaked-secrets" statement (key handling, secret scanning) |
 | **Status** | ✅ addressed → `docs/SECURITY.md`; env examples fixed |
 
@@ -48,7 +48,7 @@ Founder & Market Readiness 25% · Traction & Path Forward 20%.**
 | | |
 | --- | --- |
 | **Rubric asks** | knows **which** specific applications/developers would adopt it, **and why** over rolling their own |
-| **Evidence (have)** | a working first integrator (the 云筑家 App) that exports scheme JSON |
+| **Evidence (have)** | a working first integrator (the VirtuHome App) that exports scheme JSON |
 | **Gap (was absent entirely)** | **no named adopter segments, no "build vs buy" argument, no adoption/pricing model** |
 | **Status** | ✅ addressed → `docs/INTEGRATING.md` ("Who builds on this" + "Why not roll your own") |
 

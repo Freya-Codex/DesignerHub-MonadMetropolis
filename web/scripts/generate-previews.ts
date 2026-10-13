@@ -1,7 +1,7 @@
 /**
- * 用蓝图风格重新生成 assets/schemes/previews/*.svg 与 web/public/previews/*.svg
- * 生成中英双份：<name>.svg（中文）与 <name>.en.svg（英文）。
- * 用法（web/ 目录下）：npm run previews
+  * Regenerate assets/schemes/previews/*.svg and web/public/previews/*.svg in blueprint style
+  * Generates both zh/en: <name>.svg (Chinese) and <name>.en.svg (English).
+  * Usage (from the web/ dir): npm run previews
  */
 import fs from "node:fs";
 import path from "node:path";

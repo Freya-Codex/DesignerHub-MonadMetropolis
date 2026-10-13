@@ -3,7 +3,7 @@ import { readLocalRecord } from "@/lib/pinata";
 
 export const runtime = "nodejs";
 
-/** 本地演示模式：按 local:// CID 读取已被固定/存储的内容。 */
+/** Local demo mode: read content already pinned/stored by local:// CID. */
 export async function GET(_req: NextRequest, { params }: { params: { cid: string } }) {
   const record = readLocalRecord(params.cid);
   if (!record) {

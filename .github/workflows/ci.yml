@@ -1,6 +1,6 @@
 name: CI
 
-# 触发：main 分支 push 与所有 PR
+# Trigger: pushes to the main branch and all PRs
 on:
   push:
     branches: [main]
@@ -9,12 +9,12 @@ on:
 
 jobs:
   contracts:
-    name: 合约测试（Foundry）
+    name: Contract tests (Foundry)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: 安装 Foundry
+      - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
@@ -27,12 +27,12 @@ jobs:
         working-directory: contracts
         run: forge test -vv
 
-      - name: 部署脚本语法检查
+      - name: Deployment script syntax check
         working-directory: contracts
         run: forge script script/Deploy.s.sol --help > /dev/null
 
   web:
-    name: 前端构建（Next.js）
+    name: Front-end build (Next.js)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: 安装依赖
+      - name: Install dependencies
         working-directory: web
         run: npm ci --no-audit --no-fund
 

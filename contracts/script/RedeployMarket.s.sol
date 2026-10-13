@@ -6,14 +6,14 @@ import {console2} from "forge-std/console2.sol";
 import {DreamScheme} from "../src/DreamScheme.sol";
 import {SchemeMarket} from "../src/SchemeMarket.sol";
 
-/// @title RedeployMarket — 只重部署 SchemeMarket（复用已部署的 DreamScheme）
-/// @notice 用途：SchemeMarket 不可升级；当加入了「创作者收款地址(setPayout)」这类新逻辑时，
-///         只需换掉市场合约，DreamScheme / AgentRegistry / ProvenanceRegistry / 工厂都不动。
+/// @title RedeployMarket — redeploy only SchemeMarket (reusing the deployed DreamScheme)
+/// @notice Purpose: SchemeMarket is non-upgradeable; when new logic such as the "creator payout address (setPayout)" is added,
+///         only the market contract is swapped; DreamScheme / AgentRegistry / ProvenanceRegistry / factory stay untouched.
 ///
-/// 用法：
+/// Usage:
 ///   forge script script/RedeployMarket.s.sol --rpc-url monad_testnet --broadcast
 ///
-/// 读取 deployments/monad-testnet.json 里的 DreamScheme 地址；平台地址取 PLATFORM_ADDRESS。
+/// Reads the DreamScheme address from deployments/monad-testnet.json; the platform address comes from PLATFORM_ADDRESS.
 contract RedeployMarket is Script {
     function run() public {
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");

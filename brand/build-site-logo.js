@@ -2,16 +2,16 @@ const fontkit = require("fontkit");
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = "/Users/freya/Desktop/VirtuHome/monad";
+const ROOT = path.resolve(__dirname, "..");
 const ARCHIVO = path.join(ROOT, "web/public/fonts/archivo-var.woff2");
 const OUTPUB = path.join(ROOT, "web/public");
 const OUTBRAND = path.join(ROOT, "brand/site");
 
-// 站点色板（web/app/globals.css + tailwind.config.ts）
+// Site palette (web/app/globals.css + tailwind.config.ts)
 const S = {
   violet: "#6E54FF",       // --violet
   violetDeep: "#4F47EB",   // --violet.deep
-  lavender: "#C7D2FE",     // 淡紫（原品牌辅色，作为节点色）
+  lavender: "#C7D2FE",     // lavender (former brand accent, used as the node color)
   white: "#FFFFFF",
   ink: "#0F0F12",          // --ink
   paper: "#FBFAF9"         // --paper
@@ -21,7 +21,7 @@ const HEX = "M408 256 L332 124 L180 124 L104 256 L180 388 L332 388 Z";
 const HOUSE = "M162 274 L256 166 L350 274 L326 274 L326 350 L186 350 L186 274 Z";
 const DOOR = "M232 294 H280 V350 H232 Z";
 
-/** 主图形：六边形（hub）+ 实心房子（门为镂空，透出底色）+ 两枚节点 */
+/** Main mark: hexagon (hub) + solid house (door cut out, showing the background) + two nodes */
 function glyph({ fg = S.white, hub = S.lavender, hexW = 30, dots = true, dotR = 22 }) {
   let s = `<path d="${HEX}" fill="none" stroke="${fg}" stroke-width="${hexW}" stroke-linejoin="round"/>`;
   s += `<path d="${HOUSE} ${DOOR}" fill="${fg}" fill-rule="evenodd"/>`;
@@ -29,7 +29,7 @@ function glyph({ fg = S.white, hub = S.lavender, hexW = 30, dots = true, dotR = 
   return s;
 }
 
-/** 圆角色块底板（站点靛紫渐变） */
+/** Rounded tile background (site indigo/violet gradient) */
 function tile(id = "g", rx = 112) {
   return `<defs>
     <linearGradient id="${id}" x1="0" y1="0" x2="0.85" y2="1">
@@ -41,12 +41,12 @@ function tile(id = "g", rx = 112) {
 
 const svg = (w, h, vb, body) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${vb}" role="img">${body}</svg>`;
 
-// ---- 站点资源 ----
+// ---- Site assets ----
 const markTile = (px) => svg(px, px, "0 0 512 512", tile() + glyph({}));
 const markPlain = (px) => svg(px, px, "0 0 512 512", glyph({ fg: S.violetDeep, hub: S.violet }));
 const favicon = () => svg(64, 64, "0 0 512 512", tile() + glyph({ hexW: 34, dotR: 24 }));
 
-// ---- 字标（Archivo，转矢量路径，无字体依赖）----
+// ---- Wordmark (Archivo, converted to vector paths, no font dependency) ----
 const archivo = fontkit.openSync(ARCHIVO);
 function wordPath(text, size, x0, baseY) {
   const f = archivo, s = size / f.unitsPerEm, run = f.layout(text);
@@ -60,7 +60,7 @@ function wordPath(text, size, x0, baseY) {
   return { d, width: pen * s, capHeight: f.capHeight * s, descent: -f.descent * s };
 }
 
-/** 横版锁定稿：图标（色块）+ 字标 */
+/** Horizontal lockup: icon (tile) + wordmark */
 function lockup({ tone }) {
   const dark = tone === "dark";
   const fg = dark ? S.white : S.ink;
@@ -91,7 +91,7 @@ for (const [name, content] of Object.entries(files)) {
   fs.writeFileSync(path.join(OUTBRAND, name), content);
 }
 
-// 预览页（浅/深两种背景）
+// Preview page (light/dark backgrounds)
 fs.mkdirSync(OUTBRAND, { recursive: true });
 fs.writeFileSync(path.join(OUTBRAND, "preview.html"),
 `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -102,7 +102,7 @@ body{font:13px/1.4 -apple-system,"PingFang SC",sans-serif;color:#cfd3dc;backgrou
 .t{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.6}
 .hdr{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px}
 </style></head><body>
-<div class="c dk"><div class="t">Header 1x（站点靛紫）</div>
+<div class="c dk"><div class="t">Header 1x (site indigo/violet)</div>
   <div class="hdr" style="background:#0F0F12;color:#fff">
     <svg width="32" height="32" viewBox="0 0 512 512"><defs><linearGradient id="h1" x1="0" y1="0" x2=".85" y2="1"><stop offset="0" stop-color="${S.violet}"/><stop offset="1" stop-color="${S.violetDeep}"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#h1)"/>${glyph({ hexW: 30 }) }</svg>
     <span style="font:600 15px/1 -apple-system;letter-spacing:-.02em">Designer Hub<br><span style="font:400 9px/2.2 ui-monospace;letter-spacing:.2em;opacity:.45">DESIGNER HUB · MONAD</span></span>

@@ -39,7 +39,7 @@ pay for content that is generated and remixed over time" applies to any generati
 
 | Adopter | Why they'd use it instead of building their own |
 | --- | --- |
-| **Generative / design tools** (像 云筑家 App 本身) | Get on-chain attribution + revenue split without writing WebAuthn/P256 verification, CREATE2 accounts, or lineage math. |
+| **Generative / design tools** (like the VirtuHome App itself) | Get on-chain attribution + revenue split without writing WebAuthn/P256 verification, CREATE2 accounts, or lineage math. |
 | **Content marketplaces / asset libraries** (3D assets, floor plans, presets) | Drop-in passkey login (no seed phrases, higher conversion) + enforceable resale royalty and remix lineage. |
 | **AI-agent platforms / model & data providers** | `AgentRegistry` + `ProvenanceRegistry` give a neutral, on-chain record of *which model produced what* — useful for audit, disputes, and agent reputation. |
 | **Identity / wallet SDKs** | A reference implementation of a P-256 WebAuthn account with a pure-Solidity verifier that works on chains without the RIP-7212 precompile (Monad included). |
@@ -117,7 +117,7 @@ hold a little MON. See `docs/SECURITY.md` for the trust model.
 Traction today is **self-served only** (no third-party integration yet — stated honestly). Concretely:
 
 1. **Ship the kit** (done): publish `@designerhub/sdk` + this guide + runnable examples.
-2. **Land one integrator during the event**: 云筑家 App is the first-party integrator (already exports
+2. **Land one integrator during the event**: the VirtuHome App is the first-party integrator (already exports
    the scheme JSON); recruit **one external team** (a design tool, an asset library, or an AI-agent
    platform) to mint/attest through the SDK — even a read-only integration counts.
 3. **Post-event**: open a small integration-bounty / "built on Designer Hub" track, add a

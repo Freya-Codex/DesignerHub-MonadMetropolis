@@ -1,10 +1,10 @@
 /**
- * Envio HyperIndex 事件处理器 — Designer Hub · Monad
+  * Envio HyperIndex event handlers -- Designer Hub · Monad
  *
- * 把五个合约的链上事件整理成实体（见 schema.graphql），
- * 前端通过 GraphQL 查询这些实体来驱动 /trades、/scheme/[id]、/board。
+  * Organize the on-chain events of the five contracts into entities (see schema.graphql);
+  * the front end queries these entities over GraphQL to drive /trades, /scheme/[id], and /board.
  *
- * 运行 `pnpm codegen` 会根据 config.yaml + schema.graphql 生成类型与 context 实体。
+  * Running `pnpm codegen` generates types and the context entity from config.yaml + schema.graphql.
  */
 import { indexer } from "envio";
 
@@ -12,7 +12,7 @@ const blockNum = (n: number | undefined): bigint => BigInt(n ?? 0);
 
 // ---------------------------------------------------------------- DreamScheme
 
-/** 方案铸造：建 Scheme 实体（含 AI provider 归因 agentId）。 */
+/** Scheme mint: create a Scheme entity (with the AI provider attribution agentId). */
 indexer.onEvent(
   { contract: "DreamScheme", event: "SchemeMinted" },
   async ({ event, context }) => {
@@ -33,7 +33,7 @@ indexer.onEvent(
   }
 );
 
-/** 版税设置：更新 Scheme 的版税接收人 / bps（ERC-2981）。 */
+/** Royalty set: update the Scheme's royalty receiver / bps (ERC-2981). */
 indexer.onEvent(
   { contract: "DreamScheme", event: "RoyaltySet" },
   async ({ event, context }) => {
@@ -50,7 +50,7 @@ indexer.onEvent(
 
 // --------------------------------------------------------------- SchemeMarket
 
-/** 方案应用：写一笔交易账本记录，并累加方案的 appliedCount。 */
+/** Scheme apply: write a trade-ledger record and increment the scheme's appliedCount. */
 indexer.onEvent(
   { contract: "SchemeMarket", event: "SchemeApplied" },
   async ({ event, context }) => {
@@ -77,7 +77,7 @@ indexer.onEvent(
   }
 );
 
-/** 衍生分账：记录付给祖先创作者的份额（血缘变现的可核实凭据）。 */
+/** Derivative split: record the share paid to ancestor creators (verifiable proof of lineage monetization). */
 indexer.onEvent(
   { contract: "SchemeMarket", event: "AncestorPaid" },
   async ({ event, context }) => {
@@ -94,7 +94,7 @@ indexer.onEvent(
 
 // ------------------------------------------------------------- AgentRegistry
 
-/** Agent 注册：建 Agent 实体（Kimi 等 provider 归因）。 */
+/** Agent register: create an Agent entity (provider attribution such as Kimi). */
 indexer.onEvent(
   { contract: "AgentRegistry", event: "AgentRegistered" },
   async ({ event, context }) => {
@@ -110,7 +110,7 @@ indexer.onEvent(
   }
 );
 
-/** 声誉累加：更新 Agent 声誉并记一条声誉事件（驱动 /board 信誉榜）。 */
+/** Reputation increment: update the agent's reputation and record a reputation event (drives the /board leaderboard). */
 indexer.onEvent(
   { contract: "AgentRegistry", event: "ReputationAdded" },
   async ({ event, context }) => {
@@ -141,7 +141,7 @@ indexer.onEvent(
 
 // --------------------------------------------------------- ProvenanceRegistry
 
-/** 链上确权：只存承诺（commitment），内容本体始终留在链下。 */
+/** On-chain attestation: only the commitment is stored; the content body always stays off-chain. */
 indexer.onEvent(
   { contract: "ProvenanceRegistry", event: "Attested" },
   async ({ event, context }) => {

@@ -1,18 +1,18 @@
 /**
- * app/api/relay/route.ts —— 演示用 gas sponsor（relayer）。
+  * app/api/relay/route.ts -- demo gas sponsor (relayer).
  *
- * 用途：让持有 passkey 的用户无需持有 MON 也能完成链上动作——
- *   1) op=createAccount：由 relayer 代付部署 P256PasskeyAccount（CREATE2 工厂）；
- *   2) op=execute      ：把 passkey 签好的断言提交给账户合约执行（relayer 只出 gas，
- *                        无法篡改操作内容——挑战覆盖 calldata 哈希与 nonce）。
+  * Purpose: let users holding a passkey perform on-chain actions without holding MON --
+  *   1) op=createAccount: the relayer pays to deploy the P256PasskeyAccount (CREATE2 factory);
+  *   2) op=execute      : submit the passkey-signed assertion to the account contract for execution (the relayer only pays gas
+  *                        and cannot tamper with the operation -- the challenge covers the calldata hash and nonce).
  *
- * 安全边界（演示级）：
- *   · 仅 Monad 测试网（chainId 10143）；
- *   · value 恒为 0：relayer 不代转任何 ETH/MON；
- *   · 目标白名单：只允许调用本项目的 4 个合约，或账户自身的 addKey；
- *   · 额度：全局每日上限 + 单账户每日上限（进程内计数，重启清零）。
+  * Security boundaries (demo grade):
+  *   - Monad Testnet only (chainId 10143);
+  *   - value is always 0: the relayer transfers no ETH/MON;
+  *   - target allowlist: only this project's 4 contracts, or the account's own addKey, may be called;
+  *   - quota: global daily cap + per-account daily cap (in-process counter; reset on restart).
  *
- * ⚠️ 生产环境应改为：持久化配额、按账户/签名付费、指标与告警、密钥托管（KMS）。
+  * WARNING: production should switch to persisted quotas, per-account/signature billing, metrics & alerts, and key custody (KMS).
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -38,7 +38,7 @@ const FACTORY = process.env.NEXT_PUBLIC_PASSKEY_FACTORY_ADDRESS;
 const MAX_GLOBAL_PER_DAY = Number(process.env.RELAYER_MAX_PER_DAY || 200);
 const MAX_PER_ACCOUNT_PER_DAY = Number(process.env.RELAYER_MAX_PER_ACCOUNT_PER_DAY || 10);
 
-/** 目标合约白名单（小写）。 */
+/** Target contract allowlist (lowercase). */
 function allowTargets(): Set<string> {
   return new Set(
     [
@@ -52,7 +52,7 @@ function allowTargets(): Set<string> {
   );
 }
 
-// 进程内配额（演示级，重启清零）
+// In-process quota (demo grade; reset on restart)
 const state = { day: "", global: 0, perAccount: new Map<string, number>() };
 
 function takeQuota(account: string, lang: "zh" | "en"): { ok: true } | { ok: false; reason: string } {
@@ -74,7 +74,7 @@ function takeQuota(account: string, lang: "zh" | "en"): { ok: true } | { ok: fal
 
 function clients() {
   const account = privateKeyToAccount(RELAYER_KEY as Hex);
-  // 服务端统一走 serverTransport()：Alchemy 优先，公共 RPC 自动兜底。
+  // The server uniformly uses serverTransport(): Alchemy first, with automatic public-RPC fallback.
   const transport = serverTransport();
   const wallet = createWalletClient({ account, chain: monadTestnet, transport });
   const pub = createPublicClient({ chain: monadTestnet, transport });
@@ -92,7 +92,7 @@ export async function GET() {
     maxGlobalPerDay: MAX_GLOBAL_PER_DAY,
     maxPerAccountPerDay: MAX_PER_ACCOUNT_PER_DAY,
     usedToday: state.day === new Date().toISOString().slice(0, 10) ? state.global : 0,
-    // 服务端 RPC 提供方（Alchemy 优先，公共 RPC 兜底）；只暴露标签，不含 Key。
+    // Server RPC provider (Alchemy first, public-RPC fallback); exposes only a label, never the Key.
     rpcProvider: usingAlchemy() ? "alchemy" : "public",
     rpcLabel: safeRpcLabel()
   });
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         }
       ] as const;
 
-      // 预演一次，签名/挑战错误会在提交前暴露（避免白付 gas）
+      // Dry-run once so signature/challenge errors surface before submission (avoids paying gas for nothing)
       const { request } = await pub.simulateContract({
         address: acct,
         abi: passkeyAccountAbi,

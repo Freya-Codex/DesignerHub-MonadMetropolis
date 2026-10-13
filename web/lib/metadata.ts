@@ -4,16 +4,16 @@ export interface TokenMetadataInput {
   design: DesignScheme;
   name: string;
   description: string;
-  /** 英文名（可选，双语展示用） */
+  /** English name (optional, for bilingual display) */
   nameEn?: string;
-  /** 英文描述（可选，双语展示用） */
+  /** English description (optional, for bilingual display) */
   descriptionEn?: string;
   imageUri: string;
   schemeUri: string;
   contentHash: string;
 }
 
-/** 构造 ERC-721 metadata（含完整方案 JSON，供 Remix 页面加载原方案）。 */
+/** Build ERC-721 metadata (including the full scheme JSON, so the Remix page can load the original). */
 export function buildTokenMetadata(input: TokenMetadataInput): Record<string, unknown> {
   const { design, name, description, nameEn, descriptionEn, imageUri, schemeUri, contentHash } = input;
   const dim = design.room.dimensions;

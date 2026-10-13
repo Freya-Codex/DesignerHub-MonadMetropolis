@@ -11,16 +11,77 @@ from chain events in real time into a leaderboard. When an author iterates on th
 `parentId` points to their previous version, forming an on-chain **v1 → v2 → v3 timeline**.
 Comments are stored off-chain with wallet-signature verification (SIWE-style), at zero gas.
 
+**In one line:** we want AIGC output to behave like registrable, traceable, tradable digital
+assets — verifiably owned, safely circulated and fairly paid out, without exposing user privacy
+or adding Web3 friction.
+
 ---
 
-## 中文摘要
+## Why we built it
 
-「Designer Hub」把云筑家 App 导出的装修方案变成 Monad 链上可 Remix、可归因、可分账的创作资产：
+Generative AI can now produce interior-design schemes at speed, but the moment a designer needs to
+**deliver, publish, circulate or trade** one, the pipeline breaks:
 
-- **五份合约**：`DreamScheme`（方案 NFT：谱系 + ERC-2981 版税 + AI 署名）、`SchemeMarket`（创作者定价 + 谱系即时分账）、`AgentRegistry`（AI 生成器注册与声誉）、`ProvenanceRegistry`（内容承诺存证，隐私优先）、`P256PasskeyAccount` + `PasskeyAccountFactory`（WebAuthn passkey 智能账户）。
-- **新市场模型**：创作者用 `setPrice` 自主定价；买家「应用到我家」时**即时分账**（无平台金库、无 withdraw）——原创 90/10，衍生 85/10/5（创作者 / 平台 / 祖先谱系池）。
-- **主流程 Passkey**：指纹 / Face ID 登录，私钥永不出设备安全芯片；CREATE2 确定性地址；**relayer 代付 gas**（仅测试网、限额、白名单）。MetaMask 保留为「高级模式」。
-- **历史地址**：旧版 `VirtuHomeScheme` / `SchemeMarket`（固定 0.01 MON + 平台金库提取模型）已弃用，地址见下方「历史部署」。
+- **The provenance object is composite and has no dedicated tool.** A scheme is not one image — it
+  bundles client-privacy context, design drafts, furniture and cross-layer assets. You cannot simply
+  watermark it, and no convenient provenance tool covers it.
+- **Provenance is a market blank.** There is no neutral on-chain record, so a creator cannot prove
+  which model or agent produced an asset; once a scheme is exported and remixed, lineage breaks and
+  revenue can no longer be traced or split programmatically.
+- **Nothing is built for workflow, transfer or trading.** Existing platforms either rely on custodial
+  vaults that freeze funds behind cumbersome withdrawals, or dump Web3's barriers — mnemonic wallets
+  and gas — directly onto mainstream users.
+
+Designer Hub is not another AI image generator. It lays the missing settlement layer for AIGC-era
+creative work: **provenance and trading happen on-chain while sensitive content stays off-chain.**
+
+---
+
+## Hackathon: Track 04, bounties & judging
+
+Built for the **Monad Metropolis** hackathon (build window 1 Sep – 13 Oct; judging 14–27 Oct;
+winners 3 Nov). Track 04 — Trust, Identity & AI Infrastructure:
+
+> "AI has made identity, provenance, data ownership, and agent trust urgent infrastructure problems.
+> Best fit for teams comfortable with cryptography, protocol design, or agent frameworks."
+> — passkey-native accounts using P256 + WebAuthn, agent identity & reputation, provenance for
+> generated media that survives re-encoding. **Prize pool: $30,000 per track** (evenly between 3 teams).
+
+### How we map to Track 04
+
+| Track 04 signal | What Designer Hub ships |
+| --- | --- |
+| Passkey-native accounts using P256 + WebAuthn, no seed phrase | `P256PasskeyAccount` + `PasskeyAccountFactory` — CREATE2 deterministic accounts; real WebAuthn assertions verified on-chain in pure Solidity (RIP-7212 fallback); the key stays in the device secure chip |
+| Agent identity & reputation | `AgentRegistry` — AI generators register and accrue reputation from real attestations; `agentId` binds every mint to its model |
+| Provenance for generated media | `ProvenanceRegistry` — stores only `keccak256(contentHash ‖ salt)`; raw content never goes on-chain; survives re-encoding |
+| Cryptography / protocol design | on-chain P-256 verifier, tamper-proof WebAuthn challenge binding, lineage-aware splitter |
+
+### Bounties this project targets
+
+Metropolis awards sponsor bounties on top of the track prizes. Designer Hub is built to be
+eligible for the following (official Monad bounty list):
+
+| Bounty | Sponsor | Why Designer Hub fits |
+| --- | --- | --- |
+| **Best Builds Powered by KIMI** — $3,000 in credits | Moonshot AI / KIMI | KIMI is the pre-registered generator (`agentId = 1`) and the `/api/kimi` design-suggestion engine; every KIMI-authored scheme is attributable on-chain |
+| **Best Builds with Qwen** — $5,000 in credits | Alibaba Qwen | the `AgentRegistry` is provider-agnostic (Qwen = `agentId 2`); schemes carry the generating provider on-chain |
+| **Best Use of Envio** — $1,000 | Envio | the `envio/` indexer streams `SchemeMinted` / `SchemeApplied` / `Attested` into the activity feed |
+| **Best Projects using Alchemy** — $1,000 in credits | Alchemy | Alchemy RPC + webhook integration (`web/docs/ALCHEMY.md`, `/api/alchemy/webhook`) |
+| **Best Analytics / Risk Tool** — $3,000 | — | `AgentRegistry` reputation + per-agent analytics over on-chain attestations |
+| **Mera: One Passkey, Many Keys** — $2,500 | Mera | `P256PasskeyAccount` supports up to 4 keys per account (`addKey`) for multi-device recovery |
+| **Best Agent Wallet Plugin** — $2,500 | — | a passkey smart account + permissionless relayer as an agent-wallet primitive |
+
+### Judging rubric alignment
+
+| Criterion | Weight | Where we answer it |
+| --- | --- | --- |
+| Technical Execution | 20% | [`docs/SECURITY.md`](./docs/SECURITY.md) · 103 Foundry tests · live testnet E2E |
+| Design & Craft (DX) | 20% | typed `@designerhub/sdk` · [`docs/INTEGRATING.md`](./docs/INTEGRATING.md) · runnable examples |
+| Originality & Track Insight | 15% | content stays off-chain · vault-free instant splits · permissionless relayer |
+| Founder & Market Readiness | 25% | named adopters + "why not roll your own" · first-party integrator (VirtuHome) |
+| Traction & Path Forward | 20% | integration kit shipped · honest gap + concrete post-event plan |
+
+Full mapping: [`docs/JUDGING-ALIGNMENT.md`](./docs/JUDGING-ALIGNMENT.md).
 
 ---
 
@@ -71,17 +132,17 @@ Source: [`sdk/`](./sdk) (typed, buildable, not yet published to npm).
 
 ---
 
-## Relationship to the 云筑家 App
+## Relationship to the VirtuHome App
 
-This repo is **fully decoupled** from the 云筑家 App; they are two repositories that only hand off a scheme JSON:
+This repo is **fully decoupled** from the VirtuHome App; they are two repositories that only hand off a scheme JSON:
 
 | Repo | Responsibility | URL |
 | --- | --- | --- |
-| **virtu-home** | The 云筑家 App itself: phone-scan a room → server rebuilds 3D → desktop workbench → **export scheme** | <https://gitee.com/freyahhhhh/virtu-home> |
+| **virtu-home** | The VirtuHome App itself: phone-scan a room → server rebuilds 3D → desktop workbench → **export scheme** | <https://gitee.com/freyahhhhh/virtu-home> |
 | **monad-competition** (this repo) | The on-chain creative asset: **create / mint / remix / trade / leaderboard** | <https://gitee.com/freyahhhhh/monad-competition_-designer-github> |
 
 ```text
-云筑家 App (virtu-home)                             this repo (monad-competition)
+VirtuHome App (virtu-home)                          this repo (monad-competition)
 ┌────────────────────────────┐                  ┌───────────────────────────────────┐
 │ phone scan → 3D → decorate │                  │ ⑦ Gallery feed / leaderboard        │
 │                            │                  │ ⑥ Remix (parentId on-chain)         │
@@ -181,7 +242,7 @@ The **primary flow is Passkey** — no mnemonic, no browser extension, and **no 
 
 Entry point: [`/passkey`](./web/app/passkey/page.tsx).
 
-**MetaMask remains available as "advanced mode"** (top-right "高级模式" connect button) for developers who
+**MetaMask remains available as an alternative** (connectable inside the [`/passkey`](./web/app/passkey/page.tsx) page) for developers who
 prefer a self-custodied EOA.
 
 ### Relayer (`/api/relay`) — demo-grade gas sponsor
@@ -207,7 +268,7 @@ monad/
 │   ├── src/ProvenanceRegistry.sol content-commitment attestation
 │   ├── src/P256PasskeyAccount.sol passkey smart account + CREATE2 factory
 │   ├── src/lib/{P256,WebAuthn}.sol  P-256 + WebAuthn verification
-│   ├── test/                      Foundry tests (96 cases)
+│   ├── test/                      Foundry tests (103 cases)
 │   ├── script/Deploy.s.sol        deploy script (writes deployments/*.json)
 │   └── deployments/               deployment records
 ├── web/                       Next.js 14 front end + API
@@ -234,7 +295,7 @@ forge-std 1.16.2), so no `forge install` is needed.
 
 ```bash
 cd contracts
-forge test          # 96 passed (mint / lineage / versions / split amounts / attestation / P-256 · WebAuthn / passkey account)
+forge test          # 103 passed (mint / lineage / versions / split amounts / attestation / P-256 · WebAuthn / passkey account)
 ```
 
 ### 2. Get testnet funds
@@ -365,7 +426,7 @@ Both run **without any secrets** (contract deps are vendored; the front end buil
 
 ## FAQ
 
-- **Relationship to the 云筑家 App**: fully decoupled; only a scheme JSON is handed off. This repo is
+- **Relationship to the VirtuHome App**: fully decoupled; only a scheme JSON is handed off. This repo is
   the standalone hackathon deliverable (contracts / front end / sample data). The App itself lives in `virtu-home`.
 - **Gallery keeps showing demo data**: `web/.env.local` has no contract addresses, or the dev server was
   not restarted after deployment.
@@ -384,4 +445,4 @@ Both run **without any secrets** (contract deps are vendored; the front end buil
   a different domain or port (localhost ↔ 127.0.0.1) yields a different account. The local record lives in `localStorage`.
 - **Passkey flow errors "relayer_disabled"**: set `RELAYER_PRIVATE_KEY` (or `MONAD_PRIVATE_KEY`) to enable the demo sponsor.
 - **Comments**: stored in `web/data/comments/<tokenId>.json` (gitignored); a 401 means the signed message
-  must exactly match the submitted one and must include "方案 #tokenId".
+  must exactly match the submitted one and must embed the scheme's token id.
