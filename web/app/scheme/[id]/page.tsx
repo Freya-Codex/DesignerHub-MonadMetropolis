@@ -24,6 +24,7 @@ import VersionTimeline from "@/components/VersionTimeline";
 import CommentsSection from "@/components/CommentsSection";
 import { monadTestnet } from "@/lib/chains";
 import { generatorLabel, shortAddress } from "@/lib/scheme";
+import { agentNameForId } from "@/lib/agents";
 import { useI18n } from "@/lib/i18n";
 
 export default function SchemeDetailPage() {
@@ -354,7 +355,7 @@ function DetailFrame(props: DetailFrameProps) {
   const isRemix = d.parentId !== undefined && d.parentId > 0n;
   const splitNote = isRemix ? "85% creator · 10% treasury · 5% lineage" : "90% creator · 10% treasury";
   const agentId: bigint = d.agentId ?? 0n;
-  const agentLabel = agentId === 1n ? "Kimi" : agentId > 0n ? `Agent #${agentId.toString()}` : "";
+  const agentLabel = agentNameForId(agentId);
   // 方案自带的 AI 生成器信息（provider · model）优先；无则回退到链上 agentId 标签
   const genLabel = generatorLabel(d.generator);
   const generatorLine = genLabel || agentLabel;

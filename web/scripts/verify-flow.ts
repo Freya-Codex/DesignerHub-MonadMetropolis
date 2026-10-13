@@ -25,7 +25,8 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "../lib/chains";
-import { dreamSchemeAbi, schemeMarketAbi, schemeMintedEvent, schemeAppliedEvent, KIMI_AGENT_ID } from "../lib/abis";
+import { dreamSchemeAbi, schemeMarketAbi, schemeMintedEvent, schemeAppliedEvent } from "../lib/abis";
+import { agentIdForScheme } from "../lib/agents";
 import { pinFile, pinJson } from "../lib/pinata";
 import { buildTokenMetadata } from "../lib/metadata";
 import { schemeToPreviewSvg, validateScheme, type DesignScheme } from "../lib/scheme";
@@ -168,7 +169,7 @@ async function main(): Promise<void> {
       address: dreamScheme,
       abi: dreamSchemeAbi,
       functionName: "mint",
-      args: [parent, contentHash as Hex, KIMI_AGENT_ID, tokenPin.uri]
+      args: [parent, contentHash as Hex, agentIdForScheme(remixed), tokenPin.uri]
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     check("Remix 交易上链", receipt.status === "success", `tx=${hash.slice(0, 18)}…`);

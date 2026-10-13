@@ -20,7 +20,8 @@ import {
   provenanceRegistryAddress,
   passkeyFactoryAddress
 } from "@/lib/contracts";
-import { KIMI_AGENT_ID, passkeyAccountAbi, passkeyFactoryAbi, provenanceRegistryAbi } from "@/lib/abis";
+import { passkeyAccountAbi, passkeyFactoryAbi, provenanceRegistryAbi } from "@/lib/abis";
+import { DEFAULT_AGENT_ID } from "@/lib/agents";
 import { monadTestnet } from "@/lib/chains";
 import {
   b64urlDecode,
@@ -184,7 +185,8 @@ export default function PasskeyPage() {
       const data = encodeFunctionData({
         abi: provenanceRegistryAbi,
         functionName: "attest",
-        args: [commitment, KIMI_AGENT_ID, ""]
+        // 通用演示存证：无具体方案 / provider，用默认 agent（Custom=12）。
+        args: [commitment, DEFAULT_AGENT_ID, ""]
       });
 
       const n = (await client.readContract({

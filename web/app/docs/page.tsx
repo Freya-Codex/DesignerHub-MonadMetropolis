@@ -66,9 +66,9 @@ const MECHANISMS: Mechanism[] = [
     tag: "06",
     title: "AI 生成器归因",
     titleEn: "AI Generator Attribution",
-    body: "AgentRegistry 注册 AI 生成器（Kimi 预注册为 agentId=1）；mint/remix 携带 agentId 上链，方案与生成它的 AI 可公开归因，声誉随确权次数累积。ProvenanceRegistry 支持 EIP-712 签名存证生成过程。",
+    body: "AgentRegistry 注册 AI 生成器（agentId 从 1 自增：Kimi=1、Qwen=2、DeepSeek=3 …、Custom=12）；mint/remix 按方案声明的 provider 携带对应 agentId 上链，未声明/未知 provider 归为 Custom，不同 AI 生成方案可分别归因，声誉随确权次数累积。ProvenanceRegistry 支持 EIP-712 签名存证生成过程。",
     bodyEn:
-      "AgentRegistry registers AI generators (Kimi is pre-registered as agentId=1); mint/remix carry agentId on-chain, so a scheme and the AI that generated it are publicly attributable, and reputation accrues with each attestation. ProvenanceRegistry supports EIP-712 signed attestation of the generation process."
+      "AgentRegistry registers AI generators (agentIds increment from 1: Kimi=1, Qwen=2, DeepSeek=3 … Custom=12); mint/remix carry the agentId matching the scheme's declared provider (undeclared/unknown providers map to Custom), so schemes from different AIs are attributed separately, and reputation accrues with each attestation. ProvenanceRegistry supports EIP-712 signed attestation of the generation process."
   },
   {
     tag: "07",

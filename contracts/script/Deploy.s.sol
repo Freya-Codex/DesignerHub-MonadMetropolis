@@ -12,10 +12,27 @@ import {PasskeyAccountFactory} from "../src/P256PasskeyAccount.sol";
 /// @title Deploy — Designer Hub 协议全家桶部署脚本
 /// @notice 部署顺序（接线关系决定）：
 ///         AgentRegistry → ProvenanceRegistry → 接线 → DreamScheme → SchemeMarket
-///         → PasskeyAccountFactory → 预注册 Kimi agent。
+///         → PasskeyAccountFactory → 按顺序预注册全部 AI agent。
 contract Deploy is Script {
-    /// @notice Kimi（AI 生成器）的元数据 URI，Phase 2 换成固定到 IPFS 的正式元数据。
-    string public constant KIMI_METADATA_URI = "https://designerhub.xyz/agents/kimi.json";
+    /// @notice AI 生成器元数据 URI，**按数组顺序**注册 → agentId 依次为 1..N。
+    ///         顺序必须与 web/lib/agents.ts 的 AGENTS 保持一致
+    ///         （Kimi=1、Qwen=2、DeepSeek=3 …），否则链上归因与前端展示会错配。
+    function agentUris() internal pure returns (string[12] memory uris) {
+        uris = [
+            "https://designerhub.xyz/agents/kimi.json",
+            "https://designerhub.xyz/agents/qwen.json",
+            "https://designerhub.xyz/agents/deepseek.json",
+            "https://designerhub.xyz/agents/zhipu.json",
+            "https://designerhub.xyz/agents/siliconflow.json",
+            "https://designerhub.xyz/agents/ark.json",
+            "https://designerhub.xyz/agents/openrouter.json",
+            "https://designerhub.xyz/agents/openai.json",
+            "https://designerhub.xyz/agents/anthropic.json",
+            "https://designerhub.xyz/agents/gemini.json",
+            "https://designerhub.xyz/agents/agnes.json",
+            "https://designerhub.xyz/agents/custom.json"
+        ];
+    }
 
     function run() public {
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
@@ -30,8 +47,12 @@ contract Deploy is Script {
         SchemeMarket market = new SchemeMarket(scheme, payable(platform));
         PasskeyAccountFactory factory = new PasskeyAccountFactory();
 
-        // 预注册 Kimi agent（agentId = 1）
-        uint256 kimiAgentId = agents.registerAgent(KIMI_METADATA_URI);
+        // 按顺序预注册全部 AI agent（agentId = 1..12）
+        string[12] memory uris = agentUris();
+        uint256[] memory agentIds = new uint256[](uris.length);
+        for (uint256 i = 0; i < uris.length; i++) {
+            agentIds[i] = agents.registerAgent(uris[i]);
+        }
 
         vm.stopBroadcast();
 
@@ -42,7 +63,21 @@ contract Deploy is Script {
         vm.serializeUint(json, "chainId", block.chainid);
         vm.serializeAddress(json, "deployer", deployer);
         vm.serializeAddress(json, "platformAddress", platform);
-        vm.serializeUint(json, "kimiAgentId", kimiAgentId);
+        vm.serializeUint(json, "kimiAgentId", agentIds[0]);
+        string memory agentsJson = "agents";
+        vm.serializeUint(agentsJson, "kimi", agentIds[0]);
+        vm.serializeUint(agentsJson, "qwen", agentIds[1]);
+        vm.serializeUint(agentsJson, "deepseek", agentIds[2]);
+        vm.serializeUint(agentsJson, "zhipu", agentIds[3]);
+        vm.serializeUint(agentsJson, "siliconflow", agentIds[4]);
+        vm.serializeUint(agentsJson, "ark", agentIds[5]);
+        vm.serializeUint(agentsJson, "openrouter", agentIds[6]);
+        vm.serializeUint(agentsJson, "openai", agentIds[7]);
+        vm.serializeUint(agentsJson, "anthropic", agentIds[8]);
+        vm.serializeUint(agentsJson, "gemini", agentIds[9]);
+        vm.serializeUint(agentsJson, "agnes", agentIds[10]);
+        string memory agentsSerialized = vm.serializeUint(agentsJson, "custom", agentIds[11]);
+        vm.serializeString(json, "agents", agentsSerialized);
         vm.serializeAddress(json, "AgentRegistry", address(agents));
         vm.serializeAddress(json, "ProvenanceRegistry", address(provenance));
         vm.serializeAddress(json, "DreamScheme", address(scheme));
@@ -56,6 +91,7 @@ contract Deploy is Script {
         console2.log("DreamScheme:            ", address(scheme));
         console2.log("SchemeMarket:           ", address(market));
         console2.log("PasskeyAccountFactory:  ", address(factory));
-        console2.log("Kimi agentId:           ", kimiAgentId);
+        console2.log("Registered agents:      ", uris.length);
+        console2.log("Kimi agentId:           ", agentIds[0]);
     }
 }

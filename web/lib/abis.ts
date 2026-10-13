@@ -2,7 +2,8 @@ import { parseAbi } from "viem";
 
 /**
  * DreamScheme —— 方案 NFT（谱系 remix + ERC-2981 版税 + AI Agent 署名）。
- * mint/remix 均携带 agentId（AI 生成器，如 Kimi = 1，来自 AgentRegistry）。
+ * mint/remix 携带 agentId（AI 生成器，来自 AgentRegistry）；agentId 按 provider
+ * 分配（见 lib/agents.ts：Kimi=1、Qwen=2、DeepSeek=3 …），不再一律写死 1。
  * 注意：条目需精简——parseAbi 条目过多会让 viem 的 readContract 泛型推断退化成 unknown。
  * 未用到的 schemeOf/setRoyalty/RoyaltySet/hashToTokenId/royaltyInfo/supportsInterface 不在此处声明。
  */
@@ -53,7 +54,7 @@ export const schemeMarketAbi = parseAbi([
   "event AncestorPaid(uint256 indexed tokenId, address indexed ancestor, uint256 amount)"
 ]);
 
-/** AgentRegistry —— AI 生成器注册表（Kimi 预注册为 agentId 1）。 */
+/** AgentRegistry —— AI 生成器注册表（agentId 从 1 自增；Kimi 预注册为 1）。 */
 export const agentRegistryAbi = parseAbi([
   "function registerAgent(string calldata metadataURI) external returns (uint256 agentId)",
   "function isRegistered(uint256 agentId) external view returns (bool)",
@@ -77,8 +78,8 @@ export const schemeAppliedEvent = parseAbi([
   "event SchemeApplied(uint256 indexed tokenId, address indexed applier, address indexed creator, uint256 price, uint256 creatorCut, uint256 platformCut)"
 ])[0];
 
-/** Kimi 在 AgentRegistry 的预注册 ID（部署脚本固定为 1）。 */
-export const KIMI_AGENT_ID = 1n;
+/** Kimi 在 AgentRegistry 的预注册 ID（= 1）。定义在 lib/agents.ts，这里再导出以兼容既有导入。 */
+export { KIMI_AGENT_ID } from "./agents";
 
 // ------------------------------------------------------------------ //
 //  Passkey（无助记词智能账户）—— 含 tuple 形参，用 JSON ABI            //

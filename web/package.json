@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "register-agents": "tsx --env-file-if-exists=.env.local scripts/register-agents.ts",
     "previews": "tsx scripts/generate-previews.ts",
     "index": "tsx --env-file-if-exists=.env.local scripts/index-activity.ts",
     "verify:flow": "tsx --env-file-if-exists=.env.local scripts/verify-flow.ts",

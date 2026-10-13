@@ -40,7 +40,7 @@ export const demoSchemes: SchemeSummary[] = [
     tokenId: 2n,
     creator: DEMO_CREATOR,
     parentId: 0n,
-    agentId: 1n,
+    agentId: 2n,
     price: 10_000_000_000_000_000n,
     payout: "0x0000000000000000000000000000000000000000",
     contentHash: "0x0000000000000000000000000000000000000000000000000000000000000002",
@@ -59,13 +59,13 @@ export const demoSchemes: SchemeSummary[] = [
     roomTypeEn: "Bedroom",
     furnitureCount: 8,
     createdAt: 1_752_000_100,
-    generator: { provider: "kimi", model: "moonshot-v1-8k" }
+    generator: { provider: "qwen", model: "qwen2.5-72b-instruct" }
   },
   {
     tokenId: 3n,
     creator: DEMO_CREATOR,
     parentId: 0n,
-    agentId: 1n,
+    agentId: 3n,
     price: 10_000_000_000_000_000n,
     payout: "0x0000000000000000000000000000000000000000",
     contentHash: "0x0000000000000000000000000000000000000000000000000000000000000003",
@@ -84,6 +84,6 @@ export const demoSchemes: SchemeSummary[] = [
     roomTypeEn: "Study",
     furnitureCount: 7,
     createdAt: 1_752_000_200,
-    generator: { provider: "kimi", model: "moonshot-v1-8k" }
+    generator: { provider: "deepseek", model: "deepseek-chat" }
   }
 ];

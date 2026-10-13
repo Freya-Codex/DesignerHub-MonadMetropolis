@@ -1,4 +1,5 @@
 import { keccak256, toBytes, type Hex } from "viem";
+import { PROVIDER_LABELS } from "./agents";
 
 export interface Vec3 {
   x: number;
@@ -322,30 +323,10 @@ export function contentHashOfScheme(scheme: DesignScheme): Hex {
   return keccak256(toBytes(JSON.stringify(scheme)));
 }
 
-/** providerId → 展示名（与 VirtuHome 的 provider 预设保持一致）。 */
-const GENERATOR_PROVIDER_NAMES: Record<string, string> = {
-  kimi: "Kimi (Moonshot)",
-  moonshot: "Kimi (Moonshot)",
-  deepseek: "DeepSeek",
-  siliconflow: "SiliconFlow",
-  dashscope: "DashScope (Qwen)",
-  qwen: "DashScope (Qwen)",
-  zhipu: "Zhipu GLM",
-  glm: "Zhipu GLM",
-  ark: "Volcengine Ark",
-  openrouter: "OpenRouter",
-  agnes: "Agnes AI",
-  openai: "OpenAI",
-  anthropic: "Anthropic",
-  claude: "Anthropic",
-  gemini: "Google Gemini",
-  custom: "Custom"
-};
-
 /** 生成器展示名：优先 provider 展示名，后缀模型名。全空返回 ""。 */
 export function generatorLabel(gen: GeneratorInfo | undefined): string {
   if (!gen) return "";
-  const provider = gen.provider ? GENERATOR_PROVIDER_NAMES[gen.provider.toLowerCase()] ?? gen.provider : "";
+  const provider = gen.provider ? PROVIDER_LABELS[gen.provider.toLowerCase()] ?? gen.provider : "";
   const model = gen.model?.trim() ?? "";
   if (provider && model) return `${provider} · ${model}`;
   return provider || model;

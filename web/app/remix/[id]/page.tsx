@@ -6,7 +6,8 @@ import { useParams } from "next/navigation";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { decodeEventLog, encodeFunctionData, type Hex } from "viem";
-import { dreamSchemeAbi, KIMI_AGENT_ID } from "@/lib/abis";
+import { dreamSchemeAbi } from "@/lib/abis";
+import { agentIdForScheme } from "@/lib/agents";
 import { dreamSchemeAddress, publicClientFor, useSchemeDetail } from "@/lib/contracts";
 import {
   ensurePasskeyAccount,
@@ -202,6 +203,8 @@ export default function RemixPage() {
         ...remixed,
         parentId: Number(tokenId)
       };
+      // 按方案 provider 分配 agentId（Kimi=1、Qwen=2、DeepSeek=3 …；未声明/未知则回退 Custom(12)）。
+      const agentId = agentIdForScheme(designWithParent);
       const previewDataUri = svgToDataUri(schemeToPreviewSvg(designWithParent, lang));
       const res = await fetch("/api/pin", {
         method: "POST",
@@ -223,7 +226,7 @@ export default function RemixPage() {
         const callData = encodeFunctionData({
           abi: dreamSchemeAbi,
           functionName: "remix",
-          args: [tokenId, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string]
+          args: [tokenId, data.contentHash as Hex, agentId, data.tokenUri as string]
         });
         const account = await ensurePasskeyAccount(cred);
         const hash = await executeViaPasskey({ account, cred, to: addr, data: callData });
@@ -236,7 +239,7 @@ export default function RemixPage() {
           address: addr,
           abi: dreamSchemeAbi,
           functionName: "remix",
-          args: [tokenId, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string]
+          args: [tokenId, data.contentHash as Hex, agentId, data.tokenUri as string]
         });
         setMintHash(hash);
       }

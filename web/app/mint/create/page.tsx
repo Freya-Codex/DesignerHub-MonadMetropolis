@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { decodeEventLog, encodeFunctionData, type Address, type Hex } from "viem";
-import { dreamSchemeAbi, KIMI_AGENT_ID } from "@/lib/abis";
+import { dreamSchemeAbi } from "@/lib/abis";
+import { agentIdForScheme } from "@/lib/agents";
 import { dreamSchemeAddress, mintedTokenForContentHash, publicClientFor } from "@/lib/contracts";
 import { monadTestnet } from "@/lib/chains";
 import { contentHashOfScheme, schemeToPreviewSvg, svgToDataUri, validateScheme, type DesignScheme } from "@/lib/scheme";
@@ -281,7 +282,9 @@ export default function CreatePage() {
         return;
       }
 
-      const mintArgs = [0n, data.contentHash as Hex, KIMI_AGENT_ID, data.tokenUri as string] as const;
+      // 按方案声明的 AI provider 分配 agentId（Kimi=1、Qwen=2、DeepSeek=3 …；未声明/未知则回退 Custom(12)）。
+      const agentId = agentIdForScheme(displayScheme);
+      const mintArgs = [0n, data.contentHash as Hex, agentId, data.tokenUri as string] as const;
 
       if (useMetaMask) {
         // 2a) MetaMask（备选）

@@ -26,7 +26,8 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "../lib/chains";
-import { dreamSchemeAbi, schemeMarketAbi, schemeMintedEvent, KIMI_AGENT_ID } from "../lib/abis";
+import { dreamSchemeAbi, schemeMarketAbi, schemeMintedEvent } from "../lib/abis";
+import { agentIdForScheme } from "../lib/agents";
 import { pinFile, pinJson } from "../lib/pinata";
 import { buildTokenMetadata } from "../lib/metadata";
 import { validateScheme, type DesignScheme } from "../lib/scheme";
@@ -150,7 +151,7 @@ async function main(): Promise<void> {
       address: dreamScheme,
       abi: dreamSchemeAbi,
       functionName,
-      args: [parentId, contentHash, KIMI_AGENT_ID, tokenPin.uri]
+      args: [parentId, contentHash, agentIdForScheme(design), tokenPin.uri]
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 
