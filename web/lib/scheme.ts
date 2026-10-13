@@ -84,7 +84,9 @@ export function validateScheme(value: unknown, lang: "zh" | "en" = "zh"): string
   if (!value || typeof value !== "object") return en ? "Scheme must be a JSON object" : "方案必须是 JSON 对象";
   const s = value as DesignScheme;
   if (typeof s.name !== "string" || s.name.trim().length < 1 || s.name.trim().length > 60) {
-    return en ? "name must be a string of 1–60 characters" : "name 需要是 1-60 字符的字符串";
+    return en
+      ? 'Missing or invalid top-level "name": needs 1–60 characters (you can also set it in the "Scheme name" field).'
+      : '缺少合法的顶层 "name" 字段：需 1-60 字符（也可在下方「方案名称」中填写）。';
   }
   if (!s.room || typeof s.room.type !== "string" || !s.room.type.trim()) {
     return en ? "room.type (room type) cannot be empty" : "room.type（房间类型）不能为空";

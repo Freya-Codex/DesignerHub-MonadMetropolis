@@ -18,7 +18,7 @@ import {
   passkeyAccountAddress,
   type StoredPasskey
 } from "@/lib/passkeyAccount";
-import { decodeSchemeCode, encodeSchemeCode } from "@/lib/schemeCodec";
+import { decodeSchemeCode, encodeSchemeCode, homePlanToScheme, looksLikeHomePlan } from "@/lib/schemeCodec";
 import SchemePreview from "@/components/SchemePreview";
 import { useI18n } from "@/lib/i18n";
 
@@ -86,31 +86,54 @@ export default function CreatePage() {
   const [decoding, setDecoding] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const scheme = useMemo<DesignScheme | null>(() => {
-    if (!raw.trim()) return null;
+  // Parse the raw JSON and normalize it: a VirtuHome HomePlan is auto-converted to this site's DesignScheme.
+  const parsed = useMemo<{ scheme: DesignScheme | null; fromHomePlan: boolean; parseError: string | null }>(() => {
+    if (!raw.trim()) return { scheme: null, fromHomePlan: false, parseError: null };
+    let obj: unknown;
     try {
-      const obj = JSON.parse(raw) as unknown;
-      return validateScheme(obj, lang) === null ? (obj as DesignScheme) : null;
+      obj = JSON.parse(raw);
     } catch {
-      return null;
+      return { scheme: null, fromHomePlan: false, parseError: t("JSON 解析失败，请检查格式", "JSON parse failed, please check the format") };
     }
-  }, [raw, lang]);
+    // A HomePlan does not validate as a DesignScheme on its own (its title lives under meta.title) -> convert it.
+    if (obj && typeof obj === "object" && !Array.isArray(obj) && looksLikeHomePlan(obj) && validateScheme(obj, lang) !== null) {
+      try {
+        return { scheme: homePlanToScheme(obj as Record<string, any>), fromHomePlan: true, parseError: null };
+      } catch {
+        return { scheme: null, fromHomePlan: false, parseError: t("HomePlan 转换失败", "Failed to convert the HomePlan") };
+      }
+    }
+    return { scheme: obj as DesignScheme, fromHomePlan: false, parseError: null };
+  }, [raw, lang, t]);
+
+  // Effective name: explicit override > the JSON's own name > the file name > empty.
+  const effectiveName = useMemo(() => {
+    const override = nameOverride.trim();
+    if (override) return override;
+    const own = parsed.scheme && typeof parsed.scheme.name === "string" ? parsed.scheme.name.trim() : "";
+    if (own) return own;
+    const fromFile = fileName.replace(/\.json$/i, "").trim();
+    return fromFile ? fromFile.slice(0, 60) : "";
+  }, [nameOverride, parsed, fileName]);
+
+  // Validate the normalized scheme with the effective name applied, so the name field can rescue a nameless JSON.
+  const scheme = useMemo<DesignScheme | null>(() => {
+    if (!parsed.scheme) return null;
+    const copy: DesignScheme = JSON.parse(JSON.stringify(parsed.scheme));
+    if (effectiveName) copy.name = effectiveName;
+    return validateScheme(copy, lang) === null ? copy : null;
+  }, [parsed, effectiveName, lang]);
+
+  const displayScheme = scheme;
 
   const validationError = useMemo(() => {
     if (!raw.trim()) return null;
-    try {
-      return validateScheme(JSON.parse(raw) as unknown, lang);
-    } catch {
-      return t("JSON 解析失败，请检查格式", "JSON parse failed, please check the format");
-    }
-  }, [raw, lang, t]);
-
-  const displayScheme = useMemo(() => {
-    if (!scheme) return null;
-    const copy: DesignScheme = JSON.parse(JSON.stringify(scheme));
-    if (nameOverride.trim()) copy.name = nameOverride.trim();
-    return copy;
-  }, [scheme, nameOverride]);
+    if (parsed.parseError) return parsed.parseError;
+    if (!parsed.scheme) return null;
+    const copy: DesignScheme = JSON.parse(JSON.stringify(parsed.scheme));
+    if (effectiveName) copy.name = effectiveName;
+    return validateScheme(copy, lang);
+  }, [raw, parsed, effectiveName, lang]);
 
   // Parse the tokenId of SchemeMinted from the receipt logs
   const tokenIdFromReceipt = useCallback(async (hash: Hex): Promise<bigint | null> => {
@@ -467,6 +490,18 @@ export default function CreatePage() {
               placeholder={t("例如：我家客厅 v2", "e.g., My living room v2")}
               className="input"
             />
+            {parsed.fromHomePlan && (
+              <p className="mt-2 text-[11px] text-violet-deep">
+                {t("已识别为 VirtuHome HomePlan，并自动转换为本站方案。", "Detected a VirtuHome HomePlan and converted it automatically.")}
+              </p>
+            )}
+            {!nameOverride.trim() &&
+              effectiveName &&
+              effectiveName !== (parsed.scheme?.name ?? "").trim() && (
+                <p className="mt-2 text-[11px] text-muted">
+                  {t(`将使用「${effectiveName}」作为方案名称`, `Using "${effectiveName}" as the scheme name`)}
+                </p>
+              )}
           </div>
 
           <button onClick={() => void handleMint()} disabled={busy || !displayScheme} className="btn-primary w-full">

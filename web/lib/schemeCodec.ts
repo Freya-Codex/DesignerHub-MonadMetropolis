@@ -120,7 +120,7 @@ export async function decodeSchemeCode(code: string): Promise<DecodedScheme> {
   );
 }
 
-function looksLikeHomePlan(x: any): boolean {
+export function looksLikeHomePlan(x: any): boolean {
   return Boolean(
     x &&
       typeof x === "object" &&
