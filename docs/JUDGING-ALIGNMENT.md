@@ -74,7 +74,11 @@ Founder & Market Readiness 25% · Traction & Path Forward 20%.**
 | 5 | Env examples stale (old variable names) | DX / Technical | **done** — `.env.example` × 3 fixed |
 | 6 | Relayer centralization not addressed | Originality 15% | **done** — permissionsless/replaceable argument |
 | 7 | **No third-party integration evidence** | Traction 20% | **open** — needs a second team; plan written, not yet executed |
-| 8 | No live deployment URL / demo video | Market + Traction | **open** — `README` still has `youtu.be/REPLACE_ME` |
+| 8 | No live deployment URL / demo video | Market + Traction | **partial** — live at <https://designerhub.asia>; demo video still `youtu.be/REPLACE_ME` |
 
-Items **1–6** are addressed in this pass. Items **7–8** require action outside the codebase
-(recruit one integrating team; host the app; record the demo).
+Items **1–6** are addressed in this pass, and item 8 is now live-deployed. Items **7–8** still require
+action outside the codebase (recruit one integrating team; record the demo video).
+
+> **Honest default:** the live demo runs with no third-party keys (`local://` pinning + built-in rules
+> engine for `/api/kimi`). Setting `PINATA_*` / `KIMI_API_KEY` upgrades new mints to real `ipfs://` CIDs
+> and real Moonshot output. See the README "Demo defaults (zero-key mode)" note.

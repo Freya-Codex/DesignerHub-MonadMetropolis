@@ -37,54 +37,6 @@ creative work: **provenance and trading happen on-chain while sensitive content 
 
 ---
 
-## Hackathon: Track 04, bounties & judging
-
-Built for the **Monad Metropolis** hackathon (build window 1 Sep – 13 Oct; judging 14–27 Oct;
-winners 3 Nov). Track 04 — Trust, Identity & AI Infrastructure:
-
-> "AI has made identity, provenance, data ownership, and agent trust urgent infrastructure problems.
-> Best fit for teams comfortable with cryptography, protocol design, or agent frameworks."
-> — passkey-native accounts using P256 + WebAuthn, agent identity & reputation, provenance for
-> generated media that survives re-encoding. **Prize pool: $30,000 per track** (evenly between 3 teams).
-
-### How we map to Track 04
-
-| Track 04 signal | What Designer Hub ships |
-| --- | --- |
-| Passkey-native accounts using P256 + WebAuthn, no seed phrase | `P256PasskeyAccount` + `PasskeyAccountFactory` — CREATE2 deterministic accounts; real WebAuthn assertions verified on-chain in pure Solidity (RIP-7212 fallback); the key stays in the device secure chip |
-| Agent identity & reputation | `AgentRegistry` — AI generators register and accrue reputation from real attestations; `agentId` binds every mint to its model |
-| Provenance for generated media | `ProvenanceRegistry` — stores only `keccak256(contentHash ‖ salt)`; raw content never goes on-chain; survives re-encoding |
-| Cryptography / protocol design | on-chain P-256 verifier, tamper-proof WebAuthn challenge binding, lineage-aware splitter |
-
-### Bounties this project targets
-
-Metropolis awards sponsor bounties on top of the track prizes. Designer Hub is built to be
-eligible for the following (official Monad bounty list):
-
-| Bounty | Sponsor | Why Designer Hub fits |
-| --- | --- | --- |
-| **Best Builds Powered by KIMI** — $3,000 in credits | Moonshot AI / KIMI | KIMI is the pre-registered generator (`agentId = 1`) and the `/api/kimi` design-suggestion engine; every KIMI-authored scheme is attributable on-chain |
-| **Best Builds with Qwen** — $5,000 in credits | Alibaba Qwen | the `AgentRegistry` is provider-agnostic (Qwen = `agentId 2`); schemes carry the generating provider on-chain |
-| **Best Use of Envio** — $1,000 | Envio | the `envio/` indexer streams `SchemeMinted` / `SchemeApplied` / `Attested` into the activity feed |
-| **Best Projects using Alchemy** — $1,000 in credits | Alchemy | Alchemy RPC + webhook integration (`web/docs/ALCHEMY.md`, `/api/alchemy/webhook`) |
-| **Best Analytics / Risk Tool** — $3,000 | — | `AgentRegistry` reputation + per-agent analytics over on-chain attestations |
-| **Mera: One Passkey, Many Keys** — $2,500 | Mera | `P256PasskeyAccount` supports up to 4 keys per account (`addKey`) for multi-device recovery |
-| **Best Agent Wallet Plugin** — $2,500 | — | a passkey smart account + permissionless relayer as an agent-wallet primitive |
-
-### Judging rubric alignment
-
-| Criterion | Weight | Where we answer it |
-| --- | --- | --- |
-| Technical Execution | 20% | [`docs/SECURITY.md`](./docs/SECURITY.md) · 103 Foundry tests · live testnet E2E |
-| Design & Craft (DX) | 20% | typed `@designerhub/sdk` · [`docs/INTEGRATING.md`](./docs/INTEGRATING.md) · runnable examples |
-| Originality & Track Insight | 15% | content stays off-chain · vault-free instant splits · permissionless relayer |
-| Founder & Market Readiness | 25% | named adopters + "why not roll your own" · first-party integrator (VirtuHome) |
-| Traction & Path Forward | 20% | integration kit shipped · honest gap + concrete post-event plan |
-
-Full mapping: [`docs/JUDGING-ALIGNMENT.md`](./docs/JUDGING-ALIGNMENT.md).
-
----
-
 ## What it is
 
 Every interior-design scheme is an ERC-721:
@@ -413,36 +365,54 @@ The front end follows the **Monad visual style** and makes "interior design" the
 
 ---
 
-## CI
+## Hackathon: Track 04, bounties & judging
 
-| Platform | File | Trigger | Content |
-| --- | --- | --- | --- |
-| Gitee Go | `.workflow/forge-test.yml` | push / PR to `main` | `forge build` + `forge test -vv` + `npm ci && npm run build` |
-| GitHub Actions | `.github/workflows/ci.yml` | push / PR to `main` | same (two parallel jobs, npm cache) |
+Built for the **Monad Metropolis** hackathon (build window 1 Sep – 13 Oct; judging 14–27 Oct;
+winners 3 Nov). Track 04 — Trust, Identity & AI Infrastructure:
 
-Both run **without any secrets** (contract deps are vendored; the front end builds with defaults).
+> "AI has made identity, provenance, data ownership, and agent trust urgent infrastructure problems.
+> Best fit for teams comfortable with cryptography, protocol design, or agent frameworks."
+> — passkey-native accounts using P256 + WebAuthn, agent identity & reputation, provenance for
+> generated media that survives re-encoding. **Prize pool: $30,000 per track** (evenly between 3 teams).
 
----
+### How we map to Track 04
 
-## FAQ
+| Track 04 signal | What Designer Hub ships |
+| --- | --- |
+| Passkey-native accounts using P256 + WebAuthn, no seed phrase | `P256PasskeyAccount` + `PasskeyAccountFactory` — CREATE2 deterministic accounts; real WebAuthn assertions verified on-chain in pure Solidity (RIP-7212 fallback); the key stays in the device secure chip |
+| Agent identity & reputation | `AgentRegistry` — AI generators register and accrue reputation from real attestations; `agentId` binds every mint to its model |
+| Provenance for generated media | `ProvenanceRegistry` — stores only `keccak256(contentHash ‖ salt)`; raw content never goes on-chain; survives re-encoding |
+| Cryptography / protocol design | on-chain P-256 verifier, tamper-proof WebAuthn challenge binding, lineage-aware splitter |
 
-- **Relationship to the VirtuHome App**: fully decoupled; only a scheme JSON is handed off. This repo is
-  the standalone hackathon deliverable (contracts / front end / sample data). The App itself lives in `virtu-home`.
-- **Gallery keeps showing demo data**: `web/.env.local` has no contract addresses, or the dev server was
-  not restarted after deployment.
-- **Mint fails with a "post-object" style error**: wrong network — switch the wallet to Monad Testnet (10143).
-- **Pinata 403**: check `PINATA_KEY/PINATA_SECRET`; without them the local `local://` mode + `/api/cid` is used.
-- **Kimi returns nothing**: `KIMI_API_KEY` is unset; the built-in rule engine answers instead.
-- **`eth_getLogs is limited to a 100 range`**: Monad's public RPC caps `eth_getLogs` at 100 blocks (deploy-to-latest
-  spans millions of blocks). The gallery enumerates via `totalSupply()` (no logs); `/mint` and `/trades`
-  history comes from an **offline index** (`cd web && npm run index` → `web/data/activity.json`, committed
-  and read via `/api/activity`), plus a recent tail scan of `NEXT_PUBLIC_TAIL_SCAN_BLOCKS` (default 2000).
-- **`chain does not support contract multicall3`**: Monad's multicall3 is added in `web/lib/chains.ts`
-  (canonical address `0xcA11…CA11`).
-- **Wallet `projectId` error**: leave `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` empty (MetaMask injected mode is unaffected). To enable WalletConnect (and mobile scanning), get a real `projectId` at <https://cloud.reown.com> and set `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` — with no real value the UI shows injected MetaMask only and makes no WalletConnect network calls.
-- **Connect-wallet crash (`invalid border=0`)**: caused by `qr@0.7.0` (pulled by `@rainbow-me/rainbowkit` → `cuer`) rejecting the `border: 0` that RainbowKit's wallet QR passes. `package.json` pins `"overrides": { "qr": "0.5.5" }`; run `npm install` after pulling. Do not remove the override or RainbowKit's QR screen will throw `RangeError: invalid border=0` during `render`.
-- **Passkey account address differs between visits**: the address is bound to `(passkey, RP ID, Origin)` —
-  a different domain or port (localhost ↔ 127.0.0.1) yields a different account. The local record lives in `localStorage`.
-- **Passkey flow errors "relayer_disabled"**: set `RELAYER_PRIVATE_KEY` (or `MONAD_PRIVATE_KEY`) to enable the demo sponsor.
-- **Comments**: stored in `web/data/comments/<tokenId>.json` (gitignored); a 401 means the signed message
-  must exactly match the submitted one and must embed the scheme's token id.
+### Bounties this project targets
+
+Metropolis awards sponsor bounties on top of the track prizes. Designer Hub is built to be
+eligible for the following (official Monad bounty list):
+
+| Bounty | Sponsor | Why Designer Hub fits |
+| --- | --- | --- |
+| **Best Builds Powered by KIMI** — $3,000 in credits | Moonshot AI / KIMI | KIMI is the pre-registered generator (`agentId = 1`) and the `/api/kimi` design-suggestion engine (built-in rules-engine fallback when `KIMI_API_KEY` is unset); every KIMI-authored scheme is attributable on-chain |
+| **Best Builds with Qwen** — $5,000 in credits | Alibaba Qwen | the `AgentRegistry` is provider-agnostic (Qwen = `agentId 2`); schemes carry the generating provider on-chain |
+| **Best Use of Envio** — $1,000 | Envio | the `envio/` indexer streams `SchemeMinted` / `SchemeApplied` / `Attested` into the activity feed |
+| **Best Projects using Alchemy** — $1,000 in credits | Alchemy | Alchemy RPC + webhook integration (`web/docs/ALCHEMY.md`, `/api/alchemy/webhook`) |
+| **Best Analytics / Risk Tool** — $3,000 | — | `AgentRegistry` reputation + per-agent analytics over on-chain attestations |
+| **Mera: One Passkey, Many Keys** — $2,500 | Mera | `P256PasskeyAccount` supports up to 4 keys per account (`addKey`) for multi-device recovery |
+| **Best Agent Wallet Plugin** — $2,500 | — | a passkey smart account + permissionless relayer as an agent-wallet primitive |
+
+### Judging rubric alignment
+
+| Criterion | Weight | Where we answer it |
+| --- | --- | --- |
+| Technical Execution | 20% | [`docs/SECURITY.md`](./docs/SECURITY.md) · 103 Foundry tests · live testnet E2E |
+| Design & Craft (DX) | 20% | typed `@designerhub/sdk` · [`docs/INTEGRATING.md`](./docs/INTEGRATING.md) · runnable examples |
+| Originality & Track Insight | 15% | content stays off-chain · vault-free instant splits · permissionless relayer |
+| Founder & Market Readiness | 25% | named adopters + "why not roll your own" · first-party integrator (VirtuHome) |
+| Traction & Path Forward | 20% | integration kit shipped · honest gap + concrete post-event plan |
+
+Full mapping: [`docs/JUDGING-ALIGNMENT.md`](./docs/JUDGING-ALIGNMENT.md).
+
+**Demo defaults (zero-key mode).** The site runs end to end with no third-party keys: scheme JSON is
+pinned to the local `local://` store (served by `/api/cid/<cid>`) instead of public IPFS, and `/api/kimi`
+answers from the built-in rules engine instead of a model. Setting `PINATA_JWT` (or `PINATA_KEY` +
+`PINATA_SECRET`) switches **new** mints to real `ipfs://` CIDs, and `KIMI_API_KEY` switches `/api/kimi` to
+Moonshot's `moonshot-v1-8k`. Already-minted tokens keep the URIs they were minted with.

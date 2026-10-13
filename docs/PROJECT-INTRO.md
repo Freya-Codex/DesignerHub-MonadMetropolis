@@ -59,7 +59,7 @@ already running on Monad Testnet:
 | **Remixable assets + lineage** | `DreamScheme` + `SchemeMarket` | ERC-721 assets with on-chain lineage via `parentId` (a v1→v2→v3 timeline); creators set their own price with `setPrice`; applying "to my home" splits **instantly** — original **90/10**, derivative **85/10/5** (creator / platform / ancestor lineage pool), **no platform vault, no `withdraw()`**; resale follows ERC-2981 (5% royalty). `AgentRegistry` records AI generators (Kimi pre-registered as `agentId = 1`) and reputation, making "the scheme **and** the model that generated it" publicly attributable. |
 
 The main flow uses Passkey (fingerprint / Face ID login; the user needs no MON, the relayer pays gas);
-MetaMask is kept as an "advanced mode".
+MetaMask is kept as an alternative, connectable inside the `/passkey` page.
 
 ---
 
@@ -148,7 +148,16 @@ MetaMask is kept as an "advanced mode".
 | 5 contracts deployed + 103 tests + testnet E2E | ✅ done |
 | SDK / integration docs / security docs | ✅ done |
 | Third-party integration evidence | ⚠️ **not achieved** — need to recruit a second team (top priority) |
-| Live demo URL / demo video | ⚠️ **not done** — README still has `youtu.be/REPLACE_ME` |
+| Live demo URL | ✅ <https://designerhub.asia> |
+| Demo video | ⚠️ **not done** — README still has `youtu.be/REPLACE_ME` |
+
+### Zero-key demo mode (honest default)
+
+The live demo runs end to end **without any third-party keys**: scheme JSON is pinned to the local
+`local://` store (served by `/api/cid/<cid>`) and `/api/kimi` answers from the built-in rules engine.
+Setting `PINATA_JWT` (or `PINATA_KEY` + `PINATA_SECRET`) makes **new** mints use real `ipfs://` CIDs;
+setting `KIMI_API_KEY` makes `/api/kimi` call Moonshot's `moonshot-v1-8k`. Already-minted tokens keep
+the URI they were minted with (`local://` for tokens minted before the keys were set).
 
 ---
 
