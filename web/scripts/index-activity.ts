@@ -1,25 +1,30 @@
 /**
  * index-activity.ts —— 链上活动索引器（SchemeMinted / SchemeApplied 全量流水）
  *
- * 背景：Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 个区块内，
- * 而部署块（NEXT_PUBLIC_DEPLOY_BLOCK）到最新块之间已有百万级区块，
- * 前端无法在浏览器里直接扫完这段区间（会产生 1 万多次请求）。
- * 本脚本离线扫描并按 100 区块分片、带指数退避重试，把结果落盘为
- * web/data/activity.json；前端通过 /api/activity 读取，得到一份
- * 完整、可核对的交易账本。
+ * 数据源（两选一，自动选择）：
+ *   1) 首选 Envio HyperSync（配置了 ENVIO_API_TOKEN 时）——一次拉全量历史日志，
+ *      直接覆盖部署块 → 最新块，无需分片，这正是 /trades 交易账本与 /mint 铸造流水
+ *      依赖的数据。
+ *   2) 回退公共 RPC 分片扫描（未配置 token 时）——Monad 公共 RPC 把 eth_getLogs
+ *      限制在 100 个区块内，只能分片 + 指数退避。
+ *
+ * 两者都把结果落盘为 web/data/activity.json；前端通过 /api/activity 读取，
+ * 得到一份完整、可核对的交易账本。
  *
  * 用法（在 web/ 目录下）：
- *   npm run index                              # 头部窗口 20000 + 尾部窗口 20000（快）
- *   INDEX_HEAD=100000 INDEX_TAIL=100000 npm run index
- *   INDEX_FULL=1 npm run index                 # 部署块 → 最新块全量扫描（慢，但最完整）
+ *   npm run index                              # 有 token → HyperSync 全量；否则头部/尾部窗口
+ *   INDEX_FULL=1 npm run index                 # 回退路径下：部署块 → 最新块全量扫描（慢）
+ *   ENVIO_API_TOKEN=xxx npm run index          # 显式走 HyperSync
  *
  * 脚本可安全重复执行（按 txHash+logIndex 去重，结果稳定）。
  */
 import fs from "node:fs";
 import path from "node:path";
-import { createPublicClient, getAddress, http, type Address } from "viem";
+import { createPublicClient, getAddress, type Address } from "viem";
 import { monadTestnet } from "../lib/chains";
 import { schemeMintedEvent, schemeAppliedEvent } from "../lib/abis";
+import { serverTransport, safeRpcLabel, usingAlchemy } from "../lib/serverRpc";
+import { fetchActivityViaHyperSync, usingHyperSync } from "../lib/hypersync";
 
 /** Next.js 会自动加载 .env.local，但 tsx 直接跑脚本不会。 */
 function loadEnvLocal(): void {
@@ -45,7 +50,8 @@ function loadEnvLocal(): void {
 loadEnvLocal();
 
 const env = process.env;
-const CHUNK = 100n;
+// Alchemy 允许更大的 eth_getLogs 区间，未开通时回退公共 RPC（100 区块）。
+const CHUNK = BigInt(env.INDEX_CHUNK || (usingAlchemy() ? "2000" : "100"));
 const CONCURRENCY = Math.max(1, Number(env.INDEX_CONCURRENCY || "6"));
 const HEAD = BigInt(env.INDEX_HEAD || "20000");
 const TAIL = BigInt(env.INDEX_TAIL || "20000");
@@ -76,7 +82,7 @@ function resolveAddress(envKey: string, jsonKey: string): Address | undefined {
   return undefined;
 }
 
-const client = createPublicClient({ chain: monadTestnet, transport: http() });
+const client = createPublicClient({ chain: monadTestnet, transport: serverTransport() });
 
 /** 单个 100 区块分片的查询，遇到限流（429 / -32614）指数退避重试。 */
 async function getLogsWithRetry(
@@ -136,6 +142,51 @@ async function main(): Promise<void> {
   console.log("🏠 DreamScheme :", scheme);
   console.log("🏪 SchemeMarket   :", market ?? "未配置");
   console.log("⛓️  部署块 / 最新块 :", deployBlock.toString(), "/", latest.toString());
+
+  // ---- 首选：Envio HyperSync 全量历史（一次拉完，无分片）----
+  if (usingHyperSync()) {
+    console.log("🔌 数据源         : Envio HyperSync（全量历史）");
+    const hs = await fetchActivityViaHyperSync({
+      scheme,
+      market,
+      fromBlock: deployBlock,
+      toBlock: latest,
+      onProgress: (m) => console.log("   " + m)
+    });
+    if (hs) {
+      const mints = [...hs.mints].sort((a, b) => (BigInt(a.blockNumber) < BigInt(b.blockNumber) ? -1 : 1));
+      const trades = [...hs.trades].sort((a, b) =>
+        BigInt(a.blockNumber) === BigInt(b.blockNumber)
+          ? b.logIndex - a.logIndex
+          : BigInt(a.blockNumber) < BigInt(b.blockNumber)
+            ? 1
+            : -1
+      );
+      const payload = {
+        generatedAt: new Date().toISOString(),
+        chainId: monadTestnet.id,
+        source: "envio-hypersync",
+        archiveHeight: hs.archiveHeight,
+        scheme,
+        market: market ?? null,
+        latestBlock: latest.toString(),
+        windows: [[deployBlock.toString(), latest.toString()]],
+        mints,
+        trades
+      };
+      fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
+      fs.writeFileSync(OUT_FILE, JSON.stringify(payload, null, 2) + "\n");
+      console.log(`\n✅ 写入 ${path.relative(process.cwd(), OUT_FILE)}（Envio HyperSync）`);
+      console.log(`   铸造记录 ${mints.length} 条 · 应用记录 ${trades.length} 条`);
+      return;
+    }
+    console.warn("⚠️  HyperSync 返回空，回退公共 RPC 分片扫描…");
+  }
+
+  // ---- 回退：公共 RPC 分片扫描 ----
+  console.log("🔌 数据源         : 公共 RPC 分片扫描");
+  console.log("🔌 RPC 提供方     :", usingAlchemy() ? `Alchemy (${safeRpcLabel()})` : "公共 RPC");
+  console.log("📦 getLogs 分片    :", CHUNK.toString(), "区块");
 
   const windows: Array<[bigint, bigint]> = [];
   if (FULL) {
@@ -202,6 +253,7 @@ async function main(): Promise<void> {
   const payload = {
     generatedAt: new Date().toISOString(),
     chainId: monadTestnet.id,
+    source: "public-rpc",
     scheme,
     market: market ?? null,
     latestBlock: latest.toString(),

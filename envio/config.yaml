@@ -1,0 +1,57 @@
+# Envio HyperIndex — Designer Hub · Monad
+#
+# 把五个合约的链上事件索引成实体，产出 GraphQL 端点，
+# 驱动前端的「交易账本 /trades」「方案详情与血缘 /scheme/[id]」「Agent 信誉榜 /board」。
+#
+# 为什么需要它：Monad 测试网公共 RPC 把 eth_getLogs 限制在 100 区块内，
+# 从部署块(66892530)到最新块已有千万级区块，前端无法自己在浏览器里扫完全史。
+# Envio HyperSync 负责历史回填，HyperIndex 负责把事件整理成可查询实体。
+#
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: designer-hub-monad
+description: Designer Hub · Monad — scheme provenance, trade ledger & agent reputation
+contracts:
+  - name: DreamScheme
+    events:
+      - event: "SchemeMinted(uint256 indexed tokenId, address indexed creator, uint256 indexed parentId, bytes32 contentHash, uint256 agentId)"
+        field_selection:
+          transaction_fields:
+            - hash
+      - event: "RoyaltySet(uint256 indexed tokenId, address indexed receiver, uint96 feeNumerator)"
+  - name: SchemeMarket
+    events:
+      - event: "SchemeApplied(uint256 indexed tokenId, address indexed applier, address indexed creator, uint256 price, uint256 creatorCut, uint256 platformCut)"
+        field_selection:
+          transaction_fields:
+            - hash
+      - event: "PriceSet(uint256 indexed tokenId, address indexed creator, uint256 price)"
+      - event: "AncestorPaid(uint256 indexed tokenId, address indexed ancestor, uint256 amount)"
+        field_selection:
+          transaction_fields:
+            - hash
+      - event: "PayoutSet(uint256 indexed tokenId, address indexed creator, address payout)"
+  - name: AgentRegistry
+    events:
+      - event: "AgentRegistered(uint256 indexed agentId, address indexed owner, string metadataURI)"
+      - event: "ReputationAdded(uint256 indexed agentId, uint256 newReputation, uint256 delta)"
+        field_selection:
+          transaction_fields:
+            - hash
+  - name: ProvenanceRegistry
+    events:
+      - event: "Attested(address indexed attestor, bytes32 indexed commitment, uint256 indexed agentId, string metadataURI)"
+        field_selection:
+          transaction_fields:
+            - hash
+chains:
+  - id: 10143 # Monad Testnet
+    start_block: 66892530
+    contracts:
+      - name: DreamScheme
+        address: "0x2541eB7A4AC7bb5287A5944452576f983b3dc3eB"
+      - name: SchemeMarket
+        address: "0x51DBCb43D2279e7d108753490794f97AA43877a9"
+      - name: AgentRegistry
+        address: "0x9EB3d5C336c66823577F4FBB1E31dbABcf7c268D"
+      - name: ProvenanceRegistry
+        address: "0xCe41D2fa11fC3944662b783ac895D3380B8B09ED"

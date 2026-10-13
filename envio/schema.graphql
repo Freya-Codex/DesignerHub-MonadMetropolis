@@ -1,0 +1,80 @@
+# Envio HyperIndex 数据模型 — Designer Hub · Monad
+#
+# 这些实体由 src/EventHandlers.ts 写入，前端通过 GraphQL 查询它们，
+# 也就是 /trades、/scheme/[id]、/board 三个页面背后真正的数据来源。
+
+"""一个已铸造的设计方案（DreamScheme 的 ERC-721）。"""
+type Scheme {
+  "tokenId（十进制字符串）"
+  id: ID!
+  creator: String!
+  "父方案 tokenId；根方案为 0"
+  parentId: BigInt!
+  "方案内容承诺 keccak256(contentHash + salt)"
+  contentHash: String!
+  "铸造时归因的 AI provider（AgentRegistry.agentId）"
+  agentId: BigInt!
+  mintedBlock: BigInt!
+  mintedTx: String!
+  "被应用的累计次数（由 SchemeApplied 累加）"
+  appliedCount: Int!
+  "创作者设置的版税接收人"
+  royaltyReceiver: String
+  "版税 bps（例如 500 = 5%）"
+  royaltyBps: BigInt
+}
+
+"""一次方案应用（SchemeMarket.SchemeApplied），即一笔交易账本记录。"""
+type Trade {
+  id: ID!
+  scheme: Scheme!
+  tokenId: BigInt!
+  applier: String!
+  creator: String!
+  price: BigInt!
+  creatorCut: BigInt!
+  platformCut: BigInt!
+  blockNumber: BigInt!
+  txHash: String!
+  logIndex: Int!
+}
+
+"""衍生方案被应用时，按血缘付给祖先创作者的份额。"""
+type AncestorPayout {
+  id: ID!
+  tokenId: BigInt!
+  ancestor: String!
+  amount: BigInt!
+  blockNumber: BigInt!
+  txHash: String!
+}
+
+"""一个已注册的 AI agent（AgentRegistry）及其声誉。"""
+type Agent {
+  id: ID!
+  owner: String!
+  metadataURI: String!
+  reputation: BigInt!
+  registeredBlock: BigInt!
+}
+
+"""声誉变更事件（AgentRegistry.ReputationAdded）。"""
+type ReputationEvent {
+  id: ID!
+  agent: Agent!
+  newReputation: BigInt!
+  delta: BigInt!
+  blockNumber: BigInt!
+  txHash: String!
+}
+
+"""一条链上确权证明（ProvenanceRegistry.Attested），不含内容本体。"""
+type Attestation {
+  id: ID!
+  commitment: String!
+  attestor: String!
+  agentId: BigInt!
+  metadataURI: String!
+  blockNumber: BigInt!
+  txHash: String!
+}

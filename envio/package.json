@@ -1,0 +1,19 @@
+{
+  "name": "designer-hub-monad-indexer",
+  "version": "1.0.0",
+  "description": "Envio HyperIndex for Designer Hub · Monad — scheme provenance, trade ledger & agent reputation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "envio": "3.14.0",
+    "typescript": "^5.6.0"
+  }
+}
