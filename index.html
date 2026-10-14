@@ -283,8 +283,8 @@
       read-only (no wallet), standard EOA, or a passkey account with optional gas sponsorship.</p>
     <div class="grid g2">
       <div>
-        <pre>npm i @designerhub/sdk viem</pre>
-        <pre>import { publicClient, readTotalSupply, readScheme, readSplitPreview } from &quot;@designerhub/sdk&quot;;
+        <pre>npm i @freya-codex/sdk viem</pre>
+        <pre>import { publicClient, readTotalSupply, readScheme, readSplitPreview } from &quot;@freya-codex/sdk&quot;;
 
 const client = publicClient();                       // Monad Testnet (10143)
 const s = await readScheme(client, await readTotalSupply(client));
@@ -293,7 +293,7 @@ console.log(s.creator, s.parentId, s.remixCount, s.priceWei);</pre>
       <div>
         <pre>import { createPasskey, rpIdHashHex, originHashHex, passkeyFactoryAbi,
          buildAttestData, deriveSingleChallenge, signAssertion,
-         publicClient, monadTestnet } from &quot;@designerhub/sdk&quot;;
+         publicClient, monadTestnet } from &quot;@freya-codex/sdk&quot;;
 
 const cred = await createPasskey({ rpId: &quot;yourdomain.xyz&quot; });
 const account = await publicClient().readContract({
@@ -309,6 +309,7 @@ const account = await publicClient().readContract({
       <li><b>Docs:</b> <span class="mono">docs/INTEGRATING.md</span> &mdash; the primitive, adopters, the &ldquo;why not roll your own&rdquo; argument, integration paths, gas sponsorship, and the post-event plan.</li>
       <li><b>Security:</b> <span class="mono">docs/SECURITY.md</span> &mdash; threat model, P-256/WebAuthn correctness, relayer trust, secrets handling.</li>
       <li><b>SDK reference:</b> <span class="mono">sdk/README.md</span> &mdash; API reference and runnable examples.</li>
+      <li><b>Package:</b> published as <span class="mono">@freya-codex/sdk</span> (brand <span class="mono">@designerhub/sdk</span>) to <b>GitHub Packages</b> &mdash; install needs a token with <span class="mono">read:packages</span>; see <span class="mono">sdk/PUBLISH.md</span>.</li>
     </ul>
   </div>
 </section>
