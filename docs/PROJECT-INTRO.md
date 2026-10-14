@@ -6,7 +6,7 @@
 
 - **Track**: **Track 04 — Trust, Identity & AI Infrastructure**
 - **Network**: Monad Testnet (chainId `10143`)
-- **Deliverables**: 5 deployed contracts + a front-end app + a typed SDK (`@designerhub/sdk`) + integration docs (the "primitive" form Track 04 asks for)
+- **Deliverables**: 5 deployed contracts + a front-end app + a typed SDK (`@designerhub/sdk`, published to GitHub Packages as `@freya-codex/sdk`) + integration docs (the "primitive" form Track 04 asks for)
 - **This brief is organized per the hackathon's judging rubric (Technical 20% / Design 20% / Originality 15% / Market 25% / Traction 20%)**
 
 ---

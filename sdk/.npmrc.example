@@ -1,0 +1,13 @@
+# GitHub Packages 发布配置（模板）
+#
+# 用法：
+#   1) 打开 https://github.com/settings/tokens 新建 classic PAT，
+#      勾选至少：write:packages、read:packages（建议再勾 repo）。
+#   2) 把下面两行的 <YOUR_GITHUB_PAT> 换成你的 token 后，
+#      把本文件另存为同目录下的 `.npmrc`（.npmrc 已被 .gitignore 忽略，不会提交）。
+#   3) 然后在本目录执行：npm publish
+#
+# 注意：scope 必须与 GitHub 账号/组织名一致（此处为 Freya-Codex → 包名 @freya-codex/sdk）。
+
+@freya-codex:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=<YOUR_GITHUB_PAT>

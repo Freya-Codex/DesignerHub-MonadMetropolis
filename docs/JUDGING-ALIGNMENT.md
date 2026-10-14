@@ -32,7 +32,7 @@ Founder & Market Readiness 25% · Traction & Path Forward 20%.**
 | **Rubric asks** | usable by **developers who'd build on it** — clear docs, clean interface/API, **even without an end-user UI**. Design = DX |
 | **Evidence (have)** | a polished end-user Next.js app; `/docs` in-app page |
 | **Gap (was the largest)** | **no SDK / typed client, no integration guide, no API reference, no quickstart for a third-party dev**; the repo README was an *app* README, not a *primitive* README |
-| **Status** | ✅ addressed → **`@designerhub/sdk`** (`sdk/`, typed, buildable, typechecked, challenge vectors cross-checked) + `docs/INTEGRATING.md` |
+| **Status** | ✅ addressed → **`@designerhub/sdk`** (`sdk/`, typed, buildable, typechecked, challenge vectors cross-checked; published to GitHub Packages as `@freya-codex/sdk`) + `docs/INTEGRATING.md` |
 
 ### 3 · Originality & Track Insight — 15%
 
@@ -67,7 +67,7 @@ Founder & Market Readiness 25% · Traction & Path Forward 20%.**
 
 | # | Gap | Weight hit | Action |
 | --- | --- | --- | --- |
-| 1 | No developer SDK / typed API | Design 20% + Market 25% + Traction 20% | **done** — `sdk/` (`@designerhub/sdk`) |
+| 1 | No developer SDK / typed API | Design 20% + Market 25% + Traction 20% | **done** — `sdk/` (`@designerhub/sdk`, npm: `@freya-codex/sdk`) |
 | 2 | No integration docs / quickstart / API reference | Design 20% | **done** — `docs/INTEGRATING.md`, `sdk/README.md` |
 | 3 | No "why not roll your own" / named adopters | Market 25% | **done** — `docs/INTEGRATING.md` |
 | 4 | No security/threat-model & secrets statement | Technical 20% | **done** — `docs/SECURITY.md` |

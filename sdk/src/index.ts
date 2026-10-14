@@ -1,11 +1,11 @@
 /**
- * @designerhub/sdk — typed client for the Designer Hub on-chain primitive (Monad).
+ * @freya-codex/sdk — typed client for the Designer Hub on-chain primitive (Monad).
  *
  *   import {
  *     monadTestnet, publicClient, readScheme,
  *     buildMintData, deriveSingleChallenge,
  *     rpIdHashHex, originHashHex, createPasskey, signAssertion, passkeyFactoryAbi
- *   } from "@designerhub/sdk";
+ *   } from "@freya-codex/sdk";
  *
  * Primitives covered:
  *   · passkey (WebAuthn / P-256) smart accounts — no mnemonic, key stays in the secure element

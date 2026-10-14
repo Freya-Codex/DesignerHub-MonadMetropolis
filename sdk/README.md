@@ -1,4 +1,4 @@
-# @designerhub/sdk
+# @freya-codex/sdk
 
 Typed client for the **Designer Hub** on-chain primitive on Monad Testnet.
 
@@ -13,21 +13,38 @@ re-declare the ABIs:
 3. **Remixable design-scheme assets** — ERC-721 with on-chain lineage and **instant** revenue split
    on every use (no platform vault, no `withdraw()`).
 
-> **Status:** not published to npm yet (`publishConfig.access = public` is set and the package
-> builds, but `npm publish` is intentionally deferred — see the repo README).
+> **Status:** published to the **GitHub Packages** registry as `@freya-codex/sdk`.
+> (npmjs.com is blocked by Cloudflare from this network, so GitHub Packages is used instead —
+> see "Install" below. The GitHub Packages registry requires auth even for public packages.)
 
-## Install
+## Install (GitHub Packages)
+
+GitHub Packages requires an auth token even for public packages:
+
+1. Create a classic PAT at <https://github.com/settings/tokens> with the `read:packages` scope
+   (add `write:packages` if you also want to publish).
+2. Add a project `.npmrc`:
+
+```
+@freya-codex:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+3. Install:
 
 ```bash
-npm i @designerhub/sdk viem
+npm i @freya-codex/sdk viem
 ```
 
 `viem` (>= 2) is a peer dependency.
 
+> No-auth alternative: build a tarball with `npm pack` and install it directly
+> (`npm i ./freya-codex-sdk-0.1.0.tgz`).
+
 ## Quickstart — read schemes (no wallet, no API key)
 
 ```ts
-import { publicClient, readTotalSupply, readScheme } from "@designerhub/sdk";
+import { publicClient, readTotalSupply, readScheme } from "@freya-codex/sdk";
 
 const client = publicClient(); // Monad Testnet, https://testnet-rpc.monad.xyz
 const total = await readTotalSupply(client);
@@ -42,7 +59,7 @@ import {
   createPasskey, signAssertion, rpIdHashHex, originHashHex,
   deriveSingleChallenge, buildAttestData, passkeyFactoryAbi, publicClient,
   monadTestnet, KIMI_AGENT_ID
-} from "@designerhub/sdk";
+} from "@freya-codex/sdk";
 
 const RP_ID = "designerhub.xyz";          // your registrable domain
 const ORIGIN = "https://designerhub.xyz";

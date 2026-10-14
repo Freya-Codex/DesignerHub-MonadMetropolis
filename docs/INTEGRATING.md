@@ -3,8 +3,12 @@
 Designer Hub is not just a demo app — it is a small **on-chain primitive set** on Monad you can
 build on. This guide is for the developer who wants to use it **without** our UI.
 
-If you only read one thing: install [`@designerhub/sdk`](../sdk/README.md) and call `readScheme()` /
+If you only read one thing: install [`@freya-codex/sdk`](../sdk/README.md) and call `readScheme()` /
 `createPasskey()` / `deriveSingleChallenge()`.
+
+> **Package name:** the SDK is published to **GitHub Packages** as `@freya-codex/sdk`
+> (brand name `@designerhub/sdk`). GitHub Packages requires an auth token even for public
+> packages — see [`../sdk/PUBLISH.md`](../sdk/PUBLISH.md) for the one-line `.npmrc`.
 
 ---
 
@@ -56,7 +60,7 @@ security-sensitive work; the SDK exposes all of it in a few typed calls.
 ### A. Read-only (no wallet, no keys) — 2 minutes
 
 ```ts
-import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@designerhub/sdk";
+import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@freya-codex/sdk";
 
 const client = publicClient();
 const total = await readTotalSupply(client);
@@ -67,7 +71,7 @@ const split = await readSplitPreview(client, total, s.priceWei); // dry-run the 
 ### B. Standard wallet (EOA) — mint / set price / apply
 
 ```ts
-import { mintScheme, setSchemePrice, applyScheme } from "@designerhub/sdk";
+import { mintScheme, setSchemePrice, applyScheme } from "@freya-codex/sdk";
 
 await mintScheme(wallet, { parentId: 0n, contentHash, agentId: 1n, metadataURI: "ipfs://…" });
 await setSchemePrice(wallet, tokenId, 10_000_000_000_000_000n); // 0.01 MON, your call
@@ -78,7 +82,7 @@ await applyScheme(wallet, tokenId, priceWei);                    // instant spli
 
 ```ts
 import { createPasskey, rpIdHashHex, originHashHex, passkeyFactoryAbi,
-         buildAttestData, deriveSingleChallenge, signAssertion, publicClient, monadTestnet } from "@designerhub/sdk";
+         buildAttestData, deriveSingleChallenge, signAssertion, publicClient, monadTestnet } from "@freya-codex/sdk";
 
 const cred = await createPasskey({ rpId: "yourdomain.xyz" });
 const account = await publicClient().readContract({
@@ -116,7 +120,7 @@ hold a little MON. See `docs/SECURITY.md` for the trust model.
 
 Traction today is **self-served only** (no third-party integration yet — stated honestly). Concretely:
 
-1. **Ship the kit** (done): publish `@designerhub/sdk` + this guide + runnable examples.
+1. **Ship the kit** (done): publish `@freya-codex/sdk` + this guide + runnable examples.
 2. **Land one integrator during the event**: the VirtuHome App is the first-party integrator (already exports
    the scheme JSON); recruit **one external team** (a design tool, an asset library, or an AI-agent
    platform) to mint/attest through the SDK — even a read-only integration counts.

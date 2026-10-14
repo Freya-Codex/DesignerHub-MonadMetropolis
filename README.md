@@ -60,18 +60,20 @@ This repo is not only an app — it is a small **on-chain primitive set** you ca
 Use the typed SDK and skip the cryptography:
 
 ```bash
-npm i @designerhub/sdk viem
+npm i @freya-codex/sdk viem
 ```
 
 ```ts
-import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@designerhub/sdk";
+import { publicClient, readTotalSupply, readScheme, readSplitPreview } from "@freya-codex/sdk";
 
 const client = publicClient();                 // Monad Testnet
 const s = await readScheme(client, await readTotalSupply(client));
 console.log(s.creator, s.parentId, s.remixCount, s.priceWei);
 ```
 
-Source: [`sdk/`](./sdk) (typed, buildable, not yet published to npm).
+Source: [`sdk/`](./sdk) (typed, buildable; published to **GitHub Packages** as
+[`@freya-codex/sdk`](https://github.com/Freya-Codex?tab=packages) — brand name `@designerhub/sdk`).
+Install requires a GitHub token with `read:packages`; see [`sdk/PUBLISH.md`](./sdk/PUBLISH.md).
 
 **Documentation:**
 
